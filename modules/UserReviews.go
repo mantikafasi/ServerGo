@@ -1,5 +1,8 @@
 package modules
 
+// TODO: test this
+//Join it with users table and return username and discordid along with reviews
+
 import (
 	"context"
 	"encoding/json"
