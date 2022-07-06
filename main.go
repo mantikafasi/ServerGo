@@ -12,16 +12,16 @@ import (
 	"database/sql"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
-
+	"server-go/constantants"
 )
 
 func main() {
 
 	DB := bun.NewDB(sql.OpenDB(pgdriver.NewConnector(
-		pgdriver.WithAddr("192.168.1.25:5432"),
-		pgdriver.WithUser("manti"),
-		pgdriver.WithPassword("mantikafasi3900plus"),
-		pgdriver.WithDatabase("manti"),
+		pgdriver.WithAddr(constantants.DBIP),
+		pgdriver.WithUser(constantants.DBUSER),
+		pgdriver.WithPassword(constantants.DBPASSWORD),
+		pgdriver.WithDatabase(constantants.DBNAME),
 		pgdriver.WithTLSConfig(nil),
 	)), pgdialect.New())
 
@@ -32,7 +32,7 @@ func main() {
 
 	})
 	http.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
-		
+
 	})
 
 	http.HandleFunc("/getUser", func(w http.ResponseWriter, r *http.Request) {
