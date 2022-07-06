@@ -31,6 +31,20 @@ func main() {
 		io.WriteString(w, "Fart!\n")
 
 	})
+	http.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
+		
+	})
+
+	http.HandleFunc("/getUser", func(w http.ResponseWriter, r *http.Request) {
+		stupidity,error := modules.GetStupidity(DB, 287555395151593473)
+		if error != nil {
+			io.WriteString(w, "An Error Occured\n")
+			return
+		}
+		fmt.Printf("%v",stupidity)
+		io.WriteString(w, "Stupidity: "+strconv.Itoa(stupidity)+"\n")
+
+	})
 
 	http.HandleFunc("/getReviews",func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("getReviews")
