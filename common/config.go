@@ -8,7 +8,7 @@ import(
 
 type ConfigStr struct {
 	API_ENDPOINT string `json:"api_endpoint"`
-	DBIP string `json:"database_url"`
+	DBIP string `json:"dbip"`
 	REDIRECT_URI string `json:"redirect_uri"`
 	CLIENT_ID string `json:"client_id"`
 	CLIENT_SECRET string `json:"client_secret"`
@@ -27,7 +27,7 @@ func GetConfig() *ConfigStr {
 			fmt.Println(err)
 		}
 		
-		err = json.NewDecoder(f).Decode(Config)
+		err = json.NewDecoder(f).Decode(&Config)
 		f.Close()
 	}
 

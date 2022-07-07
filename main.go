@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"io"
@@ -10,24 +9,10 @@ import (
 	"server-go/modules"
 	"strconv"
 	"encoding/json"
-	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/dialect/pgdialect"
-	"github.com/uptrace/bun/driver/pgdriver"
-	"server-go/common"
 )
 
 
 func main() {
-	config := common.GetConfig()
-
-	DB := bun.NewDB(sql.OpenDB(pgdriver.NewConnector(
-		pgdriver.WithAddr(config.DBIP),
-		pgdriver.WithUser(config.DBUSER),
-		pgdriver.WithPassword(config.DBPASSWORD),
-		pgdriver.WithDatabase(config.DBNAME),
-		pgdriver.WithTLSConfig(nil),
-	)), pgdialect.New())
-
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 	//	fmt.Fprintf(w, "Hello, world!")
@@ -39,7 +24,7 @@ func main() {
 		var jason map[string]interface{}
 		json.NewDecoder(r.Body).Decode(&jason)
 		
-		res := modules.VoteStupidity(DB,int64(jason["discordid"].(float64)),jason["token"].(string),int32(jason["stupidity"].(float64)))
+		res := modules.VoteStupidity(int64(jason["discordid"].(float64)),jason["token"].(string),int32(jason["stupidity"].(float64)))
 	
 		io.WriteString(w, res)
 	})
@@ -52,7 +37,7 @@ func main() {
 			return
 		}
 
-		stupidity,error := modules.GetStupidity(DB, userID)
+		stupidity,error := modules.GetStupidity(userID)
 		if error != nil {
 			io.WriteString(w, "An Error Occured\n")
 			return
@@ -69,7 +54,7 @@ func main() {
 			return
 		}
 
-		reviews, err := modules.GetReviews(DB, userID)
+		reviews, err := modules.GetReviews(userID)
 		if err != nil {
 			fmt.Println(err)
 			io.WriteString(w, "An Error Occured\n")
@@ -79,7 +64,7 @@ func main() {
 	})
 
 	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
-		token,err := modules.AddStupidityDBUser(DB,r.URL.Query().Get("code"))
+		token,err := modules.AddStupidityDBUser(r.URL.Query().Get("code"))
 		
 		if err != nil {
 			fmt.Println(err)
@@ -90,7 +75,7 @@ func main() {
 	})
 
 	http.HandleFunc("/URauth", func(w http.ResponseWriter, r *http.Request) {
-		token, err := modules.AddUserReviewsUser(DB,r.URL.Query().Get("code"))
+		token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"))
 
 		if err != nil {
 			fmt.Println(err)
@@ -110,7 +95,7 @@ func main() {
 
 
 
-	err = http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", nil)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
 

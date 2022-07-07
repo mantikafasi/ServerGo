@@ -7,7 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
+	"server-go/common"
 	"github.com/uptrace/bun"
 )
 
@@ -29,7 +29,9 @@ type UR_UserStr struct {
 	Username	  string `bun:"username," json:"username"`
 }
 
-func GetReviews(DB *bun.DB, userID int64) (string, error) {
+func GetReviews(userID int64) (string, error) {
+	DB := common.GetDB()
+
 	var reviews []UserReviewStr
 
 	
@@ -50,12 +52,14 @@ func GetReviews(DB *bun.DB, userID int64) (string, error) {
 	return string(jsonReviews), nil
 }
 
-func AddReview(DB *bun.DB, userID int64, token string, comment string) (string,error) {
-	senderUserID := GetIDWithToken(DB, token)
+func AddReview(userID int64, token string, comment string) (string,error) {
+	DB := common.GetDB()
+
+	senderUserID := GetIDWithToken(token)
 	if(senderUserID == 0) {
 		return "", fmt.Errorf("Invalid Token")
 	}
-	count,_ := GetReviewCountInLastHour(DB, senderUserID)
+	count,_ := GetReviewCountInLastHour(senderUserID)
 	if count > 20 {
 		return "You are reviewing too much.",nil
 	}
@@ -71,14 +75,18 @@ func AddReview(DB *bun.DB, userID int64, token string, comment string) (string,e
 	return "Successfully added review", nil
 }
 
-func GetIDWithToken(DB *bun.DB, token string) int32 {
+func GetIDWithToken(token string) int32 {
+	DB := common.GetDB()
+
 	var userID UR_UserStr
 	DB.NewSelect().Where("token = ?", CalculateHash(token)).Model(&userID).Scan(context.Background())
 
 	return userID.ID
 }
 
-func GetReviewCountInLastHour(DB *bun.DB, userID int32) (int, error) {
+func GetReviewCountInLastHour(userID int32) (int, error) {
+	DB := common.GetDB()
+
 	count,err := DB.NewSelect().Where("userid = ? AND createdat > now() - interval '1 hour'", userID).Count(context.Background())
 	if err != nil {
 		return 0, err
@@ -86,7 +94,8 @@ func GetReviewCountInLastHour(DB *bun.DB, userID int32) (int, error) {
 	return count, nil
 }
 
-func AddUserReviewsUser(DB *bun.DB, code string) (string, error) {
+func AddUserReviewsUser(code string) (string, error) {
+	DB := common.GetDB()
 
 	token, err := ExchangeCode(code)
 	if err != nil {

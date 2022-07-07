@@ -55,5 +55,5 @@ func GetUser(token string) (DiscordUser,error) {
 }
 
 func ExchangeCode(token string) (string,error) {
-	return ExchangeCodePlus(token,constantants.REDIRECT_URI)
+	return ExchangeCodePlus(token,common.GetConfig().REDIRECT_URI)
 }

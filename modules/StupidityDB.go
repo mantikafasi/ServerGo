@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"github.com/uptrace/bun"
+	"server-go/common"
 )
 
 type StupitStat struct {
@@ -30,8 +31,9 @@ func CalculateHash(token string) string {
 	return hex.EncodeToString(checksum[:])
 }
 
-func AddStupidityDBUser(DB *bun.DB,code string) (string,error) {
+func AddStupidityDBUser(code string) (string,error) {
 	// check if user exists
+	DB := common.GetDB()
 	token, err := ExchangeCode(code)
 	if err != nil {
 		return "",err
@@ -63,7 +65,8 @@ func AddStupidityDBUser(DB *bun.DB,code string) (string,error) {
 
 }
 
-func GetDiscordIDWithToken(DB *bun.DB, token string) int64 {
+func GetDiscordIDWithToken( token string) int64 {
+	DB := common.GetDB()
 
 	var user UserInfoStr
 	err := DB.NewSelect().Where("token = ?", CalculateHash(token)).Model(&user).Scan(context.Background())
@@ -73,9 +76,9 @@ func GetDiscordIDWithToken(DB *bun.DB, token string) int64 {
 	return user.DiscordID
 }
 
-func VoteStupidity(DB *bun.DB, discordID int64, token string, stupidity int32) string {
-
-	senderID := GetDiscordIDWithToken(DB, token)
+func VoteStupidity( discordID int64, token string, stupidity int32) string {
+	DB := common.GetDB()
+	senderID := GetDiscordIDWithToken(token)
 	
 	exists, err := DB.NewSelect().Where("discordid = ?", discordID).Where("senderdiscordid=?", senderID).Model(&StupitStat{}).Exists(context.Background())
 	if err != nil {
@@ -104,7 +107,9 @@ func VoteStupidity(DB *bun.DB, discordID int64, token string, stupidity int32) s
 
 }
 
-func GetStupidity(DB *bun.DB, discordID int64) (int, error) {
+func GetStupidity(discordID int64) (int, error) {
+	DB := common.GetDB()
+
 	var stat []StupitStat
 	err := DB.NewSelect().Where("discordid = ?", discordID).Model(&stat).Scan(context.Background())
 	if err != nil {
