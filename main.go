@@ -1,31 +1,33 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"server-go/modules"
 	"strconv"
-	"encoding/json"
+
+	"server-go/common"
+	"server-go/database"
+	"server-go/modules"
 )
 
-
 func main() {
+	database.InitDB()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	//	fmt.Fprintf(w, "Hello, world!")
+		//	fmt.Fprintf(w, "Hello, world!")
 		io.WriteString(w, "Main Page does not exist")
-
 	})
 	http.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
-		
+
 		var jason map[string]interface{}
 		json.NewDecoder(r.Body).Decode(&jason)
-		
-		res := modules.VoteStupidity(int64(jason["discordid"].(float64)),jason["token"].(string),int32(jason["stupidity"].(float64)))
-	
+
+		res := modules.VoteStupidity(strconv.Itoa(int(jason["discordid"].(float64))), jason["token"].(string), int32(jason["stupidity"].(float64)))
+
 		io.WriteString(w, res)
 	})
 
@@ -33,13 +35,13 @@ func main() {
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 		if err != nil {
 			fmt.Println(err)
-			io.WriteString(w, "An Error Occured\n")
+			io.WriteString(w, "An Error occurred\n")
 			return
 		}
 
-		stupidity,error := modules.GetStupidity(userID)
+		stupidity, error := modules.GetStupidity(userID)
 		if error != nil {
-			io.WriteString(w, "An Error Occured\n")
+			io.WriteString(w, "An Error occurred\n")
 			return
 		}
 		if stupidity == -1 {
@@ -48,48 +50,47 @@ func main() {
 		}
 		io.WriteString(w, strconv.Itoa(stupidity))
 	})
-	
-	http.HandleFunc("/getUserReviews",func(w http.ResponseWriter, r *http.Request) {
-		
+
+	http.HandleFunc("/getUserReviews", func(w http.ResponseWriter, r *http.Request) {
+
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 		if err != nil {
 			fmt.Println(err)
-			io.WriteString(w, "An Error Occured\n")
+			io.WriteString(w, "An Error occurred\n")
 			return
 		}
 
 		reviews, err := modules.GetReviews(userID)
 		if err != nil {
 			fmt.Println(err)
-			io.WriteString(w, "An Error Occured\n")
+			io.WriteString(w, "An Error occurred\n")
 			return
 		}
-		if reviews== "" {
+		if reviews == "null" {
 			reviews = "[]"
 		}
 		io.WriteString(w, reviews)
 	})
 
-	http.HandleFunc("/addUserReview",func(w http.ResponseWriter, r *http.Request) {
-		
+	http.HandleFunc("/addUserReview", func(w http.ResponseWriter, r *http.Request) {
+
 		var jason map[string]interface{}
 		json.NewDecoder(r.Body).Decode(&jason)
-		
-		res,err := modules.AddReview(int64(jason["userid"].(float64)),jason["token"].(string),jason["comment"].(string))
+
+		res, err := modules.AddReview(strconv.Itoa(int(jason["userid"].(float64))), jason["token"].(string), jason["comment"].(string))
 		fmt.Println(err)
 		io.WriteString(w, res)
 	})
 
-
 	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
-		token,err := modules.AddStupidityDBUser(r.URL.Query().Get("code"))
-		
+		token, err := modules.AddStupidityDBUser(r.URL.Query().Get("code"))
+
 		if err != nil {
 			fmt.Println(err)
-			http.Redirect(w,r,"/error",http.StatusTemporaryRedirect)
+			http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
 			return
 		}
-		http.Redirect(w,r,"receiveToken?token="+token,http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "receiveToken/"+token, http.StatusTemporaryRedirect)
 	})
 
 	http.HandleFunc("/URauth", func(w http.ResponseWriter, r *http.Request) {
@@ -97,23 +98,21 @@ func main() {
 
 		if err != nil {
 			fmt.Println(err)
-			http.Redirect(w,r,"/error",http.StatusTemporaryRedirect)
+			http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
 			return
 		}
-		http.Redirect(w,r,"receiveToken?token="+token,http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "receiveToken/"+token, http.StatusTemporaryRedirect)
 	})
 
 	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "An Error Occured\n")
+		io.WriteString(w, "An Error occurred\n")
 	})
 
 	http.HandleFunc("/receiveToken", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "You have successfully logged in! Your token is: "+r.URL.Query().Get("token")+"\n\n You can now close this window.")
 	})
 
-
-
-	err := http.ListenAndServe(":80", nil)
+	err := http.ListenAndServe(":"+common.GetConfig().Port, nil)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
 
