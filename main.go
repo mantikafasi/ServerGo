@@ -63,6 +63,17 @@ func main() {
 		io.WriteString(w, reviews)
 	})
 
+	http.HandleFunc("/addUserReview",func(w http.ResponseWriter, r *http.Request) {
+		
+		var jason map[string]interface{}
+		json.NewDecoder(r.Body).Decode(&jason)
+		
+		res,err := modules.AddReview(int64(jason["userid"].(float64)),jason["token"].(string),jason["comment"].(string))
+		fmt.Println(err)
+		io.WriteString(w, res)
+	})
+
+
 	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
 		token,err := modules.AddStupidityDBUser(r.URL.Query().Get("code"))
 		

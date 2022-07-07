@@ -1,7 +1,5 @@
 package modules
 
-//TODO test code
-
 import (
 	"context"
 	"crypto/sha256"
@@ -13,6 +11,7 @@ import (
 type StupitStat struct {
 	bun.BaseModel `bun:"table:stupit_table,"`
 
+	ID		int32 `bun:"id,pk,autoincrement"`
 	DiscordID int64 `bun:"discordid,"`
 	Stupidity int32 `bun:"stupidity,"`
 	SenderID  int64 `bun:"senderdiscordid,"`
@@ -21,7 +20,7 @@ type StupitStat struct {
 type UserInfoStr struct {
 	bun.BaseModel `bun:"table:user_info,"`
 
-	ID        int32  `bun:"id,"`
+	ID        int32  `bun:"id,pk,autoincrement"`
 	DiscordID int64  `bun:"discordid,"`
 	Token     string `bun:"token,"`
 }
