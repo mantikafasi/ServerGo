@@ -113,7 +113,7 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 func AddUserReviewsUser(code string) (string, error) {
 	DB := common.GetDB()
 
-	token, err := ExchangeCodePlus(code,"http://192.168.1.35/URauth")
+	token, err := ExchangeCodePlus(code,"https://manti.vendicated.dev/URauth")
 	if err != nil {
 		return "", err
 	}

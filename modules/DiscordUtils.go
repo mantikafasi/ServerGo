@@ -38,6 +38,7 @@ func ExchangeCodePlus(code string,redirtect_uri string) (string,error){
 }
 
 func GetUser(token string) (DiscordUser,error) {
+	//TODO discordid is always 0 fix
 	req,_ := http.NewRequest("GET", "https://discord.com/api/v10/users/@me", nil)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)

@@ -32,7 +32,7 @@ func CalculateHash(token string) string {
 
 func AddStupidityDBUser(code string) (string,error) {
 	DB := common.GetDB()
-	token, err := ExchangeCode(code)
+	token, err := ExchangeCodePlus(code,"http://192.168.1.35/auth")
 	if err != nil {
 		return "",err
 	}
