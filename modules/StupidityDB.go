@@ -1,7 +1,6 @@
 package modules
 
-//TODO write addUser Function
-//test code
+//TODO test code
 
 import (
 	"context"
@@ -31,27 +30,34 @@ func CalculateHash(token string) string {
 	return hex.EncodeToString(checksum[:])
 }
 
-func AddStupidityDBUser(DB *bun.DB, discordID int64, token string) (string, error) {
+func AddStupidityDBUser(DB *bun.DB,code string) (string,error) {
 	// check if user exists
-	exists, _ := DB.NewSelect().Where("discordid = ?", discordID).Model(&UserInfoStr{}).Exists(context.Background())
+	token, err := ExchangeCode(code)
+	if err != nil {
+		return "",err
+	}
+
+	discordUser,err :=GetUser(token)
+
+	exists, _ := DB.NewSelect().Where("discordid = ?", discordUser.ID).Model(&UserInfoStr{}).Exists(context.Background())
 
 	var user UserInfoStr
-	user.DiscordID = discordID
+	user.DiscordID = user.DiscordID
 	user.Token = CalculateHash(token)
 
 	if exists {
-		_, err := DB.NewUpdate().Where("discordid = ?", discordID).Model(&user).Exec(context.Background())
+		_, err := DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(&user).Exec(context.Background())
 		if err != nil {
 			return "", err
 		} else {
-			return "Updated User", nil
+			return token, nil
 		}
 	} else {
 		_, err := DB.NewInsert().Model(&user).Exec(context.Background())
 		if err != nil {
-			return "An Error Occured", err
+			return "", err
 		}
-		return "Successfully added user", nil
+		return token, nil
 
 	}
 
@@ -67,21 +73,22 @@ func GetDiscordIDWithToken(DB *bun.DB, token string) int64 {
 	return user.DiscordID
 }
 
-func VoteStupidity(DB *bun.DB, discordID int64, token string, stupidity int32) (string, error) {
-	senderID := GetDiscordIDWithToken(DB, token)
+func VoteStupidity(DB *bun.DB, discordID int64, token string, stupidity int32) string {
 
+	senderID := GetDiscordIDWithToken(DB, token)
+	
 	exists, err := DB.NewSelect().Where("discordid = ?", discordID).Where("senderdiscordid=?", senderID).Model(&StupitStat{}).Exists(context.Background())
 	if err != nil {
-		return "", err
+		return "An Error Occured"
 	}
 
 	if exists {
 		//update data
 		_, err = DB.NewUpdate().Where("discordid = ?", discordID).Model(&StupitStat{Stupidity: stupidity}).Exec(context.Background())
 		if err != nil {
-			return "", err
+			return "An error occured"
 		} else {
-			return "Updated Your Vote", nil
+			return "Updated Your Vote"
 		}
 	} else {
 		var stupit StupitStat
@@ -90,9 +97,9 @@ func VoteStupidity(DB *bun.DB, discordID int64, token string, stupidity int32) (
 		stupit.SenderID = senderID
 		_, err := DB.NewInsert().Model(&stupit).Exec(context.Background())
 		if err != nil {
-			return "An Error Occured", err
+			return "An Error Occured"
 		}
-		return "Successfully voted", nil
+		return "Successfully voted"
 	}
 
 }

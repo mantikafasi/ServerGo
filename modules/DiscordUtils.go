@@ -1,9 +1,8 @@
 package modules
 
 import (
-	"bytes"
 	"context"
-	"encodings/json"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -13,8 +12,15 @@ import (
 	"golang.org/x/oauth2"
 )
 
+type DiscordUser struct {
+	ID int64 `json:"id"`
+	Username string `json:"username"`
+	Discriminator string `json:"discriminator"`
+	Avatar string `json:"avatar"`
+}
 
-func ExchangeCodePlus(code string,redirtect_uri string) (oauth2.Token,error){
+
+func ExchangeCodePlus(code string,redirtect_uri string) (string,error){
 	conf := &oauth2.Config{
 		Endpoint: discord.Endpoint,
 		Scopes: []string{discord.ScopeIdentify},
@@ -25,28 +31,35 @@ func ExchangeCodePlus(code string,redirtect_uri string) (oauth2.Token,error){
 
 	token, err := conf.Exchange(context.Background(),code)
 	if err != nil {
-		return oauth2.Token{}, err
+		return "", err
 	} else {
-		return *token, nil
+		return token.AccessToken, nil
 	}
 
 }
 
-func GetUser(token string) {
+func GetUser(token string) (DiscordUser,error) {
 	body, _ := json.Marshal(map[string]string{
 		"Authorization": "Bearer " + token, })
-	resp, _ := http.Post(constantants.API_ENDPOINT+"/users/@me","application/json", bytes.NewBuffer(body))
-	
+	req,_ := http.NewRequest("GET", "https://discordapp.com/api/users/@me", nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return DiscordUser{}, err
+	}
+
 	defer resp.Body.Close()
+	body, _ = ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
+	var user DiscordUser
+	json.Unmarshal(body, &user)
 
-	var jason map[string]interface{}
+	return user,nil
 
-	body,_ = ioutil.ReadAll(resp.Body)
-	json.unmarshal(body,&jason)
-
-	fmt.Println(jason["id"])
 }
 
-func ExchangeCode(token string){
-	ExchangeCodePlus(token,constantants.REDIRECT_URI)
+func ExchangeCode(token string) (string,error) {
+	
+	return ExchangeCodePlus(token,constantants.REDIRECT_URI)
 }

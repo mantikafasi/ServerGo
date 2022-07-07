@@ -1,18 +1,20 @@
 package main
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
+	"server-go/constantants"
 	"server-go/modules"
+	"strconv"
+	"encoding/json"
 	"github.com/uptrace/bun"
-	"database/sql"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
-	"server-go/constantants"
 )
 
 func main() {
@@ -28,40 +30,86 @@ func main() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 	//	fmt.Fprintf(w, "Hello, world!")
-		io.WriteString(w, "Fart!\n")
+		io.WriteString(w, "Main Page does not exist")
 
 	})
 	http.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
-
+		body,_ := ioutil.ReadAll(r.Body)
+		//convert body to json
+		
+		var jason map[string]interface{}
+		json.Unmarshal(body, &jason)
+		
+		res := modules.VoteStupidity(DB,int64(jason["discordid"].(float64)),jason["token"].(string),int32(jason["stupidity"].(float64)))
+	
+		io.WriteString(w, res)
 	})
 
-	http.HandleFunc("/getUser", func(w http.ResponseWriter, r *http.Request) {
-		stupidity,error := modules.GetStupidity(DB, 287555395151593473)
+	http.HandleFunc("/getuser", func(w http.ResponseWriter, r *http.Request) {
+		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
+		if err != nil {
+			fmt.Println(err)
+			io.WriteString(w, "An Error Occured\n")
+			return
+		}
+
+		stupidity,error := modules.GetStupidity(DB, userID)
 		if error != nil {
 			io.WriteString(w, "An Error Occured\n")
 			return
 		}
-		fmt.Printf("%v",stupidity)
-		io.WriteString(w, "Stupidity: "+strconv.Itoa(stupidity)+"\n")
-
+		io.WriteString(w, strconv.Itoa(stupidity))
 	})
-
-	http.HandleFunc("/getReviews",func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("getReviews")
+	
+	http.HandleFunc("/getUserReviews",func(w http.ResponseWriter, r *http.Request) {
 		
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 		if err != nil {
 			fmt.Println(err)
+			io.WriteString(w, "An Error Occured\n")
 			return
 		}
+
 		reviews, err := modules.GetReviews(DB, userID)
 		if err != nil {
 			fmt.Println(err)
+			io.WriteString(w, "An Error Occured\n")
 			return
 		}
-		io.WriteString(w, fmt.Sprintf("%v\n", reviews))
-		fmt.Println(reviews)
+		io.WriteString(w, reviews)
 	})
+
+	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
+		token,err := modules.AddStupidityDBUser(DB,r.URL.Query().Get("code"))
+		
+		if err != nil {
+			fmt.Println(err)
+			http.Redirect(w,r,"/error",http.StatusTemporaryRedirect)
+			return
+		}
+		http.Redirect(w,r,"receiveToken?token="+token,http.StatusTemporaryRedirect)
+	})
+
+	http.HandleFunc("/URauth", func(w http.ResponseWriter, r *http.Request) {
+		token, err := modules.AddUserReviewsUser(DB,r.URL.Query().Get("code"))
+
+		if err != nil {
+			fmt.Println(err)
+			http.Redirect(w,r,"/error",http.StatusTemporaryRedirect)
+			return
+		}
+		http.Redirect(w,r,"receiveToken?token="+token,http.StatusTemporaryRedirect)
+	})
+
+	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "An Error Occured\n")
+	})
+
+	http.HandleFunc("/receiveToken", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "You have successfully logged in! Your token is: "+r.URL.Query().Get("token")+"\n\n You can now close this window.")
+	})
+
+
 
 	err := http.ListenAndServe(":8080", nil)
 	if errors.Is(err, http.ErrServerClosed) {
