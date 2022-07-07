@@ -1,32 +1,38 @@
 package common
 
-import(
+import (
 	"encoding/json"
 	"fmt"
 	"os"
 )
 
 type ConfigStr struct {
-	API_ENDPOINT string `json:"api_endpoint"`
-	DBIP string `json:"dbip"`
-	REDIRECT_URI string `json:"redirect_uri"`
-	CLIENT_ID string `json:"client_id"`
-	CLIENT_SECRET string `json:"client_secret"`
-	DBUSER string `json:"db_user"`
-	DBPASSWORD string `json:"db_password"`
-	DBNAME string `json:"db_name"`
-	GITHUB_WEBHOOK_SECRET string `json:"github_webhook_secret"`
+	ApiEndpoint         string    `json:"api_endpoint"`
+	DB                  *ConfigDB `json:"db"`
+	RedirectUri         string    `json:"redirect_uri"`
+	ClientId            string    `json:"client_id"`
+	ClientSecret        string    `json:"client_secret"`
+	GithubWebhookSecret string    `json:"github_webhook_secret"`
+	Origin              string    `json:"origin"`
+	Port                string    `json:"port"`
+}
+
+type ConfigDB struct {
+	IP       string `json:"ip"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+	Name     string `json:"db"`
 }
 
 var Config *ConfigStr
 
 func GetConfig() *ConfigStr {
-	if Config==nil{
+	if Config == nil {
 		f, err := os.Open("config.json")
 		if err != nil {
 			fmt.Println(err)
 		}
-		
+
 		err = json.NewDecoder(f).Decode(&Config)
 		f.Close()
 	}

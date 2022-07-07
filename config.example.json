@@ -1,0 +1,15 @@
+{
+  "api_endpoint": "https://discord.com/api/v10",
+  "db": {
+    "ip": "127.0.0.1:5432",
+    "user": "",
+    "password": "postgres",
+    "db": "mantika"
+  },
+  "redirect_uri": "http://192.168.0.101:4471/auth",
+  "client_id": "",
+  "client_secret": "",
+  "github_webhook_secret": "",
+  "origin": "http://192.168.0.101:4471",
+  "port": "4471"
+}
