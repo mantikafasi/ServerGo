@@ -42,7 +42,7 @@ func AddStupidityDBUser(DB *bun.DB,code string) (string,error) {
 	exists, _ := DB.NewSelect().Where("discordid = ?", discordUser.ID).Model(&UserInfoStr{}).Exists(context.Background())
 
 	var user UserInfoStr
-	user.DiscordID = user.DiscordID
+	user.DiscordID = discordUser.ID
 	user.Token = CalculateHash(token)
 
 	if exists {

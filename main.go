@@ -5,25 +5,26 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"server-go/constantants"
 	"server-go/modules"
 	"strconv"
 	"encoding/json"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
+	"server-go/common"
 )
 
+
 func main() {
+	config := common.GetConfig()
 
 	DB := bun.NewDB(sql.OpenDB(pgdriver.NewConnector(
-		pgdriver.WithAddr(constantants.DBIP),
-		pgdriver.WithUser(constantants.DBUSER),
-		pgdriver.WithPassword(constantants.DBPASSWORD),
-		pgdriver.WithDatabase(constantants.DBNAME),
+		pgdriver.WithAddr(config.DBIP),
+		pgdriver.WithUser(config.DBUSER),
+		pgdriver.WithPassword(config.DBPASSWORD),
+		pgdriver.WithDatabase(config.DBNAME),
 		pgdriver.WithTLSConfig(nil),
 	)), pgdialect.New())
 
@@ -34,11 +35,9 @@ func main() {
 
 	})
 	http.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
-		body,_ := ioutil.ReadAll(r.Body)
-		//convert body to json
 		
 		var jason map[string]interface{}
-		json.Unmarshal(body, &jason)
+		json.NewDecoder(r.Body).Decode(&jason)
 		
 		res := modules.VoteStupidity(DB,int64(jason["discordid"].(float64)),jason["token"].(string),int32(jason["stupidity"].(float64)))
 	
@@ -111,7 +110,7 @@ func main() {
 
 
 
-	err := http.ListenAndServe(":8080", nil)
+	err = http.ListenAndServe(":8080", nil)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
 

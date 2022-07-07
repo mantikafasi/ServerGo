@@ -3,11 +3,9 @@ package modules
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
-	"server-go/constantants"
-
+	
+	"server-go/common"
 	"github.com/ravener/discord-oauth2"
 	"golang.org/x/oauth2"
 )
@@ -21,12 +19,13 @@ type DiscordUser struct {
 
 
 func ExchangeCodePlus(code string,redirtect_uri string) (string,error){
+
 	conf := &oauth2.Config{
 		Endpoint: discord.Endpoint,
 		Scopes: []string{discord.ScopeIdentify},
 		RedirectURL: redirtect_uri,
-		ClientID: constantants.CLIENT_ID,
-		ClientSecret: constantants.CLIENT_SECRET,
+		ClientID: common.GetConfig().CLIENT_ID,
+		ClientSecret: common.GetConfig().CLIENT_SECRET,
 	}
 
 	token, err := conf.Exchange(context.Background(),code)
@@ -39,9 +38,7 @@ func ExchangeCodePlus(code string,redirtect_uri string) (string,error){
 }
 
 func GetUser(token string) (DiscordUser,error) {
-	body, _ := json.Marshal(map[string]string{
-		"Authorization": "Bearer " + token, })
-	req,_ := http.NewRequest("GET", "https://discordapp.com/api/users/@me", nil)
+	req,_ := http.NewRequest("GET", "https://discord.com/api/v10/users/@me", nil)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
@@ -50,16 +47,13 @@ func GetUser(token string) (DiscordUser,error) {
 	}
 
 	defer resp.Body.Close()
-	body, _ = ioutil.ReadAll(resp.Body)
-	fmt.Println(string(body))
 	var user DiscordUser
-	json.Unmarshal(body, &user)
+	json.NewDecoder(resp.Body).Decode(&user)
 
 	return user,nil
 
 }
 
 func ExchangeCode(token string) (string,error) {
-	
 	return ExchangeCodePlus(token,constantants.REDIRECT_URI)
 }
