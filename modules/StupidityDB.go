@@ -31,7 +31,6 @@ func CalculateHash(token string) string {
 }
 
 func AddStupidityDBUser(code string) (string,error) {
-	// check if user exists
 	DB := common.GetDB()
 	token, err := ExchangeCode(code)
 	if err != nil {
@@ -109,14 +108,19 @@ func VoteStupidity( discordID int64, token string, stupidity int32) string {
 func GetStupidity(discordID int64) (int, error) {
 	DB := common.GetDB()
 
-	var stat []StupitStat
-	err := DB.NewSelect().Where("discordid = ?", discordID).Model(&stat).Scan(context.Background())
+	//check if user has votes
+	exists, err := DB.NewSelect().Where("discordid = ?", discordID).Model(&StupitStat{}).Exists(context.Background())
 	if err != nil {
-		return 0, err
+		return -1, err
 	}
-	var stupidity float64
+	if !exists {
+		return -1, nil
+	}
 
+	var stupidity float64
+	
 	rows, err := DB.Query("SELECT AVG(stupidity) FROM stupit_table WHERE discordid = ?", discordID)
+
 	DB.ScanRows(context.Background(), rows, &stupidity)
 
 	return int(stupidity), nil

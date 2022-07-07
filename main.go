@@ -42,6 +42,10 @@ func main() {
 			io.WriteString(w, "An Error Occured\n")
 			return
 		}
+		if stupidity == -1 {
+			io.WriteString(w, "None")
+			return
+		}
 		io.WriteString(w, strconv.Itoa(stupidity))
 	})
 	
@@ -59,6 +63,9 @@ func main() {
 			fmt.Println(err)
 			io.WriteString(w, "An Error Occured\n")
 			return
+		}
+		if reviews== "" {
+			reviews = "[]"
 		}
 		io.WriteString(w, reviews)
 	})
