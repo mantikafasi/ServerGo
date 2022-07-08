@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"log"
+	"runtime"
 
 	"server-go/common"
 
@@ -14,7 +15,7 @@ import (
 var DB *bun.DB
 
 func InitDB() {
-	config := common.GetConfig()
+	config := common.Config
 	DB = bun.NewDB(sql.OpenDB(pgdriver.NewConnector(
 		pgdriver.WithAddr(config.DB.IP),
 		pgdriver.WithUser(config.DB.User),
@@ -22,7 +23,10 @@ func InitDB() {
 		pgdriver.WithDatabase(config.DB.Name),
 		pgdriver.WithTLSConfig(nil),
 	)), pgdialect.New())
-	DB.SetMaxOpenConns(50)
+
+	maxOpenConns := 4 * runtime.GOMAXPROCS(0)
+	DB.SetMaxOpenConns(maxOpenConns)
+	DB.SetMaxIdleConns(maxOpenConns)
 
 	// create database structure if doesn't exist
 	if err := createSchema(); err != nil {

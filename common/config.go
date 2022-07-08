@@ -26,16 +26,12 @@ type ConfigDB struct {
 
 var Config *ConfigStr
 
-func GetConfig() *ConfigStr {
-	if Config == nil {
-		f, err := os.Open("config.json")
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		err = json.NewDecoder(f).Decode(&Config)
-		f.Close()
+func init() {
+	f, err := os.Open("config.json")
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	return Config
+	err = json.NewDecoder(f).Decode(&Config)
+	f.Close()
 }

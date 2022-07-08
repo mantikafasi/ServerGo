@@ -130,7 +130,7 @@ func main() {
 		io.WriteString(w, "You have successfully logged in! Your token is: "+token+"\n\n You can now close this window.")
 	})
 
-	err := http.ListenAndServe(":"+common.GetConfig().Port, nil)
+	err := http.ListenAndServe(":"+common.Config.Port, nil)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
 

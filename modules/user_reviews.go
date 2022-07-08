@@ -93,7 +93,7 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 }
 
 func AddUserReviewsUser(code string) (string, error) {
-	token, err := ExchangeCodePlus(code, common.GetConfig().Origin+"/URauth")
+	token, err := ExchangeCodePlus(code, common.Config.Origin+"/URauth")
 	if err != nil {
 		return "", err
 	}

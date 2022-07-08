@@ -22,7 +22,7 @@ func CalculateHash(token string) string {
 }
 
 func AddStupidityDBUser(code string) (string, error) {
-	token, err := ExchangeCodePlus(code, common.GetConfig().Origin+"/auth")
+	token, err := ExchangeCodePlus(code, common.Config.Origin+"/auth")
 	if err != nil {
 		return "", err
 	}
