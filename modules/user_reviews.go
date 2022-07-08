@@ -74,15 +74,15 @@ func GetIDWithToken(token string) (id int32) {
 }
 
 func GetReviewCountInLastHour(userID int32) (int, error) {
-	return 0, nil
-	// count, err := database.DB.
-	// 	NewSelect().
-	// 	Where("userid = ? AND createdat > now() - interval '1 hour'", userID).
-	// 	Count(context.Background())
-	// if err != nil {
-	// 	return 0, err
-	// }
-	// return count, nil
+	//return 0, nil
+	count, err := database.DB.
+		NewSelect().Table("user_reviews").
+		Where("userid = ? AND timestamp > now() - interval '1 hour'", userID).
+		Count(context.Background())
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func AddUserReviewsUser(code string) (string, error) {
