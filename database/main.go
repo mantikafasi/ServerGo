@@ -22,6 +22,7 @@ func InitDB() {
 		pgdriver.WithDatabase(config.DB.Name),
 		pgdriver.WithTLSConfig(nil),
 	)), pgdialect.New())
+	DB.SetMaxOpenConns(50)
 
 	// create database structure if doesn't exist
 	if err := createSchema(); err != nil {

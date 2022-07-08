@@ -26,13 +26,18 @@ func main() {
 		var data modules.SDB_RequestData
 		json.NewDecoder(r.Body).Decode(&data)
 
+		fmt.Println("/vote ", data.DiscordID," ",data.Stupidity)
+
 		res := modules.VoteStupidity(data.DiscordID, data.Token, data.Stupidity)
 
 		io.WriteString(w, res)
 	})
 
 	http.HandleFunc("/getuser", func(w http.ResponseWriter, r *http.Request) {
+
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
+		fmt.Println("/getuser ", userID)
+
 		if err != nil {
 			fmt.Println(err)
 			io.WriteString(w, "An Error occurred\n")
@@ -52,8 +57,9 @@ func main() {
 	})
 
 	http.HandleFunc("/getUserReviews", func(w http.ResponseWriter, r *http.Request) {
-
+		
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
+		fmt.Println("/getUserReviews ", userID)
 		if err != nil {
 			fmt.Println(err)
 			io.WriteString(w, "An Error occurred\n")
@@ -76,6 +82,8 @@ func main() {
 		var data modules.UR_RequestData
 		json.NewDecoder(r.Body).Decode(&data)
 
+		fmt.Println("/addUserReview ", data.DiscordID," ",data.Comment)
+
 		if len(data.Comment) > 1000 {
 			io.WriteString(w, "Comment Too Long")
 			return
@@ -92,6 +100,7 @@ func main() {
 
 	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
 		token, err := modules.AddStupidityDBUser(r.URL.Query().Get("code"))
+		fmt.Println("/auth ")
 
 		if err != nil {
 			fmt.Println(err)
@@ -103,7 +112,7 @@ func main() {
 
 	http.HandleFunc("/URauth", func(w http.ResponseWriter, r *http.Request) {
 		token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"))
-
+		fmt.Println("/URauth ")
 		if err != nil {
 			fmt.Println(err)
 			http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
