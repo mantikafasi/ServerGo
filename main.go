@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"server-go/common"
 	"server-go/database"
@@ -18,15 +19,14 @@ func main() {
 	database.InitDB()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		//	fmt.Fprintf(w, "Hello, world!")
 		io.WriteString(w, "Main Page does not exist")
 	})
 	http.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
 
-		var jason map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&jason)
+		var data modules.SDB_RequestData
+		json.NewDecoder(r.Body).Decode(&data)
 
-		res := modules.VoteStupidity(strconv.Itoa(int(jason["discordid"].(float64))), jason["token"].(string), int32(jason["stupidity"].(float64)))
+		res := modules.VoteStupidity(data.DiscordID, data.Token, data.Stupidity)
 
 		io.WriteString(w, res)
 	})
@@ -73,11 +73,19 @@ func main() {
 	})
 
 	http.HandleFunc("/addUserReview", func(w http.ResponseWriter, r *http.Request) {
+		var data modules.UR_RequestData
+		json.NewDecoder(r.Body).Decode(&data)
 
-		var jason map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&jason)
+		if len(data.Comment) > 1000 {
+			io.WriteString(w, "Comment Too Long")
+			return
 
-		res, err := modules.AddReview(strconv.Itoa(int(jason["userid"].(float64))), jason["token"].(string), jason["comment"].(string))
+		} else if len(strings.TrimSpace(data.Comment)) == 0 {
+			io.WriteString(w, "Write Something Guh")
+			return
+		}
+
+		res, err := modules.AddReview(data.DiscordID, data.Token, data.Comment)
 		fmt.Println(err)
 		io.WriteString(w, res)
 	})
@@ -108,8 +116,9 @@ func main() {
 		io.WriteString(w, "An Error occurred\n")
 	})
 
-	http.HandleFunc("/receiveToken", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "You have successfully logged in! Your token is: "+r.URL.Query().Get("token")+"\n\n You can now close this window.")
+	http.HandleFunc("/receiveToken/", func(w http.ResponseWriter, r *http.Request) {
+		token := strings.TrimPrefix(r.URL.Path, "/receiveToken/")
+		io.WriteString(w, "You have successfully logged in! Your token is: "+token+"\n\n You can now close this window.")
 	})
 
 	err := http.ListenAndServe(":"+common.GetConfig().Port, nil)

@@ -9,6 +9,12 @@ import (
 	"server-go/database"
 )
 
+type UR_RequestData struct {
+	DiscordID int64  `json:"userid"`
+	Token     string `json:"token"`
+	Comment   string `json:"comment"`
+}
+
 func GetReviews(userID int64) (string, error) {
 	var reviews []database.UserReview
 
@@ -27,7 +33,8 @@ func GetReviews(userID int64) (string, error) {
 	return string(jsonReviews), nil
 }
 
-func AddReview(userID, token, comment string) (string, error) {
+func AddReview(userID int64, token, comment string) (string, error) {
+
 	senderUserID := GetIDWithToken(token)
 	if senderUserID == 0 {
 		return "", errors.New("invalid token")

@@ -47,12 +47,12 @@ func GetUser(token string) (user *DiscordUser, err error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
-
 	if err == nil {
 		err = json.NewDecoder(resp.Body).Decode(&user)
 		resp.Body.Close()
 	}
-	return
+	json.NewDecoder(resp.Body).Decode(&user)
+	return user, nil
 }
 
 func ExchangeCode(token string) (string, error) {

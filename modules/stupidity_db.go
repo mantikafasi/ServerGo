@@ -10,6 +10,12 @@ import (
 	"server-go/database"
 )
 
+type SDB_RequestData struct {
+	DiscordID int64  `json:"discordid"`
+	Token     string `json:"token"`
+	Stupidity   int32 `json:"stupidity"`
+}
+
 func CalculateHash(token string) string {
 	checksum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(checksum[:])
@@ -58,7 +64,7 @@ func GetDiscordIDWithToken(token string) string {
 	return user.DiscordID
 }
 
-func VoteStupidity(discordID, token string, stupidity int32) string {
+func VoteStupidity(discordID int64, token string, stupidity int32) string {
 	senderID := GetDiscordIDWithToken(token)
 
 	exists, err := database.DB.
