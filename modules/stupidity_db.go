@@ -13,7 +13,7 @@ import (
 type SDB_RequestData struct {
 	DiscordID int64  `json:"discordid"`
 	Token     string `json:"token"`
-	Stupidity   int32 `json:"stupidity"`
+	Stupidity int32  `json:"stupidity"`
 }
 
 func CalculateHash(token string) string {
@@ -28,36 +28,35 @@ func AddStupidityDBUser(code string) (string, error) {
 	}
 
 	discordUser, err := GetUser(token)
-	var user database.UserInfo
-
-	exists, _ := database.DB.
-		NewSelect().
-		Where("discordid = ?", discordUser.ID).
-		Model(&user).
-		Exists(context.Background())
-
-	user.DiscordID = discordUser.ID
-	user.Token = CalculateHash(token)
-
-	if exists {
-		_, err = database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(&user).Exec(context.Background())
-		if err != nil {
-			return "", err
-		} else {
-			return token, nil
-		}
-	} else {
-		_, err = database.DB.NewInsert().Model(&user).Exec(context.Background())
-		if err != nil {
-			return "", err
-		}
-		return token, nil
+	if err != nil {
+		return "", err
 	}
+
+	var user = &database.UserInfo{DiscordID: discordUser.ID, Token: CalculateHash(token)}
+
+	res, err := database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(user).Exec(context.Background())
+	if err != nil {
+		return "", err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return "", err
+	}
+
+	if rowsAffected == 0 {
+		_, err = database.DB.NewInsert().Model(user).Exec(context.Background())
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return token, nil
 }
 
 func GetDiscordIDWithToken(token string) string {
-	var user database.UserInfo
-	err := database.DB.NewSelect().Where("token = ?", CalculateHash(token)).Model(&user).Scan(context.Background())
+	var user *database.UserInfo
+	err := database.DB.NewSelect().Where("token = ?", CalculateHash(token)).Model(user).Scan(context.Background())
 	if err != nil {
 		return "0"
 	}
@@ -67,38 +66,32 @@ func GetDiscordIDWithToken(token string) string {
 func VoteStupidity(discordID int64, token string, stupidity int32) string {
 	senderID := GetDiscordIDWithToken(token)
 
-	exists, err := database.DB.
-		NewSelect().
+	stupit := &database.StupitStat{DiscordID: discordID, Stupidity: stupidity, SenderID: senderID}
+
+	res, err := database.DB.
+		NewUpdate().
 		Where("discordid = ?", discordID).
 		Where("senderdiscordid = ?", senderID).
-		Model((*database.StupitStat)(nil)).
-		Exists(context.Background())
+		Model(stupit).
+		Exec(context.Background())
+	if err != nil {
+		log.Println(err)
+		return "An error occurred"
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return "An error occurred"
+	}
+	if rowsAffected != 0 {
+		return "Updated Your Vote"
+	}
+
+	_, err = database.DB.NewInsert().Model(stupit).Exec(context.Background())
 	if err != nil {
 		return "An Error Occurred"
 	}
 
-	stupit := database.StupitStat{DiscordID: discordID, Stupidity: stupidity, SenderID: senderID}
-	if exists {
-		// update data
-		_, err = database.DB.
-			NewUpdate().
-			Where("discordid = ?", discordID).
-			Where("senderdiscordid = ?", senderID).
-			Model(&stupit).
-			Exec(context.Background())
-		if err != nil {
-			log.Println(err)
-			return "An error occurred"
-		} else {			
-			return "Updated Your Vote"
-		}
-	} else {
-		_, err = database.DB.NewInsert().Model(&stupit).Exec(context.Background())
-		if err != nil {
-			return "An Error Occurred"
-		}
-		return "Successfully voted"
-	}
+	return "Successfully voted"
 }
 
 func GetStupidity(discordID int64) (int, error) {
@@ -113,17 +106,23 @@ func GetStupidity(discordID int64) (int, error) {
 	}
 
 	rows, err := database.DB.Query("SELECT AVG(stupidity) FROM stupit_table WHERE discordid = ?", discordID)
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			print("Failed to release Rows connection this may be bad")
+		}
+	}()
+
 	if err != nil {
 		return -1, err
 	}
 
 	var stupidity float64 = -1
 	err = database.DB.ScanRows(context.Background(), rows, &stupidity)
-	defer rows.Close()
 
 	if err != nil {
 		return -1, err
 	}
-	
+
 	return int(stupidity), nil
 }
