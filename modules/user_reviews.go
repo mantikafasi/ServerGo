@@ -44,26 +44,26 @@ func AddReview(userID int64, token, comment string) (string, error) {
 		return "You are reviewing too much.", nil
 	}
 
-	var review database.UserReview
-	review.UserID = userID
-	review.SenderUserID = senderUserID
-	review.Comment = comment
-	review.Star = -1
+	review := &database.UserReview{
+		UserID:       userID,
+		SenderUserID: senderUserID,
+		Comment:      comment,
+		Star:         -1,
+	}
 
-	exists, _ := database.DB.
-		NewSelect().
-		Where("userid = ? AND senderuserid = ?", userID, senderUserID).
-		Model((*database.UserReview)(nil)).
-		Exists(context.Background())
-	if exists {
-		_, err := database.DB.NewUpdate().Where("userid = ? AND senderuserid = ?", userID, senderUserID).Model(&review).Exec(context.Background())
-		if err != nil {
-			return "An Error occurred while updating your review", err
-		}
+	res, err := database.DB.NewUpdate().Where("userid = ? AND senderuserid = ?", userID, senderUserID).Model(review).Exec(context.Background())
+	if err != nil {
+		return "An Error occurred while updating your review", err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return "An Error occurred while updating your review", err
+	}
+	if rowsAffected != 0 {
 		return "Updated your review", nil
 	}
 
-	_, err := database.DB.NewInsert().Model(&review).Exec(context.Background())
+	_, err = database.DB.NewInsert().Model(review).Exec(context.Background())
 	if err != nil {
 		return "An Error occurred", err
 	}
@@ -102,24 +102,25 @@ func AddUserReviewsUser(code string) (string, error) {
 		return "", err
 	}
 
-	var user database.URUser
-	user.DiscordID = discordUser.ID
-	user.Token = CalculateHash(token)
-	user.Username = discordUser.Username + "#" + discordUser.Discriminator
+	user := &database.URUser{
+		DiscordID: discordUser.ID,
+		Token:     CalculateHash(token),
+		Username:  discordUser.Username + "#" + discordUser.Discriminator,
+	}
 
-	exists, _ := database.DB.
-		NewSelect().
-		Where("discordid = ?", discordUser.ID).
-		Model((*database.URUser)(nil)).
-		Exists(context.Background())
-	if exists {
-		_, err = database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(&user).Exec(context.Background())
-		if err != nil {
-			return "", err
-		}
+	res, err := database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(user).Exec(context.Background())
+	if err != nil {
+		return "", err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return "", err
+	}
+	if rowsAffected != 0 {
 		return token, nil
 	}
-	_, err = database.DB.NewInsert().Model(&user).Exec(context.Background())
+
+	_, err = database.DB.NewInsert().Model(user).Exec(context.Background())
 	if err != nil {
 		return "An Error occurred", err
 	}
