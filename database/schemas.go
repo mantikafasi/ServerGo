@@ -31,6 +31,7 @@ type UserReview struct {
 	Star         int32  `bun:"star" json:"star"`
 	SenderUserID int32  `bun:"senderuserid" json:"senderuserid"`
 	Comment      string `bun:"comment" json:"comment"`
+	ReviewType  int32  `bun:"reviewtype" json:"reviewtype"`
 
 	User            *URUser `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
 	SenderDiscordID string  `bun:"-" json:"senderdiscordid"`

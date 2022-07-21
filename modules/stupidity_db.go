@@ -89,7 +89,7 @@ func VoteStupidity(discordID int64, token string, stupidity int32) string {
 		if err != nil {
 			log.Println(err)
 			return "An error occurred"
-		} else {
+		} else {			
 			return "Updated Your Vote"
 		}
 	} else {
@@ -116,11 +116,14 @@ func GetStupidity(discordID int64) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	var stupidity float64
+
+	var stupidity float64 = -1
 	err = database.DB.ScanRows(context.Background(), rows, &stupidity)
+	defer rows.Close()
+
 	if err != nil {
 		return -1, err
 	}
-
+	
 	return int(stupidity), nil
 }

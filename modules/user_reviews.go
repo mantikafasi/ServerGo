@@ -13,6 +13,7 @@ type UR_RequestData struct {
 	DiscordID int64  `json:"userid"`
 	Token     string `json:"token"`
 	Comment   string `json:"comment"`
+	ReviewType int	`json:"reviewtype"`
 }
 
 func GetReviews(userID int64) (string, error) {
@@ -33,7 +34,7 @@ func GetReviews(userID int64) (string, error) {
 	return string(jsonReviews), nil
 }
 
-func AddReview(userID int64, token, comment string) (string, error) {
+func AddReview(userID int64, token, comment string,reviewtype int32) (string, error) {
 
 	senderUserID := GetIDWithToken(token)
 	if senderUserID == 0 {
@@ -49,6 +50,7 @@ func AddReview(userID int64, token, comment string) (string, error) {
 	review.SenderUserID = senderUserID
 	review.Comment = comment
 	review.Star = -1
+	review.ReviewType = reviewtype
 
 	exists, _ := database.DB.
 		NewSelect().
