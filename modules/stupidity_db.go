@@ -28,6 +28,10 @@ func AddStupidityDBUser(code string) (string, error) {
 	}
 
 	discordUser, err := GetUser(token)
+	if err != nil {
+		return "", err
+	}
+
 	var user = &database.UserInfo{DiscordID: discordUser.ID, Token: CalculateHash(token)}
 
 	res, err := database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(user).Exec(context.Background())
@@ -73,14 +77,13 @@ func VoteStupidity(discordID int64, token string, stupidity int32) string {
 	if err != nil {
 		log.Println(err)
 		return "An error occurred"
-	} else {
-		rowsAffected, err := res.RowsAffected()
-		if err != nil {
-			return "An error occurred"
-		}
-		if rowsAffected != 0 {
-			return "Updated Your Vote"
-		}
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return "An error occurred"
+	}
+	if rowsAffected != 0 {
+		return "Updated Your Vote"
 	}
 
 	_, err = database.DB.NewInsert().Model(stupit).Exec(context.Background())
@@ -89,7 +92,6 @@ func VoteStupidity(discordID int64, token string, stupidity int32) string {
 	}
 
 	return "Successfully voted"
-
 }
 
 func GetStupidity(discordID int64) (int, error) {
@@ -110,12 +112,14 @@ func GetStupidity(discordID int64) (int, error) {
 			print("Failed to release Rows connection this may be bad")
 		}
 	}()
+
 	if err != nil {
 		return -1, err
 	}
 
-	var stupidity float64
+	var stupidity float64 = -1
 	err = database.DB.ScanRows(context.Background(), rows, &stupidity)
+
 	if err != nil {
 		return -1, err
 	}
