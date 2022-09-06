@@ -128,3 +128,24 @@ func AddUserReviewsUser(code string) (string, error) {
 	}
 	return token, nil
 }
+
+func ReportReview(reviewID int64,token string) (error) {
+	//todo
+	return nil
+}
+
+func GetReports() (error) {
+	//todo
+	return nil
+}
+
+func GetAuthorReviews(userid int64) (error) {
+	//todo
+	return nil
+}
+
+
+func DeleteReview(reviewID int64,reviewid string) (err error){
+	//todo
+	return nil
+}

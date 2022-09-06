@@ -3,6 +3,7 @@ package modules
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"server-go/common"
@@ -50,9 +51,22 @@ func GetUser(token string) (user *DiscordUser, err error) {
 	if err == nil {
 		err = json.NewDecoder(resp.Body).Decode(&user)
 		resp.Body.Close()
+		return user,nil
 	}
-	json.NewDecoder(resp.Body).Decode(&user)
-	return user, nil
+	return nil, err
+}
+
+func GetUserViaID(userid int64) (user *DiscordUser,err error) {
+	req, _ := http.NewRequest(http.MethodGet, common.Config.ApiEndpoint+"/users/" + fmt.Sprint(userid), nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bot " + common.Config.BotToken)
+	resp, err := http.DefaultClient.Do(req)
+	if err == nil {
+		err = json.NewDecoder(resp.Body).Decode(&user)
+		resp.Body.Close()
+		return user,nil
+	}
+	return nil, err
 }
 
 func ExchangeCode(token string) (string, error) {

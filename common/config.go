@@ -15,6 +15,7 @@ type ConfigStr struct {
 	GithubWebhookSecret string    `json:"github_webhook_secret"`
 	Origin              string    `json:"origin"`
 	Port                string    `json:"port"`
+	BotToken			string    `json:"bot_token"`
 }
 
 type ConfigDB struct {
