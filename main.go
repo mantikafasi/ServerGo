@@ -22,13 +22,12 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "Main Page does not exist")
 	})
-	
+
 	http.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
 
 		var data modules.SDB_RequestData
 		json.NewDecoder(r.Body).Decode(&data)
 
-		fmt.Println("/vote ", data.DiscordID, " ", data.Stupidity)
 
 		res := modules.VoteStupidity(data.DiscordID, data.Token, data.Stupidity)
 
@@ -38,10 +37,8 @@ func main() {
 	http.HandleFunc("/getuser", func(w http.ResponseWriter, r *http.Request) {
 
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
-		fmt.Println("/getuser ", userID)
 
 		if err != nil {
-			fmt.Println(err)
 			io.WriteString(w, "An Error occurred\n")
 			return
 		}
@@ -61,16 +58,13 @@ func main() {
 	http.HandleFunc("/getUserReviews", func(w http.ResponseWriter, r *http.Request) {
 
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
-		fmt.Println("/getUserReviews ", userID)
 		if err != nil {
-			fmt.Println(err)
 			io.WriteString(w, "An Error occurred\n")
 			return
 		}
 
 		reviews, err := modules.GetReviews(userID)
 		if err != nil {
-			fmt.Println(err)
 			io.WriteString(w, "An Error occurred\n")
 			return
 		}
@@ -84,7 +78,6 @@ func main() {
 		var data modules.UR_RequestData
 		json.NewDecoder(r.Body).Decode(&data)
 
-		fmt.Println("/addUserReview ", data.DiscordID, " ", data.Comment)
 
 		if len(data.Comment) > 1000 {
 			io.WriteString(w, "Comment Too Long")
@@ -95,17 +88,14 @@ func main() {
 			return
 		}
 
-		res, err := modules.AddReview(data.DiscordID, data.Token, data.Comment, int32(data.ReviewType))
-		fmt.Println(err)
+		res, _ := modules.AddReview(data.DiscordID, data.Token, data.Comment, int32(data.ReviewType))
 		io.WriteString(w, res)
 	})
 
 	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
 		token, err := modules.AddStupidityDBUser(r.URL.Query().Get("code"))
-		fmt.Println("/auth ")
 
 		if err != nil {
-			fmt.Println(err)
 			http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
 			return
 		}
@@ -119,9 +109,7 @@ func main() {
 		}
 
 		token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), clientmod)
-		fmt.Println("/URauth ")
 		if err != nil {
-			fmt.Println(err)
 			http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
 			return
 		}
@@ -135,8 +123,6 @@ func main() {
 	http.HandleFunc("/reportReview", func(w http.ResponseWriter, r *http.Request) {
 		var data modules.ReportData
 		json.NewDecoder(r.Body).Decode(&data)
-
-		println(fmt.Sprint(data))
 
 		if data.Token == "" || data.ReviewID == 0 {
 			io.WriteString(w, "Invalid Request")
