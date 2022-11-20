@@ -24,6 +24,7 @@ type ReportData struct {
 	Token    string `json:"token"`
 }
 
+
 func GetReviews(userID int64) (string, error) {
 	var reviews []database.UserReview
 
@@ -251,7 +252,7 @@ func DeleteReview(reviewID int32, token string) (err error) {
 
 	if (review.SenderUserID == userid) || IsUserAdmin(userid) {
 		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", reviewID).Exec(context.Background())
-		return
+		return nil
 	}
 	return errors.New("You are not allowed to delete this review")
 }

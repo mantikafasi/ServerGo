@@ -154,6 +154,41 @@ func main() {
 		io.WriteString(w, "You have successfully logged in! Your token is: "+token+"\n\n You can now close this window.")
 	})
 
+	type Response struct {
+		Successful bool   `json:"successful"`
+		Message string `json:"message"`
+	}
+
+	http.HandleFunc("/deleteReview", func(w http.ResponseWriter, r *http.Request) {
+		var data modules.ReportData //both reportdata and deletedata are same
+		json.NewDecoder(r.Body).Decode(&data)
+
+		responseData := Response{
+			Successful: false,
+			Message:    "",
+		}
+
+		if data.Token == "" || data.ReviewID == 0 {
+			responseData.Message = "Invalid Request"
+			res, _ := json.Marshal(responseData)
+
+			w.Write(res)
+			return
+		}
+
+		err := modules.DeleteReview(data.ReviewID, data.Token)
+		if err != nil {
+			responseData.Message = err.Error()
+			res, _ := json.Marshal(responseData)
+			w.Write(res)
+			return
+		}
+		responseData.Successful = true
+		responseData.Message = "Successfully Deleted Review"
+		res, _ := json.Marshal(responseData)
+		w.Write(res)
+	})
+
 	err := http.ListenAndServe(":"+common.Config.Port, nil)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
