@@ -15,15 +15,35 @@ import (
 	"server-go/modules"
 )
 
+type Cors struct {
+    handler *http.ServeMux
+}
+
+func (c *Cors) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Access-Control-Allow-Origin", "*")
+    w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+
+    c.handler.ServeHTTP(w, r)
+}
+
+func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+	c.handler.HandleFunc(pattern, handler)
+}
+
+
 func main() {
 	common.InitCache()
 	database.InitDB()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+
+	mux := &Cors{http.NewServeMux()}
+	
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "Main Page does not exist")
 	})
 
-	http.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
 
 		var data modules.SDB_RequestData
 		json.NewDecoder(r.Body).Decode(&data)
@@ -34,7 +54,7 @@ func main() {
 		io.WriteString(w, res)
 	})
 
-	http.HandleFunc("/getuser", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/getuser", func(w http.ResponseWriter, r *http.Request) {
 
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 
@@ -55,7 +75,7 @@ func main() {
 		io.WriteString(w, strconv.Itoa(stupidity))
 	})
 
-	http.HandleFunc("/getUserReviews", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/getUserReviews", func(w http.ResponseWriter, r *http.Request) {
 
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 		if err != nil {
@@ -74,7 +94,7 @@ func main() {
 		io.WriteString(w, reviews)
 	})
 
-	http.HandleFunc("/addUserReview", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/addUserReview", func(w http.ResponseWriter, r *http.Request) {
 		var data modules.UR_RequestData
 		json.NewDecoder(r.Body).Decode(&data)
 
@@ -92,7 +112,7 @@ func main() {
 		io.WriteString(w, res)
 	})
 
-	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
 		token, err := modules.AddStupidityDBUser(r.URL.Query().Get("code"))
 
 		if err != nil {
@@ -102,7 +122,7 @@ func main() {
 		http.Redirect(w, r, "receiveToken/"+token, http.StatusTemporaryRedirect)
 	})
 
-	http.HandleFunc("/URauth", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/URauth", func(w http.ResponseWriter, r *http.Request) {
 		clientmod := r.URL.Query().Get("client_mod")
 		if clientmod == "" {
 			clientmod = "aliucord"
@@ -116,11 +136,11 @@ func main() {
 		http.Redirect(w, r, "receiveToken/"+token, http.StatusTemporaryRedirect)
 	})
 
-	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
 	})
 
-	http.HandleFunc("/reportReview", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/reportReview", func(w http.ResponseWriter, r *http.Request) {
 		var data modules.ReportData
 		json.NewDecoder(r.Body).Decode(&data)
 
@@ -136,7 +156,7 @@ func main() {
 		io.WriteString(w, "Successfully Reported Review")
 	})
 
-	http.HandleFunc("/receiveToken/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/receiveToken/", func(w http.ResponseWriter, r *http.Request) {
 		token := strings.TrimPrefix(r.URL.Path, "/receiveToken/")
 		io.WriteString(w, "You have successfully logged in! Your token is: "+token+"\n\n You can now close this window.")
 	})
@@ -146,7 +166,7 @@ func main() {
 		Message string `json:"message"`
 	}
 
-	http.HandleFunc("/deleteReview", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/deleteReview", func(w http.ResponseWriter, r *http.Request) {
 		var data modules.ReportData //both reportdata and deletedata are same
 		json.NewDecoder(r.Body).Decode(&data)
 
@@ -178,7 +198,7 @@ func main() {
 	
 	
 
-	err := http.ListenAndServe(":"+common.Config.Port, nil)
+	err := http.ListenAndServe(":" + common.Config.Port, mux)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
 
