@@ -93,6 +93,6 @@ type ReportWebhookData struct {
 func SendReportWebhook(data ReportWebhookData) error {
 	body,err := json.Marshal(data)
 
-	_, err = http.Post(common.Config.DiscordWebhook, "application/json",strings.newReader(body))
+	_, err = http.Post(common.Config.DiscordWebhook, "application/json",strings.NewReader(string(body)))
 	return err
 }

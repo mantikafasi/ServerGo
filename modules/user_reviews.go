@@ -236,7 +236,7 @@ func DeleteReview(reviewID int32,token string) (err error){
 	}
 	userid := GetIDWithToken(token)
 
-	if (review.UserID == GetIDWithToken(token)) || IsUserAdmin(userid) {
+	if (review.SenderUserID == userid) || IsUserAdmin(userid) {
 		_,err = database.DB.NewDelete().Model(&review).Where("id = ?",reviewID).Exec(context.Background())
 		return
 	}
