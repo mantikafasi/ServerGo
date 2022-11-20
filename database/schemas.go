@@ -47,7 +47,7 @@ type URUser struct {
 	DiscordID string `bun:"discordid,type:numeric" json:"discordid"`
 	Token     string `bun:"token" json:"token"`
 	Username  string `bun:"username" json:"username"`
-	UserType  int32  `bun:"type" json:"-"`
+	UserType  int32  `bun:"column:type" json:"-"`
 	ProfilePhoto string `bun:"profile_photo" json:"profile_photo"`
 	ClientMod string `bun:"client_mod" json:"client_mod"`
 }

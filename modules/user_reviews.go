@@ -26,6 +26,7 @@ type ReportData struct {
 
 
 func GetReviews(userID int64) (string, error) {
+	//todo add ads trol
 	var reviews []database.UserReview
 
 	err := database.DB.NewSelect().Model(&reviews).Relation("User").Where("userid = ?", userID).Limit(50).Scan(context.Background(), &reviews)
@@ -106,6 +107,7 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 }
 
 func AddUserReviewsUser(code string, clientmod string) (string, error) {
+	//todo make this work exactly same as pyton version
 	token, err := ExchangeCodePlus(code, common.Config.Origin+"/URauth")
 	if err != nil {
 		return "", err
@@ -124,7 +126,7 @@ func AddUserReviewsUser(code string, clientmod string) (string, error) {
 		ClientMod: clientmod,
 	}
 
-	res, err := database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(user).Exec(context.Background())
+	res, err := database.DB.NewUpdate().Where("discordid = ? and client_mod = ?", discordUser.ID,clientmod).Model(user).Exec(context.Background())
 	if err != nil {
 		return "", err
 	}
