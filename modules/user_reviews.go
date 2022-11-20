@@ -288,7 +288,7 @@ func GetAllBadges() (badges []database.UserBadge, err error) {
 	//rows.Close()
 
 	database.DB.NewSelect().Distinct().Model(&users).Column("discordid", "type").Where("type = ? or type = ?", 1, -1).Scan(context.Background(), &users)
-	println(fmt.Sprint(users))
+
 	for _, user := range users {
 		if user.UserType == 1 {
 			badges = append(badges, database.UserBadge{
