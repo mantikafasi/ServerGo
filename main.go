@@ -22,6 +22,7 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "Main Page does not exist")
 	})
+	
 	http.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
 
 		var data modules.SDB_RequestData
@@ -188,6 +189,8 @@ func main() {
 		res, _ := json.Marshal(responseData)
 		w.Write(res)
 	})
+	
+	
 
 	err := http.ListenAndServe(":"+common.Config.Port, nil)
 	if errors.Is(err, http.ErrServerClosed) {
