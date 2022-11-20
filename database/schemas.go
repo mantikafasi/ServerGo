@@ -27,7 +27,7 @@ type UserReview struct {
 	bun.BaseModel `bun:"table:userreviews"`
 
 	ID           int32  `bun:"id,pk,autoincrement" json:"id"`
-	UserID       int64  `bun:"userid,type:numeric" json:"userid"`
+	UserID       int64  `bun:"userid,type:numeric" json:"-"`
 	Star         int32  `bun:"star" json:"star"`
 	SenderUserID int32  `bun:"senderuserid" json:"senderuserid"`
 	Comment      string `bun:"comment" json:"comment"`
@@ -36,6 +36,7 @@ type UserReview struct {
 	User            *URUser     `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
 	SenderDiscordID string      `bun:"-" json:"senderdiscordid"`
 	SenderUsername  string      `bun:"-" json:"username"`
+	ProfilePhoto   string      `bun:"-" json:"profile_photo"`
 	Badges          []UserBadge `bun:"-" json:"badges"`
 }
 
@@ -47,6 +48,8 @@ type URUser struct {
 	Token     string `bun:"token" json:"token"`
 	Username  string `bun:"username" json:"username"`
 	UserType  int32  `bun:"type" json:"-"`
+	ProfilePhoto string `bun:"profile_photo" json:"profile_photo"`
+	ClientMod string `bun:"client_mod" json:"client_mod"`
 }
 
 type ReviewReport struct {
@@ -56,7 +59,6 @@ type ReviewReport struct {
 	UserID     int32 `bun:"userid"`
 	ReviewID   int32 `bun:"reviewid"`
 	ReporterID int32 `bun:"reporterid"`
-	Timestamp  int64 `bun:"timestamp"`
 }
 
 type UserBadge struct {

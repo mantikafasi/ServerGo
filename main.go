@@ -112,7 +112,12 @@ func main() {
 	})
 
 	http.HandleFunc("/URauth", func(w http.ResponseWriter, r *http.Request) {
-		token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"))
+		clientmod := r.URL.Query().Get("client_mod")
+		if clientmod == "" {
+			clientmod = "aliucord"
+		}
+
+		token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), clientmod)
 		fmt.Println("/URauth ")
 		if err != nil {
 			fmt.Println(err)
@@ -124,6 +129,24 @@ func main() {
 
 	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
+	})
+
+	http.HandleFunc("/reportReview", func(w http.ResponseWriter, r *http.Request) {
+		var data modules.ReportData
+		json.NewDecoder(r.Body).Decode(&data)
+
+		println(fmt.Sprint(data))
+
+		if data.Token == "" || data.ReviewID == 0 {
+			io.WriteString(w, "Invalid Request")
+			return
+		}
+		err := modules.ReportReview(data.ReviewID, data.Token)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		io.WriteString(w, "Successfully Reported Review")
 	})
 
 	http.HandleFunc("/receiveToken/", func(w http.ResponseWriter, r *http.Request) {

@@ -19,6 +19,11 @@ type UR_RequestData struct {
 	ReviewType int    `json:"reviewtype"`
 }
 
+type ReportData struct {
+	ReviewID int32  `json:"reviewid"`
+	Token    string `json:"token"`
+}
+
 func GetReviews(userID int64) (string, error) {
 	var reviews []database.UserReview
 
@@ -30,6 +35,7 @@ func GetReviews(userID int64) (string, error) {
 	for i, review := range reviews {
 		if review.User != nil {
 			reviews[i].SenderDiscordID = review.User.DiscordID
+			reviews[i].ProfilePhoto = review.User.ProfilePhoto
 			reviews[i].SenderUsername = review.User.Username
 			reviews[i].Badges = GetBadgesOfUser(review.User.DiscordID)
 		}
@@ -98,7 +104,7 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 	return count, nil
 }
 
-func AddUserReviewsUser(code string) (string, error) {
+func AddUserReviewsUser(code string, clientmod string) (string, error) {
 	token, err := ExchangeCodePlus(code, common.Config.Origin+"/URauth")
 	if err != nil {
 		return "", err
@@ -114,6 +120,7 @@ func AddUserReviewsUser(code string) (string, error) {
 		Token:     CalculateHash(token),
 		Username:  discordUser.Username + "#" + discordUser.Discriminator,
 		UserType:  0,
+		ClientMod: clientmod,
 	}
 
 	res, err := database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(user).Exec(context.Background())
@@ -144,49 +151,55 @@ func GetReview(id int32) (rep database.UserReview, err error) {
 }
 
 func ReportReview(reviewID int32, token string) error {
+
 	user, err := GetDBUserViaID(GetIDWithToken(token))
 	if err != nil {
 		return errors.New("Invalid Token, please reauthenticate")
 	}
 
+	count, _ := database.DB.NewSelect().Model(&database.ReviewReport{}).Where("reviewid = ? AND reporterid = ?", reviewID, user.ID).Count(context.Background())
+	if count > 0 {
+		return errors.New("You have already reported this review")
+	}
+
 	review, err := GetReview(reviewID)
 	if err != nil {
-		return err
+		return errors.New("Invalid Review ID")
 	}
 	reportedUser, _ := GetDBUserViaID(review.SenderUserID)
 
 	report := database.ReviewReport{
 		UserID:     review.SenderUserID,
-		ReviewID:   review.ID,
+		ReviewID:   reviewID,
 		ReporterID: user.ID,
 	}
 
 	SendReportWebhook(ReportWebhookData{
 		Content: "Reported Reveiew",
 		Embeds: []ReportWebhookEmbed{
-			ReportWebhookEmbed{
+			{
 				Fields: []ReportWebhookEmbedField{
-					ReportWebhookEmbedField{
+					{
 						Name:  "Reporter ID",
 						Value: fmt.Sprint(user.ID),
 					},
-					ReportWebhookEmbedField{
+					{
 						Name:  "Reporter Username",
 						Value: fmt.Sprint(user.Username),
 					},
-					ReportWebhookEmbedField{
+					{
 						Name:  "Reported User Username",
 						Value: fmt.Sprint(reportedUser.Username),
 					},
-					ReportWebhookEmbedField{
+					{
 						Name:  "Reported Review ID",
 						Value: fmt.Sprint(review.ID),
 					},
-					ReportWebhookEmbedField{
+					{
 						Name:  "Reported Review Content",
 						Value: fmt.Sprint(review.Comment),
 					},
-					ReportWebhookEmbedField{
+					{
 						Name:  "Reported User ID",
 						Value: fmt.Sprint(reportedUser.ID),
 					},
@@ -273,7 +286,7 @@ func GetAllBadges() (badges []database.UserBadge, err error) {
 	//rows.Scan(&users)
 	//rows.Close()
 
-	database.DB.NewSelect().Distinct().Model(&users).Column("discordid","type").Where("type = ? or type = ?", 1, -1).Scan(context.Background(), &users)
+	database.DB.NewSelect().Distinct().Model(&users).Column("discordid", "type").Where("type = ? or type = ?", 1, -1).Scan(context.Background(), &users)
 	println(fmt.Sprint(users))
 	for _, user := range users {
 		if user.UserType == 1 {
