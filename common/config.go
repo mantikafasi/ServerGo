@@ -16,6 +16,7 @@ type ConfigStr struct {
 	Origin              string    `json:"origin"`
 	Port                string    `json:"port"`
 	BotToken			string    `json:"bot_token"`
+	DiscordWebhook		string    `json:"discord_webhook"`
 }
 
 type ConfigDB struct {

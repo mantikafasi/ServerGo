@@ -26,7 +26,7 @@ func main() {
 		var data modules.SDB_RequestData
 		json.NewDecoder(r.Body).Decode(&data)
 
-		fmt.Println("/vote ", data.DiscordID," ",data.Stupidity)
+		fmt.Println("/vote ", data.DiscordID, " ", data.Stupidity)
 
 		res := modules.VoteStupidity(data.DiscordID, data.Token, data.Stupidity)
 
@@ -57,7 +57,7 @@ func main() {
 	})
 
 	http.HandleFunc("/getUserReviews", func(w http.ResponseWriter, r *http.Request) {
-		
+
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 		fmt.Println("/getUserReviews ", userID)
 		if err != nil {
@@ -82,7 +82,7 @@ func main() {
 		var data modules.UR_RequestData
 		json.NewDecoder(r.Body).Decode(&data)
 
-		fmt.Println("/addUserReview ", data.DiscordID," ",data.Comment)
+		fmt.Println("/addUserReview ", data.DiscordID, " ", data.Comment)
 
 		if len(data.Comment) > 1000 {
 			io.WriteString(w, "Comment Too Long")
@@ -93,7 +93,7 @@ func main() {
 			return
 		}
 
-		res, err := modules.AddReview(data.DiscordID, data.Token, data.Comment,int32(data.ReviewType))
+		res, err := modules.AddReview(data.DiscordID, data.Token, data.Comment, int32(data.ReviewType))
 		fmt.Println(err)
 		io.WriteString(w, res)
 	})

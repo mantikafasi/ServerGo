@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"server-go/common"
 	"server-go/database"
@@ -29,6 +30,7 @@ func GetReviews(userID int64) (string, error) {
 			reviews[i].SenderDiscordID = review.User.DiscordID
 			reviews[i].SenderUsername = review.User.Username
 		}
+		//todo add badges
 	}
 	jsonReviews, _ := json.Marshal(reviews)
 	return string(jsonReviews), nil
@@ -95,10 +97,11 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 }
 
 func AddUserReviewsUser(code string) (string, error) {
-	token, err := ExchangeCodePlus(code, common.Config.Origin+"/URauth")
+	token, err := ExchangeCodePlus(code, common.Config.Origin + "/URauth")
 	if err != nil {
 		return "", err
 	}
+
 	discordUser, err := GetUser(token)
 	if err != nil {
 		return "", err
@@ -108,16 +111,19 @@ func AddUserReviewsUser(code string) (string, error) {
 		DiscordID: discordUser.ID,
 		Token:     CalculateHash(token),
 		Username:  discordUser.Username + "#" + discordUser.Discriminator,
+		UserType: 0,
 	}
 
 	res, err := database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(user).Exec(context.Background())
 	if err != nil {
 		return "", err
 	}
+
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
 		return "", err
 	}
+
 	if rowsAffected != 0 {
 		return token, nil
 	}
@@ -129,23 +135,131 @@ func AddUserReviewsUser(code string) (string, error) {
 	return token, nil
 }
 
-func ReportReview(reviewID int64,token string) (error) {
+func GetReview(id int32) (rep database.UserReview,err error) {
+	rep = database.UserReview{}
+	err = database.DB.NewSelect().Model(&rep).Where("id = ?",id).Scan(context.Background(),&rep)
+	return
+}
+
+func ReportReview(reviewID int32,token string) (error) {
+	user ,err := GetDBUserViaID(GetIDWithToken(token))
+	if err != nil {
+		return errors.New("Invalid Token, please reauthenticate")
+	}
+
+	review,err := GetReview(reviewID)
+	if err != nil {
+		return err
+	}
+	reportedUser,_ := GetDBUserViaID(review.SenderUserID)
+
+
+	report := database.ReviewReport{
+		UserID: review.SenderUserID,
+		ReviewID: review.ID,
+		ReporterID: user.ID,
+	}
+	
+	SendReportWebhook(ReportWebhookData{
+		Content: "Reported Reveiew",
+		Embeds: []ReportWebhookEmbed{
+			ReportWebhookEmbed{
+				Fields: []ReportWebhookEmbedField{
+					ReportWebhookEmbedField{
+						Name: "Reporter ID",
+						Value: fmt.Sprint(user.ID),
+					},
+					ReportWebhookEmbedField{
+						Name: "Reporter Username",
+						Value: fmt.Sprint(user.Username),
+					},
+					ReportWebhookEmbedField{
+						Name: "Reported User Username",
+						Value: fmt.Sprint(reportedUser.Username),
+					},
+					ReportWebhookEmbedField{
+						Name: "Reported Review ID",
+						Value: fmt.Sprint(review.ID),
+					},
+					ReportWebhookEmbedField{
+						Name: "Reported Review Content",
+						Value: fmt.Sprint(review.Comment),
+					},
+					ReportWebhookEmbedField{
+						Name: "Reported User ID",
+						Value: fmt.Sprint(reportedUser.ID),
+					},
+				},
+
+			},
+		},
+	})
+
+	database.DB.NewInsert().Model(&report).Exec(context.Background())
+	return nil
+}
+
+func GetReports() (reports []database.ReviewReport,err error) {
+	reports = []database.ReviewReport{}
+	err = database.DB.NewSelect().Model(&reports).Scan(context.Background(),&reports)
+	return
+}
+
+func IsUserAdminDC(discordid int64) (bool) {
+	user := database.URUser{}
+	database.DB.NewSelect().Model(&user).Where("discordid = ?",discordid).Scan(context.Background(),&user)
+	if user.UserType == 1 {
+		return true
+	}
+	return false
+}
+
+func IsUserAdmin(id int32) (bool) {
+	user := database.URUser{}
+	database.DB.NewSelect().Model(&user).Where("id = ?",id).Scan(context.Background(),&user)
+	if user.UserType == 1 {
+		return true
+	}
+	return false
+}
+
+func GetDBUserViaID(id int32) (user database.URUser,err error) {
+	user = database.URUser{}
+	err = database.DB.NewSelect().Model(&user).Where("id = ?",id).Scan(context.Background(),&user)
+	return
+}
+
+func DeleteReview(reviewID int32,token string) (err error){
+	review,err := GetReview(reviewID)
+	if err != nil {
+		return errors.New("Invalid Review ID")
+	}
+	userid := GetIDWithToken(token)
+
+	if (review.UserID == GetIDWithToken(token)) || IsUserAdmin(userid) {
+		_,err = database.DB.NewDelete().Model(&review).Where("id = ?",reviewID).Exec(context.Background())
+		return
+	}
+	return errors.New("You are not allowed to delete this review")
+}
+
+func GetBadgesOfUser(discordid int64) (error) {
 	//todo
 	return nil
 }
 
-func GetReports() (error) {
+func GetAllBadges() (error) {
 	//todo
 	return nil
 }
 
-func GetAuthorReviews(userid int64) (error) {
+func GetVencordBadges() (error) {
 	//todo
 	return nil
 }
 
-
-func DeleteReview(reviewID int64,reviewid string) (err error){
+func AddBadge(discordid int64,badge_name string,badge_icon string,redirect_url string) (error) {
 	//todo
 	return nil
 }
+

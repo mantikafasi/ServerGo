@@ -45,6 +45,17 @@ type URUser struct {
 	DiscordID string `bun:"discordid,type:numeric" json:"discordid"`
 	Token     string `bun:"token" json:"token"`
 	Username  string `bun:"username" json:"username"`
+	UserType int32  `bun:"type" json:""`
+}
+
+type ReviewReport struct {
+	bun.BaseModel `bun:"table:ur_reports"`
+	
+	ID int32 `bun:"id,pk,autoincrement"`
+	UserID int32 `bun:"userid"`
+	ReviewID int32 `bun:"reviewid"`
+	ReporterID int32 `bun:"reporterid"`
+	Timestamp int64 `bun:"timestamp"` 
 }
 
 func createSchema() error {

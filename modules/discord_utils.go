@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"server-go/common"
 
@@ -71,4 +72,27 @@ func GetUserViaID(userid int64) (user *DiscordUser,err error) {
 
 func ExchangeCode(token string) (string, error) {
 	return ExchangeCodePlus(token, common.Config.RedirectUri)
+}
+
+type ReportWebhookEmbedField struct {
+	Name   string `json:"name"`
+	Value  string `json:"value"`
+}
+
+type ReportWebhookEmbed struct {
+	Fields []ReportWebhookEmbedField `json:"fields"`
+}
+type ReportWebhookData struct {
+	Content string `json:"content"`
+	Username string `json:"username"`
+	AvatarURL string `json:"avatar_url"`
+	Embeds []ReportWebhookEmbed `json:"embeds"`
+
+}
+
+func SendReportWebhook(data ReportWebhookData) error {
+	body,err := json.Marshal(data)
+
+	_, err = http.Post(common.Config.DiscordWebhook, "application/json",strings.newReader(body))
+	return err
 }
