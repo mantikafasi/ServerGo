@@ -8,6 +8,8 @@ import (
 
 	"server-go/common"
 	"server-go/database"
+
+	"github.com/patrickmn/go-cache"
 )
 
 type UR_RequestData struct {
@@ -29,8 +31,8 @@ func GetReviews(userID int64) (string, error) {
 		if review.User != nil {
 			reviews[i].SenderDiscordID = review.User.DiscordID
 			reviews[i].SenderUsername = review.User.Username
+			reviews[i].Badges = GetBadgesOfUser(review.User.DiscordID)
 		}
-		//todo add badges
 	}
 	jsonReviews, _ := json.Marshal(reviews)
 	return string(jsonReviews), nil
@@ -97,7 +99,7 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 }
 
 func AddUserReviewsUser(code string) (string, error) {
-	token, err := ExchangeCodePlus(code, common.Config.Origin + "/URauth")
+	token, err := ExchangeCodePlus(code, common.Config.Origin+"/URauth")
 	if err != nil {
 		return "", err
 	}
@@ -111,7 +113,7 @@ func AddUserReviewsUser(code string) (string, error) {
 		DiscordID: discordUser.ID,
 		Token:     CalculateHash(token),
 		Username:  discordUser.Username + "#" + discordUser.Discriminator,
-		UserType: 0,
+		UserType:  0,
 	}
 
 	res, err := database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(user).Exec(context.Background())
@@ -135,62 +137,60 @@ func AddUserReviewsUser(code string) (string, error) {
 	return token, nil
 }
 
-func GetReview(id int32) (rep database.UserReview,err error) {
+func GetReview(id int32) (rep database.UserReview, err error) {
 	rep = database.UserReview{}
-	err = database.DB.NewSelect().Model(&rep).Where("id = ?",id).Scan(context.Background(),&rep)
+	err = database.DB.NewSelect().Model(&rep).Where("id = ?", id).Scan(context.Background(), &rep)
 	return
 }
 
-func ReportReview(reviewID int32,token string) (error) {
-	user ,err := GetDBUserViaID(GetIDWithToken(token))
+func ReportReview(reviewID int32, token string) error {
+	user, err := GetDBUserViaID(GetIDWithToken(token))
 	if err != nil {
 		return errors.New("Invalid Token, please reauthenticate")
 	}
 
-	review,err := GetReview(reviewID)
+	review, err := GetReview(reviewID)
 	if err != nil {
 		return err
 	}
-	reportedUser,_ := GetDBUserViaID(review.SenderUserID)
-
+	reportedUser, _ := GetDBUserViaID(review.SenderUserID)
 
 	report := database.ReviewReport{
-		UserID: review.SenderUserID,
-		ReviewID: review.ID,
+		UserID:     review.SenderUserID,
+		ReviewID:   review.ID,
 		ReporterID: user.ID,
 	}
-	
+
 	SendReportWebhook(ReportWebhookData{
 		Content: "Reported Reveiew",
 		Embeds: []ReportWebhookEmbed{
 			ReportWebhookEmbed{
 				Fields: []ReportWebhookEmbedField{
 					ReportWebhookEmbedField{
-						Name: "Reporter ID",
+						Name:  "Reporter ID",
 						Value: fmt.Sprint(user.ID),
 					},
 					ReportWebhookEmbedField{
-						Name: "Reporter Username",
+						Name:  "Reporter Username",
 						Value: fmt.Sprint(user.Username),
 					},
 					ReportWebhookEmbedField{
-						Name: "Reported User Username",
+						Name:  "Reported User Username",
 						Value: fmt.Sprint(reportedUser.Username),
 					},
 					ReportWebhookEmbedField{
-						Name: "Reported Review ID",
+						Name:  "Reported Review ID",
 						Value: fmt.Sprint(review.ID),
 					},
 					ReportWebhookEmbedField{
-						Name: "Reported Review Content",
+						Name:  "Reported Review Content",
 						Value: fmt.Sprint(review.Comment),
 					},
 					ReportWebhookEmbedField{
-						Name: "Reported User ID",
+						Name:  "Reported User ID",
 						Value: fmt.Sprint(reportedUser.ID),
 					},
 				},
-
 			},
 		},
 	})
@@ -199,67 +199,106 @@ func ReportReview(reviewID int32,token string) (error) {
 	return nil
 }
 
-func GetReports() (reports []database.ReviewReport,err error) {
+func GetReports() (reports []database.ReviewReport, err error) {
 	reports = []database.ReviewReport{}
-	err = database.DB.NewSelect().Model(&reports).Scan(context.Background(),&reports)
+	err = database.DB.NewSelect().Model(&reports).Scan(context.Background(), &reports)
 	return
 }
 
-func IsUserAdminDC(discordid int64) (bool) {
+func IsUserAdminDC(discordid int64) bool {
 	user := database.URUser{}
-	database.DB.NewSelect().Model(&user).Where("discordid = ?",discordid).Scan(context.Background(),&user)
+	database.DB.NewSelect().Model(&user).Where("discordid = ?", discordid).Scan(context.Background(), &user)
 	if user.UserType == 1 {
 		return true
 	}
 	return false
 }
 
-func IsUserAdmin(id int32) (bool) {
+func IsUserAdmin(id int32) bool {
 	user := database.URUser{}
-	database.DB.NewSelect().Model(&user).Where("id = ?",id).Scan(context.Background(),&user)
+	database.DB.NewSelect().Model(&user).Where("id = ?", id).Scan(context.Background(), &user)
 	if user.UserType == 1 {
 		return true
 	}
 	return false
 }
 
-func GetDBUserViaID(id int32) (user database.URUser,err error) {
+func GetDBUserViaID(id int32) (user database.URUser, err error) {
 	user = database.URUser{}
-	err = database.DB.NewSelect().Model(&user).Where("id = ?",id).Scan(context.Background(),&user)
+	err = database.DB.NewSelect().Model(&user).Where("id = ?", id).Scan(context.Background(), &user)
 	return
 }
 
-func DeleteReview(reviewID int32,token string) (err error){
-	review,err := GetReview(reviewID)
+func DeleteReview(reviewID int32, token string) (err error) {
+	review, err := GetReview(reviewID)
 	if err != nil {
 		return errors.New("Invalid Review ID")
 	}
 	userid := GetIDWithToken(token)
 
 	if (review.SenderUserID == userid) || IsUserAdmin(userid) {
-		_,err = database.DB.NewDelete().Model(&review).Where("id = ?",reviewID).Exec(context.Background())
+		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", reviewID).Exec(context.Background())
 		return
 	}
 	return errors.New("You are not allowed to delete this review")
 }
 
-func GetBadgesOfUser(discordid int64) (error) {
-	//todo
-	return nil
+func GetBadgesOfUser(discordid string) []database.UserBadge {
+	userBadges := []database.UserBadge{}
+
+	badges, _ := GetAllBadges()
+	for _, badge := range badges {
+
+		if badge.DiscordID == discordid {
+
+			userBadges = append(userBadges, badge)
+		}
+	}
+	return userBadges
 }
 
-func GetAllBadges() (error) {
-	//todo
-	return nil
+func GetAllBadges() (badges []database.UserBadge, err error) {
+
+	cachedBadges, found := common.Cache.Get("badges")
+	if found {
+		badges = cachedBadges.([]database.UserBadge)
+		return
+	}
+
+	badges = []database.UserBadge{}
+	err = database.DB.NewSelect().Model(&badges).Scan(context.Background(), &badges)
+
+	users := []database.URUser{}
+	//rows,err := database.DB.Query("SELECT DISTINCT discordid,type FROM UR_Users where type = -1 or type = 1")
+	//rows.Scan(&users)
+	//rows.Close()
+
+	database.DB.NewSelect().Distinct().Model(&users).Column("discordid","type").Where("type = ? or type = ?", 1, -1).Scan(context.Background(), &users)
+	println(fmt.Sprint(users))
+	for _, user := range users {
+		if user.UserType == 1 {
+			badges = append(badges, database.UserBadge{
+				DiscordID:   user.DiscordID,
+				BadgeName:   "Admin",
+				BadgeIcon:   "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",
+				RedirectURL: "www.youtube.com/watch?v=dQw4w9WgXcQ",
+			})
+		} else {
+			badges = append(badges, database.UserBadge{
+				DiscordID:   user.DiscordID,
+				BadgeName:   "Banned",
+				BadgeIcon:   "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",
+				RedirectURL: "www.youtube.com/watch?v=dQw4w9WgXcQ",
+			})
+		}
+
+	}
+
+	common.Cache.Set("badges", badges, cache.DefaultExpiration)
+	return
 }
 
-func GetVencordBadges() (error) {
-	//todo
+func GetVencordBadges() error {
+	//todo eta:never
 	return nil
 }
-
-func AddBadge(discordid int64,badge_name string,badge_icon string,redirect_url string) (error) {
-	//todo
-	return nil
-}
-

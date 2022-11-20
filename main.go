@@ -16,6 +16,7 @@ import (
 )
 
 func main() {
+	common.InitCache()
 	database.InitDB()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
