@@ -133,7 +133,7 @@ func main() {
 			http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
 			return
 		}
-		http.Redirect(w, r, "receiveToken/"+token, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "receiveToken/" + token, http.StatusTemporaryRedirect)
 	})
 
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {

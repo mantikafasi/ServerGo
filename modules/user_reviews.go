@@ -24,7 +24,6 @@ type ReportData struct {
 	Token    string `json:"token"`
 }
 
-
 func GetReviews(userID int64) (string, error) {
 	//todo add ads trol
 	var reviews []database.UserReview
@@ -108,7 +107,7 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 
 func AddUserReviewsUser(code string, clientmod string) (string, error) {
 	//todo make this work exactly same as pyton version
-	token, err := ExchangeCodePlus(code, common.Config.Origin+"/URauth")
+	token, err := ExchangeCodePlus(code, common.Config.Origin +"/URauth")
 	if err != nil {
 		return "", err
 	}
@@ -119,14 +118,20 @@ func AddUserReviewsUser(code string, clientmod string) (string, error) {
 	}
 
 	user := &database.URUser{
-		DiscordID: discordUser.ID,
-		Token:     CalculateHash(token),
-		Username:  discordUser.Username + "#" + discordUser.Discriminator,
-		UserType:  0,
-		ClientMod: clientmod,
+		DiscordID:    discordUser.ID,
+		Token:        CalculateHash(token),
+		Username:     discordUser.Username + "#" + discordUser.Discriminator,
+		ProfilePhoto: GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
+		UserType:     0,
+		ClientMod:    clientmod,
 	}
 
-	res, err := database.DB.NewUpdate().Where("discordid = ? and client_mod = ?", discordUser.ID,clientmod).Model(user).Exec(context.Background())
+	count, err := database.DB.NewSelect().Model(user).Where("discordid = ? and token = ?", discordUser.ID, CalculateHash(token)).ScanAndCount(context.Background())
+	if count != 0 {
+		return token, nil
+	}
+
+	res, err := database.DB.NewUpdate().Where("discordid = ? and client_mod = ?", discordUser.ID, clientmod).Model(user).Exec(context.Background())
 	if err != nil {
 		return "", err
 	}
@@ -139,6 +144,8 @@ func AddUserReviewsUser(code string, clientmod string) (string, error) {
 	if rowsAffected != 0 {
 		return token, nil
 	}
+
+
 
 	_, err = database.DB.NewInsert().Model(user).Exec(context.Background())
 	if err != nil {

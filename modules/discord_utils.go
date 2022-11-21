@@ -96,3 +96,11 @@ func SendReportWebhook(data ReportWebhookData) error {
 	_, err = http.Post(common.Config.DiscordWebhook, "application/json",strings.NewReader(string(body)))
 	return err
 }
+
+func GetProfilePhotoURL(userid string, avatar string) string {
+	if strings.HasPrefix(avatar, "a_") {
+		return fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.gif", userid, avatar)
+	} else {
+		return fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.png", userid, avatar)
+	}
+}
