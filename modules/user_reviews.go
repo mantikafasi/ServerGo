@@ -299,9 +299,6 @@ func GetAllBadges() (badges []database.UserBadge, err error) {
 	err = database.DB.NewSelect().Model(&badges).Scan(context.Background(), &badges)
 
 	users := []database.URUser{}
-	//rows,err := database.DB.Query("SELECT DISTINCT discordid,type FROM UR_Users where type = -1 or type = 1")
-	//rows.Scan(&users)
-	//rows.Close()
 
 	database.DB.NewSelect().Distinct().Model(&users).Column("discordid", "type").Where("type = ? or type = ?", 1, -1).Scan(context.Background(), &users)
 
@@ -310,7 +307,7 @@ func GetAllBadges() (badges []database.UserBadge, err error) {
 			badges = append(badges, database.UserBadge{
 				DiscordID:   user.DiscordID,
 				BadgeName:   "Admin",
-				BadgeIcon:   "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",
+				BadgeIcon:   "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
 				RedirectURL: "www.youtube.com/watch?v=dQw4w9WgXcQ",
 			})
 		} else {
