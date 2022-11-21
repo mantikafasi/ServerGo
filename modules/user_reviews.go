@@ -45,7 +45,7 @@ func GetReviews(userID int64) (string, error) {
 	return string(jsonReviews), nil
 }
 
-func AddReview(userID int64, token, comment string, reviewtype int32) (string, error) {
+func AddReview(userID string, token, comment string, reviewtype int32) (string, error) {
 
 	senderUserID := GetIDWithToken(token)
 	

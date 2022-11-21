@@ -27,7 +27,7 @@ type UserReview struct {
 	bun.BaseModel `bun:"table:userreviews"`
 
 	ID           int32  `bun:"id,pk,autoincrement" json:"id"`
-	UserID       int64  `bun:"userid,type:numeric" json:"-"`
+	UserID       string  `bun:"userid,type:numeric" json:"-"`
 	Star         int32  `bun:"star" json:"star"`
 	SenderUserID int32  `bun:"senderuserid" json:"senderuserid"`
 	Comment      string `bun:"comment" json:"comment"`
