@@ -128,7 +128,7 @@ func main() {
 	}
 
 	mux.HandleFunc("/URauth", func(w http.ResponseWriter, r *http.Request) {
-		clientmod := r.URL.Query().Get("client_mod")
+		clientmod := r.URL.Query().Get("clientMod")
 		if clientmod == "" {
 			clientmod = "aliucord"
 		}
