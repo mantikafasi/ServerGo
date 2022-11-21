@@ -108,7 +108,8 @@ func main() {
 			return
 		}
 
-		res, _ := modules.AddReview(data.DiscordID, data.Token, data.Comment, int32(data.ReviewType))
+		res, err := modules.AddReview(data.DiscordID, data.Token, data.Comment, int32(data.ReviewType))
+		println(err.Error())
 		io.WriteString(w, res)
 	})
 

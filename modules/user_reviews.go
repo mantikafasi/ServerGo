@@ -73,6 +73,7 @@ func AddReview(userID Snowflake, token, comment string, reviewtype int32) (strin
 
 	res, err := database.DB.NewUpdate().Where("userid = ? AND senderuserid = ?", userID, senderUserID).Model(review).Exec(context.Background())
 	if err != nil {
+		
 		return "An Error occurred while updating your review", err
 	}
 	rowsAffected, err := res.RowsAffected()
