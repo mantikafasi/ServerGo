@@ -36,20 +36,20 @@ type UserReview struct {
 	User            *URUser     `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
 	SenderDiscordID string      `bun:"-" json:"senderdiscordid"`
 	SenderUsername  string      `bun:"-" json:"username"`
-	ProfilePhoto   string      `bun:"-" json:"profile_photo"`
+	ProfilePhoto    string      `bun:"-" json:"profile_photo"`
 	Badges          []UserBadge `bun:"-" json:"badges"`
 }
 
 type URUser struct {
 	bun.BaseModel `bun:"table:ur_users"`
 
-	ID        int32  `bun:"id,pk,autoincrement" json:"id"`
-	DiscordID string `bun:"discordid,type:numeric" json:"discordid"`
-	Token     string `bun:"token" json:"token"`
-	Username  string `bun:"username" json:"username"`
-	UserType  int32  `bun:"column:type" json:"-"`
+	ID           int32  `bun:"id,pk,autoincrement" json:"id"`
+	DiscordID    string `bun:"discordid,type:numeric" json:"discordid"`
+	Token        string `bun:"token" json:"token"`
+	Username     string `bun:"username" json:"username"`
+	UserType     int32  `bun:"column:type" json:"-"`
 	ProfilePhoto string `bun:"profile_photo" json:"profile_photo"`
-	ClientMod string `bun:"client_mod" json:"client_mod"`
+	ClientMod    string `bun:"client_mod" json:"client_mod"`
 }
 
 type ReviewReport struct {
@@ -65,10 +65,11 @@ type UserBadge struct {
 	bun.BaseModel `bun:"table:userbadges"`
 
 	ID          int32  `bun:"id,pk,autoincrement" json:"-"`
-	DiscordID   string  `bun:"discordid,type:numeric" json:"-"`
+	DiscordID   string `bun:"discordid,type:numeric" json:"-"`
 	BadgeName   string `bun:"badge_name" json:"badge_name"`
 	BadgeIcon   string `bun:"badge_icon" json:"badge_icon"`
 	RedirectURL string `bun:"redirect_url" json:"redirect_url"`
+	BadgeType   int32  `bun:"badge_type" json:"badge_type"`
 }
 
 func createSchema() error {
