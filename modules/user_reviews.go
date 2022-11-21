@@ -13,7 +13,7 @@ import (
 )
 
 type UR_RequestData struct {
-	DiscordID  int64  `json:"userid"`
+	DiscordID  string  `json:"userid"`
 	Token      string `json:"token"`
 	Comment    string `json:"comment"`
 	ReviewType int    `json:"reviewtype"`
@@ -48,9 +48,16 @@ func GetReviews(userID int64) (string, error) {
 func AddReview(userID int64, token, comment string, reviewtype int32) (string, error) {
 
 	senderUserID := GetIDWithToken(token)
+	
 	if senderUserID == 0 {
 		return "", errors.New("invalid token")
 	}
+
+	user,_ := GetDBUserViaID(senderUserID)
+	if (user.UserType == -1) {
+		return "", errors.New("You have been banned from ReviewDB")
+	}
+
 	count, _ := GetReviewCountInLastHour(senderUserID)
 	if count > 20 {
 		return "You are reviewing too much.", nil
