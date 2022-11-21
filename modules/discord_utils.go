@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"server-go/common"
@@ -103,4 +104,15 @@ func GetProfilePhotoURL(userid string, avatar string) string {
 	} else {
 		return fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.png", userid, avatar)
 	}
+}
+
+type Snowflake uint64 
+func (s *Snowflake) UnmarshalJSON(v []byte) error {
+    parsed, err := strconv.ParseUint(strings.Trim(string(v), `"`), 10, 64)
+    if err != nil {
+        return err
+    }
+
+    *s = Snowflake(parsed)
+    return nil
 }

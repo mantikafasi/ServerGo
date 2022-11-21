@@ -13,7 +13,7 @@ import (
 )
 
 type UR_RequestData struct {
-	DiscordID  string  `json:"userid"`
+	DiscordID  Snowflake  `json:"userid"`
 	Token      string `json:"token"`
 	Comment    string `json:"comment"`
 	ReviewType int    `json:"reviewtype"`
@@ -45,7 +45,7 @@ func GetReviews(userID int64) (string, error) {
 	return string(jsonReviews), nil
 }
 
-func AddReview(userID string, token, comment string, reviewtype int32) (string, error) {
+func AddReview(userID Snowflake, token, comment string, reviewtype int32) (string, error) {
 
 	senderUserID := GetIDWithToken(token)
 	
@@ -64,7 +64,7 @@ func AddReview(userID string, token, comment string, reviewtype int32) (string, 
 	}
 
 	review := &database.UserReview{
-		UserID:       userID,
+		UserID:       int64(userID),
 		SenderUserID: senderUserID,
 		Comment:      comment,
 		Star:         -1,
