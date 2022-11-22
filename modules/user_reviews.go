@@ -310,6 +310,7 @@ func GetAllBadges() (badges []database.UserBadge, err error) {
 				BadgeName:   "Admin",
 				BadgeIcon:   "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
 				RedirectURL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+				BadgeDescription: "This user is an admin of ReviewDB.",
 			})
 		} else {
 			badges = append(badges, database.UserBadge{
@@ -317,6 +318,7 @@ func GetAllBadges() (badges []database.UserBadge, err error) {
 				BadgeName:   "Banned",
 				BadgeIcon:   "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",
 				RedirectURL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+				BadgeDescription: "This user is banned from ReviewDB.",
 			})
 		}
 

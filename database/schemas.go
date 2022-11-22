@@ -64,12 +64,13 @@ type ReviewReport struct {
 type UserBadge struct {
 	bun.BaseModel `bun:"table:userbadges"`
 
-	ID          int32  `bun:"id,pk,autoincrement" json:"-"`
-	DiscordID   string `bun:"discordid,type:numeric" json:"-"`
-	BadgeName   string `bun:"badge_name" json:"badge_name"`
-	BadgeIcon   string `bun:"badge_icon" json:"badge_icon"`
-	RedirectURL string `bun:"redirect_url" json:"redirect_url"`
-	BadgeType   int32  `bun:"badge_type" json:"badge_type"`
+	ID               int32  `bun:"id,pk,autoincrement" json:"-"`
+	DiscordID        string `bun:"discordid,type:numeric" json:"-"`
+	BadgeName        string `bun:"badge_name" json:"badge_name"`
+	BadgeIcon        string `bun:"badge_icon" json:"badge_icon"`
+	RedirectURL      string `bun:"redirect_url" json:"redirect_url"`
+	BadgeType        int32  `bun:"badge_type" json:"badge_type"`
+	BadgeDescription string `bun:"badge_description" json:"badge_description"`
 }
 
 func createSchema() error {
