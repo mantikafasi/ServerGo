@@ -309,14 +309,14 @@ func GetAllBadges() (badges []database.UserBadge, err error) {
 				DiscordID:   user.DiscordID,
 				BadgeName:   "Admin",
 				BadgeIcon:   "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
-				RedirectURL: "www.youtube.com/watch?v=dQw4w9WgXcQ",
+				RedirectURL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
 			})
 		} else {
 			badges = append(badges, database.UserBadge{
 				DiscordID:   user.DiscordID,
 				BadgeName:   "Banned",
 				BadgeIcon:   "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",
-				RedirectURL: "www.youtube.com/watch?v=dQw4w9WgXcQ",
+				RedirectURL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
 			})
 		}
 
