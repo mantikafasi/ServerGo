@@ -54,7 +54,7 @@ func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *htt
 }
 
 var URUserCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
-	Name: "get_user_count",
+	Name: "user_count",
 	Help: "Count of user reviews users",
 }, func() float64 {
 	userCount, err := modules.GetURUserCount()
@@ -67,7 +67,7 @@ var URUserCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
 })
 
 var ReviewCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
-	Name: "get_review_count",
+	Name: "review_count",
 	Help: "Count of total user reviews",
 }, func() float64 {
 	count, err := modules.GetReviewCount()
