@@ -83,14 +83,14 @@ func main() {
 		}
 
 		if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && !(r.URL.Query().Get("noAds") == "true") {
-			reviews = append(reviews, database.UserReview{
+			reviews = append([]database.UserReview{{
 				SenderUsername:  "ReviewDB",
 				ProfilePhoto:    "https://cdn.discordapp.com/avatars/287555395151593473/7cd9b7a57f803b74009137f8bb073941.webp?size=128",
 				Comment:         "If you like the plugins I make, please consider supporting me at: \nhttps://github.com/sponsors/mantikafasi\n You can disable this in settings",
 				ReviewType:      1,
 				SenderDiscordID: "287555395151593473",
 				SystemMessage:   true,
-			})
+			}}, reviews...)
 		}
 
 		jsonReviews, _ := json.Marshal(reviews)
