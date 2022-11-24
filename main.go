@@ -13,6 +13,9 @@ import (
 	"server-go/common"
 	"server-go/database"
 	"server-go/modules"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Cors struct {
@@ -27,13 +30,66 @@ func (c *Cors) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c.handler.ServeHTTP(w, r)
 }
 
+var Counters = map[string]prometheus.Counter{}
+
 func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 	c.handler.HandleFunc(pattern, handler)
+
+	pattern = strings.Replace(pattern, "/", "", -1)
+	if pattern == "" {
+		pattern = "root"
+	}
+
+	if _,exists := Counters[pattern]; !exists {
+		Counters[pattern] = prometheus.NewCounter(prometheus.CounterOpts{
+			Name: pattern,
+			Help: "Number of requests on " + pattern,
+		})
+		prometheus.MustRegister(Counters[pattern])
+	}
+	Counters[pattern].Inc()
+}
+
+var URUserCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
+	Name: "get_user_count",
+	Help: "Count of user reviews users",
+
+},func() float64 {
+	userCount,err := modules.GetURUserCount()
+	
+	if err != nil {
+		return 0
+	}
+
+	return float64(userCount)
+})
+
+var ReviewCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
+	Name: "get_review_count",
+	Help: "Count of total user reviews",
+
+},func() float64 {
+	count,err := modules.GetReviewCount()
+	
+	if err != nil {
+		return 0
+	}
+
+	return float64(count)
+})
+
+
+func (c *Cors) Handle(pattern string, handler http.Handler) {
+	c.handler.Handle(pattern, handler)
 }
 
 func main() {
+	
 	common.InitCache()
 	database.InitDB()
+
+	prometheus.MustRegister(ReviewCounter)
+	prometheus.MustRegister(URUserCounter)
 
 	mux := &Cors{http.NewServeMux()}
 
@@ -228,6 +284,9 @@ func main() {
 		res, _ := json.Marshal(responseData)
 		w.Write(res)
 	})
+
+	mux.Handle("/metrics", promhttp.Handler())
+	
 
 	err := http.ListenAndServe(":"+common.Config.Port, mux)
 	if errors.Is(err, http.ErrServerClosed) {

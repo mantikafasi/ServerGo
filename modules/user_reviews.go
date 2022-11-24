@@ -328,3 +328,11 @@ func GetVencordBadges() error {
 	//todo eta:never
 	return nil
 }
+
+func GetURUserCount() (count int, err error) {
+	return database.DB.NewSelect().Model(&database.URUser{}).Count(context.Background())
+}
+
+func GetReviewCount() (count int, err error) {
+	return database.DB.NewSelect().Model(&database.UserReview{}).Count(context.Background())
+}
