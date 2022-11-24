@@ -53,10 +53,6 @@ func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *htt
 	})
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "Hello world!")
-}
-
 var URUserCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
 	Name: "get_user_count",
 	Help: "Count of user reviews users",
