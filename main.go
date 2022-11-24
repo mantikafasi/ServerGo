@@ -31,6 +31,11 @@ func (c *Cors) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 var Counters = map[string]prometheus.Counter{}
+var TotalRequestCounter = prometheus.NewCounter(prometheus.CounterOpts{
+	Name: "total_request",
+	Help: "Total request count",
+})
+
 
 func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 
@@ -48,6 +53,7 @@ func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *htt
 	}
 
 	c.handler.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+		TotalRequestCounter.Inc()
 		Counters[metric].Inc()
 		handler(w, r)
 	})
