@@ -96,6 +96,8 @@ func main() {
 
 	prometheus.MustRegister(ReviewCounter)
 	prometheus.MustRegister(URUserCounter)
+	prometheus.MustRegister(TotalRequestCounter)
+
 
 	mux := &Cors{http.NewServeMux()}
 
