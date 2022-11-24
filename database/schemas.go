@@ -32,6 +32,7 @@ type UserReview struct {
 	SenderUserID int32  `bun:"senderuserid" json:"senderuserid"`
 	Comment      string `bun:"comment" json:"comment"`
 	ReviewType   int32  `bun:"reviewtype" json:"reviewtype"`
+	SystemMessage bool `bun:"-" json:"isSystemMessage"`
 
 	User            *URUser     `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
 	SenderDiscordID string      `bun:"-" json:"senderdiscordid"`

@@ -16,29 +16,27 @@ import (
 )
 
 type Cors struct {
-    handler *http.ServeMux
+	handler *http.ServeMux
 }
 
 func (c *Cors) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Access-Control-Allow-Origin", "*")
-    w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 
-    c.handler.ServeHTTP(w, r)
+	c.handler.ServeHTTP(w, r)
 }
 
 func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 	c.handler.HandleFunc(pattern, handler)
 }
 
-
 func main() {
 	common.InitCache()
 	database.InitDB()
 
-
 	mux := &Cors{http.NewServeMux()}
-	
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "Main Page does not exist")
 	})
@@ -47,7 +45,6 @@ func main() {
 
 		var data modules.SDB_RequestData
 		json.NewDecoder(r.Body).Decode(&data)
-
 
 		res := modules.VoteStupidity(data.DiscordID, data.Token, data.Stupidity)
 
@@ -76,28 +73,39 @@ func main() {
 	})
 
 	mux.HandleFunc("/getUserReviews", func(w http.ResponseWriter, r *http.Request) {
-
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
-		if err != nil {
-			io.WriteString(w, "An Error occurred\n")
-			return
-		}
 
 		reviews, err := modules.GetReviews(userID)
+
 		if err != nil {
 			io.WriteString(w, "An Error occurred\n")
 			return
 		}
-		if reviews == "null" {
-			reviews = "[]"
+
+		if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && !(r.URL.Query().Get("noAds") == "true") {
+			reviews = append(reviews, database.UserReview{
+				SenderUsername:  "ReviewDB",
+				ProfilePhoto:    "https://cdn.discordapp.com/avatars/287555395151593473/7cd9b7a57f803b74009137f8bb073941.webp?size=128",
+				Comment:         "If you like the plugins I make, please consider supporting me at: \nhttps://github.com/sponsors/mantikafasi\n You can disable this in settings",
+				ReviewType:      1,
+				SenderDiscordID: "287555395151593473",
+				SystemMessage:   true,
+			})
 		}
-		io.WriteString(w, reviews)
+
+		jsonReviews, _ := json.Marshal(reviews)
+		reviewsStr := string(jsonReviews)
+
+		if reviewsStr == "null" {
+			reviewsStr = "[]"
+		}
+
+		io.WriteString(w, reviewsStr)
 	})
 
 	mux.HandleFunc("/addUserReview", func(w http.ResponseWriter, r *http.Request) {
 		var data modules.UR_RequestData
 		json.NewDecoder(r.Body).Decode(&data)
-
 
 		if len(data.Comment) > 1000 {
 			io.WriteString(w, "Comment Too Long")
@@ -126,8 +134,8 @@ func main() {
 	})
 
 	type UR_AuthResponse struct {
-		Token string `json:"token"`
-		Status int32 `json:"status"`
+		Token  string `json:"token"`
+		Status int32  `json:"status"`
 	}
 
 	mux.HandleFunc("/URauth", func(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +146,6 @@ func main() {
 
 		token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), clientmod)
 
-
 		if r.URL.Query().Get("returnType") == "json" {
 			if err != nil {
 				io.WriteString(w, `{"token": "", "status": 1}`)
@@ -146,20 +153,20 @@ func main() {
 			}
 
 			res := UR_AuthResponse{
-				Token: token,
+				Token:  token,
 				Status: 0,
 			}
-			response , _ := json.Marshal(res)
+			response, _ := json.Marshal(res)
 			io.WriteString(w, string(response))
 			return
 		}
-		
+
 		if err != nil {
 			http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
 			return
 		}
 
-		http.Redirect(w, r, "receiveToken/" + token, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "receiveToken/"+token, http.StatusTemporaryRedirect)
 	})
 
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
@@ -189,7 +196,7 @@ func main() {
 
 	type Response struct {
 		Successful bool   `json:"successful"`
-		Message string `json:"message"`
+		Message    string `json:"message"`
 	}
 
 	mux.HandleFunc("/deleteReview", func(w http.ResponseWriter, r *http.Request) {
@@ -221,10 +228,8 @@ func main() {
 		res, _ := json.Marshal(responseData)
 		w.Write(res)
 	})
-	
-	
 
-	err := http.ListenAndServe(":" + common.Config.Port, mux)
+	err := http.ListenAndServe(":"+common.Config.Port, mux)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
 

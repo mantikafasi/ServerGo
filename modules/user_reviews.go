@@ -2,7 +2,6 @@ package modules
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -13,10 +12,10 @@ import (
 )
 
 type UR_RequestData struct {
-	DiscordID  Snowflake  `json:"userid"`
-	Token      string `json:"token"`
-	Comment    string `json:"comment"`
-	ReviewType int    `json:"reviewtype"`
+	DiscordID  Snowflake `json:"userid"`
+	Token      string    `json:"token"`
+	Comment    string    `json:"comment"`
+	ReviewType int       `json:"reviewtype"`
 }
 
 type ReportData struct {
@@ -24,13 +23,12 @@ type ReportData struct {
 	Token    string `json:"token"`
 }
 
-func GetReviews(userID int64) (string, error) {
-	//todo add ads trol
+func GetReviews(userID int64) ([]database.UserReview, error) {
 	var reviews []database.UserReview
 
 	err := database.DB.NewSelect().Model(&reviews).Relation("User").Where("userid = ?", userID).Limit(50).Scan(context.Background(), &reviews)
 	if err != nil {
-		return "very bad error occurred", err
+		return nil, err
 	}
 
 	for i, review := range reviews {
@@ -41,20 +39,20 @@ func GetReviews(userID int64) (string, error) {
 			reviews[i].Badges = GetBadgesOfUser(review.User.DiscordID)
 		}
 	}
-	jsonReviews, _ := json.Marshal(reviews)
-	return string(jsonReviews), nil
+
+	return reviews, nil
 }
 
 func AddReview(userID Snowflake, token, comment string, reviewtype int32) (string, error) {
 
 	senderUserID := GetIDWithToken(token)
-	
+
 	if senderUserID == 0 {
 		return "", errors.New("invalid token")
 	}
 
-	user,_ := GetDBUserViaID(senderUserID)
-	if (user.UserType == -1) {
+	user, _ := GetDBUserViaID(senderUserID)
+	if user.UserType == -1 {
 		return "", errors.New("You have been banned from ReviewDB")
 	}
 
@@ -73,7 +71,7 @@ func AddReview(userID Snowflake, token, comment string, reviewtype int32) (strin
 
 	res, err := database.DB.NewUpdate().Where("userid = ? AND senderuserid = ?", userID, senderUserID).Model(review).Exec(context.Background())
 	if err != nil {
-		
+
 		return "An Error occurred while updating your review", err
 	}
 	rowsAffected, err := res.RowsAffected()
@@ -115,7 +113,7 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 
 func AddUserReviewsUser(code string, clientmod string) (string, error) {
 	//todo make this work exactly same as pyton version
-	token, err := ExchangeCodePlus(code, common.Config.Origin +"/URauth")
+	token, err := ExchangeCodePlus(code, common.Config.Origin+"/URauth")
 	if err != nil {
 		return "", err
 	}
@@ -152,8 +150,6 @@ func AddUserReviewsUser(code string, clientmod string) (string, error) {
 	if rowsAffected != 0 {
 		return token, nil
 	}
-
-
 
 	_, err = database.DB.NewInsert().Model(user).Exec(context.Background())
 	if err != nil {
@@ -306,18 +302,18 @@ func GetAllBadges() (badges []database.UserBadge, err error) {
 	for _, user := range users {
 		if user.UserType == 1 {
 			badges = append(badges, database.UserBadge{
-				DiscordID:   user.DiscordID,
-				BadgeName:   "Admin",
-				BadgeIcon:   "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
-				RedirectURL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+				DiscordID:        user.DiscordID,
+				BadgeName:        "Admin",
+				BadgeIcon:        "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
+				RedirectURL:      "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
 				BadgeDescription: "This user is an admin of ReviewDB.",
 			})
 		} else {
 			badges = append(badges, database.UserBadge{
-				DiscordID:   user.DiscordID,
-				BadgeName:   "Banned",
-				BadgeIcon:   "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",
-				RedirectURL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+				DiscordID:        user.DiscordID,
+				BadgeName:        "Banned",
+				BadgeIcon:        "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",
+				RedirectURL:      "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
 				BadgeDescription: "This user is banned from ReviewDB.",
 			})
 		}
