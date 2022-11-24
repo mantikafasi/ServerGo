@@ -293,6 +293,12 @@ func main() {
 		w.Write(res)
 	})
 
+	mux.HandleFunc("/getLastReviewID",func(w http.ResponseWriter, r *http.Request) {
+		id := r.URL.Query().Get("discordid")
+
+		w.Write([]byte(strconv.Itoa(int(modules.GetLastReviewID(id)))))
+	})
+
 	mux.Handle("/metrics", promhttp.Handler())
 
 	err := http.ListenAndServe(":"+common.Config.Port, mux)

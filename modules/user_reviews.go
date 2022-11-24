@@ -336,3 +336,15 @@ func GetURUserCount() (count int, err error) {
 func GetReviewCount() (count int, err error) {
 	return database.DB.NewSelect().Model(&database.UserReview{}).Count(context.Background())
 }
+
+func GetLastReviewID(userID string) int32 {
+	review := database.UserReview{}
+
+	err := database.DB.NewSelect().Model(&database.UserReview{}).Where("userid = ?", userID).Order("id DESC").Limit(1).Scan(context.Background(),&review)
+	
+	if err != nil {
+		return 0
+	}
+	
+	return review.ID
+}
