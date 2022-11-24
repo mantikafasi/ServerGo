@@ -33,30 +33,36 @@ func (c *Cors) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 var Counters = map[string]prometheus.Counter{}
 
 func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
-	c.handler.HandleFunc(pattern, handler)
 
-	pattern = strings.Replace(pattern, "/", "", -1)
-	if pattern == "" {
-		pattern = "root"
+	metric := strings.Replace(pattern, "/", "", -1)
+	if metric == "" {
+		metric = "root"
 	}
 
-	if _,exists := Counters[pattern]; !exists {
-		Counters[pattern] = prometheus.NewCounter(prometheus.CounterOpts{
-			Name: pattern,
+	if _, exists := Counters[metric]; !exists {
+		Counters[metric] = prometheus.NewCounter(prometheus.CounterOpts{
+			Name: metric,
 			Help: "Number of requests on " + pattern,
 		})
-		prometheus.MustRegister(Counters[pattern])
+		prometheus.MustRegister(Counters[metric])
 	}
-	Counters[pattern].Inc()
+
+	c.handler.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+		Counters[metric].Inc()
+		handler(w, r)
+	})
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "Hello world!")
 }
 
 var URUserCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
 	Name: "get_user_count",
 	Help: "Count of user reviews users",
+}, func() float64 {
+	userCount, err := modules.GetURUserCount()
 
-},func() float64 {
-	userCount,err := modules.GetURUserCount()
-	
 	if err != nil {
 		return 0
 	}
@@ -67,10 +73,9 @@ var URUserCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
 var ReviewCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
 	Name: "get_review_count",
 	Help: "Count of total user reviews",
+}, func() float64 {
+	count, err := modules.GetReviewCount()
 
-},func() float64 {
-	count,err := modules.GetReviewCount()
-	
 	if err != nil {
 		return 0
 	}
@@ -78,13 +83,12 @@ var ReviewCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
 	return float64(count)
 })
 
-
 func (c *Cors) Handle(pattern string, handler http.Handler) {
 	c.handler.Handle(pattern, handler)
 }
 
 func main() {
-	
+
 	common.InitCache()
 	database.InitDB()
 
@@ -286,7 +290,6 @@ func main() {
 	})
 
 	mux.Handle("/metrics", promhttp.Handler())
-	
 
 	err := http.ListenAndServe(":"+common.Config.Port, mux)
 	if errors.Is(err, http.ErrServerClosed) {
