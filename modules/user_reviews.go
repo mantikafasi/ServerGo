@@ -26,7 +26,7 @@ type ReportData struct {
 func GetReviews(userID int64) ([]database.UserReview, error) {
 	var reviews []database.UserReview
 
-	err := database.DB.NewSelect().Model(&reviews).Relation("User").Where("userid = ?", userID).Order("BY ID DESC").Limit(50).Scan(context.Background(), &reviews)
+	err := database.DB.NewSelect().Model(&reviews).Relation("User").Where("userid = ?", userID).OrderExpr("ID DESC").Limit(50).Scan(context.Background(), &reviews)
 	if err != nil {
 		return nil, err
 	}
