@@ -139,11 +139,10 @@ func main() {
 	mux.HandleFunc("/getUserReviews", func(w http.ResponseWriter, r *http.Request) {
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 
-		reviewsUnsorted, err := modules.GetReviews(userID)
-		var reviews []database.UserReview = make([]database.UserReview, len(reviewsUnsorted))
+		reviews, err := modules.GetReviews(userID)
 
-		for i, j := 0, len(reviewsUnsorted)-1; i < j; i, j = i+1, j-1 {
-			reviews[i], reviews[j] = reviewsUnsorted[j], reviewsUnsorted[i]
+		for i, j := 0, len(reviews)-1; i < j; i, j = i+1, j-1 {
+			reviews[i], reviews[j] = reviews[j], reviews[i]
 		}
 		
 
