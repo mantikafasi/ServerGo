@@ -139,7 +139,13 @@ func main() {
 	mux.HandleFunc("/getUserReviews", func(w http.ResponseWriter, r *http.Request) {
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 
-		reviews, err := modules.GetReviews(userID)
+		reviewsUnsorted, err := modules.GetReviews(userID)
+		var reviews []database.UserReview
+
+		for i, j := 0, len(reviewsUnsorted)-1; i < j; i, j = i+1, j-1 {
+			reviews[i], reviews[j] = reviewsUnsorted[j], reviewsUnsorted[i]
+		}
+		
 
 		if err != nil {
 			io.WriteString(w, "An Error occurred\n")
