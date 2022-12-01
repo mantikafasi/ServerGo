@@ -140,7 +140,7 @@ func main() {
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 
 		reviewsUnsorted, err := modules.GetReviews(userID)
-		var reviews []database.UserReview
+		var reviews []database.UserReview = make([]database.UserReview, len(reviewsUnsorted))
 
 		for i, j := 0, len(reviewsUnsorted)-1; i < j; i, j = i+1, j-1 {
 			reviews[i], reviews[j] = reviewsUnsorted[j], reviewsUnsorted[i]
