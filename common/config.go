@@ -15,8 +15,8 @@ type ConfigStr struct {
 	GithubWebhookSecret string    `json:"github_webhook_secret"`
 	Origin              string    `json:"origin"`
 	Port                string    `json:"port"`
-	BotToken			string    `json:"bot_token"`
-	DiscordWebhook		string    `json:"discord_webhook"`
+	BotToken            string    `json:"bot_token"`
+	DiscordWebhook      string    `json:"discord_webhook"`
 }
 
 type ConfigDB struct {
@@ -28,6 +28,8 @@ type ConfigDB struct {
 
 var Config *ConfigStr
 
+var OptedOut []uint64
+
 func init() {
 	f, err := os.Open("config.json")
 	if err != nil {
@@ -36,4 +38,13 @@ func init() {
 
 	err = json.NewDecoder(f).Decode(&Config)
 	f.Close()
+
+	f2, er2 := os.Open("out.example.json")
+	if er2 != nil {
+		fmt.Println(er2)
+	}
+
+	er2 = json.NewDecoder(f2).Decode(&OptedOut)
+	f2.Close()
+
 }
