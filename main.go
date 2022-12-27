@@ -101,9 +101,12 @@ func main() {
 
 	mux := &Cors{http.NewServeMux()}
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "Main Page does not exist")
-	})
+    mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        http.ServeFile(w, r, "artgallery/index.html")
+    })
+
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("artgallery/static"))))
+
 
 	mux.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
 
