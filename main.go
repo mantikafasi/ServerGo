@@ -106,6 +106,7 @@ func main() {
     })
 
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("artgallery/static"))))
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("artgallery/assets"))))
 
 
 	mux.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
