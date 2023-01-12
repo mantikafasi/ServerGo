@@ -16,6 +16,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"golang.org/x/exp/slices"
 )
 
 type Cors struct {
@@ -35,7 +37,6 @@ var TotalRequestCounter = prometheus.NewCounter(prometheus.CounterOpts{
 	Name: "total_request",
 	Help: "Total request count",
 })
-
 
 func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 
@@ -98,7 +99,6 @@ func main() {
 	prometheus.MustRegister(URUserCounter)
 	prometheus.MustRegister(TotalRequestCounter)
 
-
 	mux := &Cors{http.NewServeMux()}
 
     mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -143,12 +143,26 @@ func main() {
 	mux.HandleFunc("/getUserReviews", func(w http.ResponseWriter, r *http.Request) {
 		userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 
+		if slices.Contains(common.OptedOut, uint64(userID)) {
+			reviews := append([]database.UserReview{{
+				SenderUsername:  "ReviewDB",
+				ProfilePhoto:    "https://cdn.discordapp.com/avatars/287555395151593473/7cd9b7a57f803b74009137f8bb073941.webp?size=128",
+				Comment:         "This user has opted out of ReviewDB. It means you cannot review this user.",
+				ReviewType:      1,
+				SenderDiscordID: "287555395151593473",
+				SystemMessage:   true,
+			}})
+			jsonReviews, _ := json.Marshal(reviews)
+
+			io.WriteString(w, string(jsonReviews))
+			return
+		}
+
 		reviews, err := modules.GetReviews(userID)
 
 		for i, j := 0, len(reviews)-1; i < j; i, j = i+1, j-1 {
 			reviews[i], reviews[j] = reviews[j], reviews[i]
 		}
-		
 
 		if err != nil {
 			io.WriteString(w, "An Error occurred\n")
@@ -186,6 +200,11 @@ func main() {
 
 		} else if len(strings.TrimSpace(data.Comment)) == 0 {
 			io.WriteString(w, "Write Something Guh")
+			return
+		}
+
+		if slices.Contains(common.OptedOut, uint64(data.DiscordID)) {
+			io.WriteString(w, "This user opted out")
 			return
 		}
 
@@ -302,7 +321,7 @@ func main() {
 		w.Write(res)
 	})
 
-	mux.HandleFunc("/getLastReviewID",func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/getLastReviewID", func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("discordid")
 
 		w.Write([]byte(strconv.Itoa(int(modules.GetLastReviewID(id)))))
