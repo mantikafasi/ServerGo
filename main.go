@@ -151,6 +151,7 @@ func main() {
 				ReviewType:      1,
 				SenderDiscordID: "287555395151593473",
 				SystemMessage:   true,
+				Badges: []database.UserBadge{},
 			}})
 			jsonReviews, _ := json.Marshal(reviews)
 
