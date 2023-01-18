@@ -188,7 +188,7 @@ func ReportReview(reviewID int32, token string) error {
 		ReporterID: user.ID,
 	}
 
-	SendReportWebhook(ReportWebhookData{
+	err = SendReportWebhook(ReportWebhookData{
 		Content: "Reported Reveiew",
 		Embeds: []ReportWebhookEmbed{
 			{
@@ -221,6 +221,10 @@ func ReportReview(reviewID int32, token string) error {
 			},
 		},
 	})
+	
+	if err != nil {
+		println(err.Error())
+	}
 
 	database.DB.NewInsert().Model(&report).Exec(context.Background())
 	return nil
