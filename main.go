@@ -170,7 +170,7 @@ func main() {
 			return
 		}
 
-		if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && !(r.URL.Query().Get("noAds") == "true") {
+		if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && r.URL.Query().Get("noAds") != "true" {
 			reviews = append([]database.UserReview{{
 				SenderUsername:  "ReviewDB",
 				ProfilePhoto:    "https://cdn.discordapp.com/avatars/287555395151593473/7cd9b7a57f803b74009137f8bb073941.webp?size=128",
