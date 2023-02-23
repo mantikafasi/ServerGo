@@ -32,14 +32,15 @@ Reports the specific user
 ### Example body while sending request
 ```json
 {"token" : "akd3qegd","reviewid":123}
-returns "Successfully Reported Review" if successful, error string if not
 ```
+returns "Successfully Reported Review" if successful, error string if not
+
 ## `/addUserReview`
 Adds review to database
 
 Example Body Json
 ```json
-{"userid":1293812321,"token":"asdasdasd",comment:"this is pog",reviewtype:1}
+{"userid":1293812321,"token":"asdasdasd","comment":"this is pog","reviewtype":1}
 ```
 ### Fields
 > userid : discordid of user thats been reviewed
