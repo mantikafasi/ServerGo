@@ -190,7 +190,45 @@ func ReportReview(reviewID int32, token string) error {
 
 	err = SendReportWebhook(ReportWebhookData{
 		Username: "ReviewDB",
-		Content: "Reported Reveiew",
+		Content:  "Reported Reveiew",
+		Components: []WebhookComponent{
+			{
+				Type: 1,
+				Components: []WebhookComponent{
+					{
+						Type:     2,
+						Label:    "Delete Review",
+						Style:    4,
+						CustomID: fmt.Sprintf("delete_review:%d", reviewID),
+						Emoji: WebhookEmoji{
+							Name: "🗑️",
+						},
+					},
+					{
+						Type:     2,
+						Label:    "Ban User",
+						Style:    4,
+						CustomID: fmt.Sprintf("ban_user:%d", reportedUser.DiscordID),
+						Emoji: WebhookEmoji{
+							Name:     "banned",
+							ID:       "590237837299941382",
+							Animated: true,
+						},
+					},
+					{
+						Type:     2,
+						Label:    "Delete Review and Ban User",
+						Style:    4,
+						CustomID: fmt.Sprintf("delete_and_ban:%d:%d", reviewID, reportedUser.DiscordID),
+						Emoji: WebhookEmoji{
+							Name:     "banned",
+							ID:       "590237837299941382",
+							Animated: true,
+						},
+					},
+				},
+			},
+		},
 		Embeds: []ReportWebhookEmbed{
 			{
 				Fields: []ReportWebhookEmbedField{
@@ -222,7 +260,7 @@ func ReportReview(reviewID int32, token string) error {
 			},
 		},
 	})
-	
+
 	if err != nil {
 		println(err.Error())
 	}
@@ -268,7 +306,7 @@ func DeleteReview(reviewID int32, token string) (err error) {
 	}
 	userid := GetIDWithToken(token)
 
-	if (review.SenderUserID == userid) || IsUserAdmin(userid) {
+	if (review.SenderUserID == userid) || IsUserAdmin(userid) || token == common.Config.AdminToken {
 		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", reviewID).Exec(context.Background())
 		return nil
 	}
@@ -345,11 +383,32 @@ func GetReviewCount() (count int, err error) {
 func GetLastReviewID(userID string) int32 {
 	review := database.UserReview{}
 
-	err := database.DB.NewSelect().Model(&database.UserReview{}).Where("userid = ?", userID).Order("id DESC").Limit(1).Scan(context.Background(),&review)
-	
+	err := database.DB.NewSelect().Model(&database.UserReview{}).Where("userid = ?", userID).Order("id DESC").Limit(1).Scan(context.Background(), &review)
+
 	if err != nil {
 		return 0
 	}
-	
+
 	return review.ID
+}
+
+func BanUser(discordid string, token string) error {
+	user := database.URUser{}
+
+	if !IsUserAdmin(GetIDWithToken(token)) || token == common.Config.AdminToken {
+		return errors.New("You are not allowed to ban users")
+	}
+
+	database.DB.NewSelect().Model(&user).Where("discordid = ?", discordid).Scan(context.Background(), &user)
+
+	if user.UserType == 1 {
+		return errors.New("You can't ban an admin")
+	}
+
+	user.UserType = -1
+	_, err := database.DB.NewUpdate().Model(&user).Where("discordid = ?", discordid).Exec(context.Background())
+	if err != nil {
+		return err
+	}
+	return nil
 }

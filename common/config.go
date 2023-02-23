@@ -17,6 +17,7 @@ type ConfigStr struct {
 	Port                string    `json:"port"`
 	BotToken            string    `json:"bot_token"`
 	DiscordWebhook      string    `json:"discord_webhook"`
+	AdminToken          string    `json:"admin_token"`
 }
 
 type ConfigDB struct {

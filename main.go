@@ -101,14 +101,37 @@ func main() {
 
 	mux := &Cors{http.NewServeMux()}
 
-    mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        http.ServeFile(w, r, "artgallery/index.html")
-    })
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "artgallery/index.html")
+	})
 
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("artgallery/static"))))
 	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("artgallery/assets"))))
 
+	mux.HandleFunc("/interactions", func(w http.ResponseWriter, r *http.Request) {
+		var body []byte
 
+		r.Body.Read(body)
+		signature := r.Header.Get("X-Signature-Ed25519")
+		timestamp := r.Header.Get("X-Signature-Timestamp")
+
+		message := append(body, []byte(timestamp)...)
+		if !common.VerifySignature([]byte(signature), message) {
+			w.WriteHeader(401)
+			return
+		}
+		var data modules.InteractionsData
+
+		json.Unmarshal(body, &data)
+		response, err := modules.Interactions(data)
+		if err != nil {
+			w.WriteHeader(500)
+			return
+		}
+		w.WriteHeader(200)
+		w.Write([]byte(response))
+
+	})
 	mux.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
 
 		var data modules.SDB_RequestData
@@ -151,7 +174,7 @@ func main() {
 				ReviewType:      1,
 				SenderDiscordID: "287555395151593473",
 				SystemMessage:   true,
-				Badges: []database.UserBadge{},
+				Badges:          []database.UserBadge{},
 			}})
 			jsonReviews, _ := json.Marshal(reviews)
 
