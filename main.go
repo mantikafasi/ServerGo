@@ -116,7 +116,7 @@ func main() {
 		timestamp := r.Header.Get("X-Signature-Timestamp")
 
 		message := append(body, []byte(timestamp)...)
-		if !common.VerifySignature([]byte(signature), message) {
+		if !common.VerifySignature(signature, message) {
 			w.WriteHeader(401)
 			return
 		}
