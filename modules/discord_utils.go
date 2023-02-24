@@ -67,15 +67,28 @@ func Interactions(data InteractionsData) (string, error) {
 	if data.Type == 3 && IsUserAdminDC(userid) {
 		firstVariable, _ := strconv.ParseInt(action[1], 10, 32) // if action is delete review or delete_and_ban its reviewid otherwise userid
 		if action[0] == "delete_review" {
-			DeleteReview(int32(firstVariable), common.Config.AdminToken)
-			response.Data.Content = "Successfully Review Deleted"
+			err := DeleteReview(int32(firstVariable), common.Config.AdminToken)
+			if err == nil {
+				response.Data.Content = "Successfully Deleted review with id " + action[1]
+			} else {
+				response.Data.Content = err.Error()
+			}
 		} else if action[0] == "ban_user" {
-			BanUser(action[1], common.Config.AdminToken)
-			response.Data.Content = "Successfully banned user"
+			err := BanUser(action[1], common.Config.AdminToken)
+			if err == nil {
+				response.Data.Content = "Successfully banned user with id " + action[1]
+			} else {
+				response.Data.Content = err.Error()
+			}
+
 		} else if action[0] == "delete_and_ban" {
-			DeleteReview(int32(firstVariable), common.Config.AdminToken)
-			BanUser(action[2], common.Config.AdminToken)
-			response.Data.Content = "Successfully Deleted and banned user"
+			err := DeleteReview(int32(firstVariable), common.Config.AdminToken)
+			err2 := BanUser(action[2], common.Config.AdminToken)
+			if err == nil && err2 == nil {
+				response.Data.Content = "Successfully Deleted review with id " + action[1] + " and banned user with id " + action[2]
+			} else {
+				response.Data.Content = err.Error() + err2.Error() // I hope this doesnt create error
+			}
 		}
 	}
 	if response.Data.Content != "" {
@@ -147,9 +160,9 @@ type ReportWebhookEmbed struct {
 }
 
 type WebhookEmoji struct {
-	Name     string `json:"name"`
-	ID       string `json:"id"`
-	Animated bool   `json:"animated"`
+	Name     string `json:"name,omitempty"`
+	ID       string `json:"id,omitempty"`
+	Animated bool   `json:"animated,omitempty"`
 }
 
 type WebhookComponent struct {
@@ -157,7 +170,7 @@ type WebhookComponent struct {
 	Style      int                `json:"style"`
 	Label      string             `json:"label"`
 	CustomID   string             `json:"custom_id"`
-	Emoji      WebhookEmoji       `json:"emoji"`
+	Emoji      WebhookEmoji       `json:"emoji,omitempty"`
 	Components []WebhookComponent `json:"components"`
 }
 

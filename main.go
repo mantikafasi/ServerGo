@@ -109,28 +109,25 @@ func main() {
 	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("artgallery/assets"))))
 
 	mux.HandleFunc("/interactions", func(w http.ResponseWriter, r *http.Request) {
-		var body []byte
+		body, _ := io.ReadAll(r.Body)
 
-		r.Body.Read(body)
 		signature := r.Header.Get("X-Signature-Ed25519")
 		timestamp := r.Header.Get("X-Signature-Timestamp")
-		
-		message := append([]byte(timestamp) , body...)
+
+		message := append([]byte(timestamp), body...)
 		if !common.VerifySignature(signature, message) {
 			w.WriteHeader(401)
 			return
 		}
 		var data modules.InteractionsData
 
-		json.Unmarshal(body, &data)
+		json.Unmarshal(message[len(timestamp):], &data)
 		response, err := modules.Interactions(data)
 		if err != nil {
 			w.WriteHeader(500)
 			return
 		}
-		w.WriteHeader(200)
-		w.Write([]byte(response))
-
+		io.WriteString(w, response)
 	})
 	mux.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
 

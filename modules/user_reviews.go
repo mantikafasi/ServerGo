@@ -208,7 +208,7 @@ func ReportReview(reviewID int32, token string) error {
 						Type:     2,
 						Label:    "Ban User",
 						Style:    4,
-						CustomID: fmt.Sprintf("ban_user:%d", reportedUser.DiscordID),
+						CustomID: fmt.Sprintf("ban_user:%s", string(reportedUser.DiscordID)),
 						Emoji: WebhookEmoji{
 							Name:     "banned",
 							ID:       "590237837299941382",
@@ -219,7 +219,7 @@ func ReportReview(reviewID int32, token string) error {
 						Type:     2,
 						Label:    "Delete Review and Ban User",
 						Style:    4,
-						CustomID: fmt.Sprintf("delete_and_ban:%d:%d", reviewID, reportedUser.DiscordID),
+						CustomID: fmt.Sprintf("delete_and_ban:%d:%s", reviewID, string(reportedUser.DiscordID)),
 						Emoji: WebhookEmoji{
 							Name:     "banned",
 							ID:       "590237837299941382",
@@ -393,7 +393,7 @@ func GetLastReviewID(userID string) int32 {
 }
 
 func BanUser(discordid string, token string) error {
-	user := database.URUser{}
+	users := []database.URUser{}
 
 	if !IsUserAdmin(GetIDWithToken(token)) || token == common.Config.AdminToken {
 		return errors.New("You are not allowed to ban users")
@@ -401,12 +401,16 @@ func BanUser(discordid string, token string) error {
 
 	database.DB.NewSelect().Model(&user).Where("discordid = ?", discordid).Scan(context.Background(), &user)
 
-	if user.UserType == 1 {
-		return errors.New("You can't ban an admin")
-	}
 
-	user.UserType = -1
-	_, err := database.DB.NewUpdate().Model(&user).Where("discordid = ?", discordid).Exec(context.Background())
+	for user := range users {
+		users[user].UserType = -1
+
+		if users[user].UserType == 1 {
+			return errors.New("You can't ban an admin")
+		}
+	}
+	
+	_, err := database.DB.NewUpdate().Model(&users).Where("discordid = ?", discordid).Exec(context.Background())
 	if err != nil {
 		return err
 	}
