@@ -402,14 +402,14 @@ func BanUser(discordid string, token string) error {
 	database.DB.NewSelect().Model(&users).Where("discordid = ?", discordid).Scan(context.Background(), &users)
 
 	for user := range users {
-		users[user].UserType = -1
-
 		if users[user].UserType == 1 {
 			return errors.New("You can't ban an admin")
 		}
+		users[user].UserType = -1
 	}
 
-	_, err := database.DB.NewUpdate().Model(&users).Where("discordid = ?", discordid).Exec(context.Background())
+	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("type = -1").Exec(context.Background())
+	//_, err := database.DB.NewUpdate().Model(&users).Where("discordid = ?", discordid).Exec(context.Background())
 	if err != nil {
 		return err
 	}

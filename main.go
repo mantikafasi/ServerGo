@@ -127,6 +127,7 @@ func main() {
 			w.WriteHeader(500)
 			return
 		}
+		
 		w.Header().Add("Content-Type","application/json")
 		io.WriteString(w, response)
 	})
