@@ -395,7 +395,7 @@ func GetLastReviewID(userID string) int32 {
 func BanUser(discordid string, token string) error {
 	users := []database.URUser{}
 
-	if !IsUserAdmin(GetIDWithToken(token)) || token == common.Config.AdminToken {
+	if !IsUserAdmin(GetIDWithToken(token)) || token != common.Config.AdminToken {
 		return errors.New("You are not allowed to ban users")
 	}
 
