@@ -35,7 +35,6 @@ type InteractionResponse struct {
 	} `json:"data"`
 }
 
-
 type InteractionsData struct {
 	Type int `json:"type"` // 1 = ping
 	Data struct {
@@ -54,7 +53,7 @@ type InteractionsData struct {
 
 func Interactions(data InteractionsData) (string, error) {
 	if data.Type == 1 {
-		return "Pong", nil
+		return "{\"type\":1}", nil //copilot I hope you die
 	}
 
 	response := InteractionResponse{}
@@ -66,7 +65,7 @@ func Interactions(data InteractionsData) (string, error) {
 	action := strings.Split(data.Data.ID, ":")
 
 	if data.Type == 3 && IsUserAdminDC(userid) {
-		firstVariable,_ := strconv.ParseInt(action[1],10,32) // if action is delete review or delete_and_ban its reviewid otherwise userid
+		firstVariable, _ := strconv.ParseInt(action[1], 10, 32) // if action is delete review or delete_and_ban its reviewid otherwise userid
 		if action[0] == "delete_review" {
 			DeleteReview(int32(firstVariable), common.Config.AdminToken)
 			response.Data.Content = "Successfully Review Deleted"
@@ -79,7 +78,7 @@ func Interactions(data InteractionsData) (string, error) {
 			response.Data.Content = "Successfully Deleted and banned user"
 		}
 	}
-	if response.Data.Content != "" { 
+	if response.Data.Content != "" {
 		b, err := json.Marshal(response)
 		if err != nil {
 			return "", err
@@ -154,11 +153,11 @@ type WebhookEmoji struct {
 }
 
 type WebhookComponent struct {
-	Type     int    `json:"type"`
-	Style    int    `json:"style"`
-	Label    string `json:"label"`
-	CustomID string `json:"custom_id"`
-	Emoji  WebhookEmoji `json:"emoji"`
+	Type       int                `json:"type"`
+	Style      int                `json:"style"`
+	Label      string             `json:"label"`
+	CustomID   string             `json:"custom_id"`
+	Emoji      WebhookEmoji       `json:"emoji"`
 	Components []WebhookComponent `json:"components"`
 }
 
