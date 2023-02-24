@@ -399,8 +399,7 @@ func BanUser(discordid string, token string) error {
 		return errors.New("You are not allowed to ban users")
 	}
 
-	database.DB.NewSelect().Model(&user).Where("discordid = ?", discordid).Scan(context.Background(), &user)
-
+	database.DB.NewSelect().Model(&users).Where("discordid = ?", discordid).Scan(context.Background(), &users)
 
 	for user := range users {
 		users[user].UserType = -1
@@ -409,7 +408,7 @@ func BanUser(discordid string, token string) error {
 			return errors.New("You can't ban an admin")
 		}
 	}
-	
+
 	_, err := database.DB.NewUpdate().Model(&users).Where("discordid = ?", discordid).Exec(context.Background())
 	if err != nil {
 		return err
