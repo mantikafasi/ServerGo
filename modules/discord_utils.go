@@ -33,6 +33,13 @@ type InteractionResponse struct {
 	Data struct {
 		Content string `json:"content"`
 	} `json:"data"`
+	Embeds []Embed `json:"embeds"`
+}
+
+type EmbedFooter struct {
+	Text         string `json:"text"`
+	IconURL      string `json:"icon_url"`
+	ProxyIconURL string `json:"proxy_icon_url"`
 }
 
 type InteractionsData struct {
@@ -46,7 +53,9 @@ type InteractionsData struct {
 
 	Member struct {
 		User struct {
-			ID string `json:"id"`
+			ID       string `json:"id"`
+			Username string `json:"username"`
+			Discriminator string `json:"discriminator"`
 		} `json:"user"`
 	} `json:"member"`
 }
@@ -65,6 +74,13 @@ func Interactions(data InteractionsData) (string, error) {
 	action := strings.Split(data.Data.ID, ":")
 
 	if data.Type == 3 && IsUserAdminDC(userid) {
+
+		response.Embeds = []Embed{{
+			Footer: EmbedFooter{
+				Text: fmt.Sprintf("Admin: %s (%s#%s)", data.Member.User.ID, data.Member.User.Username,data.Member.User.Discriminator),
+			},
+		}}
+
 		firstVariable, _ := strconv.ParseInt(action[1], 10, 32) // if action is delete review or delete_and_ban its reviewid otherwise userid
 		if action[0] == "delete_review" {
 			err := DeleteReview(int32(firstVariable), common.Config.AdminToken)
@@ -155,8 +171,9 @@ type ReportWebhookEmbedField struct {
 	Value string `json:"value"`
 }
 
-type ReportWebhookEmbed struct {
+type Embed struct {
 	Fields []ReportWebhookEmbedField `json:"fields"`
+	Footer EmbedFooter               `json:"footer"`
 }
 
 type WebhookEmoji struct {
@@ -175,11 +192,11 @@ type WebhookComponent struct {
 }
 
 type ReportWebhookData struct {
-	Content    string               `json:"content"`
-	Username   string               `json:"username"`
-	AvatarURL  string               `json:"avatar_url"`
-	Embeds     []ReportWebhookEmbed `json:"embeds"`
-	Components []WebhookComponent   `json:"components"`
+	Content    string             `json:"content"`
+	Username   string             `json:"username"`
+	AvatarURL  string             `json:"avatar_url"`
+	Embeds     []Embed            `json:"embeds"`
+	Components []WebhookComponent `json:"components"`
 }
 
 func SendReportWebhook(data ReportWebhookData) error {

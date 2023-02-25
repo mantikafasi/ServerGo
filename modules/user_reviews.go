@@ -61,6 +61,10 @@ func AddReview(userID Snowflake, token, comment string, reviewtype int32) (strin
 		return "You are reviewing too much.", nil
 	}
 
+	if common.ProfanityDetector.IsProfane(comment) {
+		return "Your review contains profanity.", nil
+	}
+
 	review := &database.UserReview{
 		UserID:       int64(userID),
 		SenderUserID: senderUserID,
@@ -229,7 +233,7 @@ func ReportReview(reviewID int32, token string) error {
 				},
 			},
 		},
-		Embeds: []ReportWebhookEmbed{
+		Embeds: []Embed{
 			{
 				Fields: []ReportWebhookEmbedField{
 					{
