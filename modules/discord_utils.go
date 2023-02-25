@@ -31,9 +31,9 @@ var oauthEndpoint = oauth2.Endpoint{
 type InteractionResponse struct {
 	Type int `json:"type"` // 1 = Pong ,4 = Respond
 	Data struct {
-		Content string `json:"content"`
+		Content string  `json:"content"`
+		Embeds  []Embed `json:"embeds"`
 	} `json:"data"`
-	Embeds []Embed `json:"embeds"`
 }
 
 type EmbedFooter struct {
@@ -53,8 +53,8 @@ type InteractionsData struct {
 
 	Member struct {
 		User struct {
-			ID       string `json:"id"`
-			Username string `json:"username"`
+			ID            string `json:"id"`
+			Username      string `json:"username"`
 			Discriminator string `json:"discriminator"`
 		} `json:"user"`
 	} `json:"member"`
@@ -75,9 +75,9 @@ func Interactions(data InteractionsData) (string, error) {
 
 	if data.Type == 3 && IsUserAdminDC(userid) {
 
-		response.Embeds = []Embed{{
+		response.Data.Embeds = []Embed{{
 			Footer: EmbedFooter{
-				Text: fmt.Sprintf("Admin: %s (%s#%s)", data.Member.User.ID, data.Member.User.Username,data.Member.User.Discriminator),
+				Text: fmt.Sprintf("Admin: %s (%s#%s)", data.Member.User.ID, data.Member.User.Username, data.Member.User.Discriminator),
 			},
 		}}
 
