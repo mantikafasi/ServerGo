@@ -77,7 +77,7 @@ func Interactions(data InteractionsData) (string, error) {
 
 		response.Data.Embeds = []Embed{{
 			Footer: EmbedFooter{
-				Text: fmt.Sprintf("Admin: %s (%s#%s)", data.Member.User.ID, data.Member.User.Username, data.Member.User.Discriminator),
+				Text: fmt.Sprintf("Admin: %s:%s (%s)", data.Member.User.Username, data.Member.User.Discriminator, data.Member.User.ID),
 			},
 		}}
 
