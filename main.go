@@ -127,8 +127,8 @@ func main() {
 			w.WriteHeader(500)
 			return
 		}
-		
-		w.Header().Add("Content-Type","application/json")
+
+		w.Header().Add("Content-Type", "application/json")
 		io.WriteString(w, response)
 	})
 	mux.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
@@ -168,7 +168,7 @@ func main() {
 		if slices.Contains(common.OptedOut, uint64(userID)) {
 			reviews := append([]database.UserReview{{
 				SenderUsername:  "ReviewDB",
-				ProfilePhoto:    "https://cdn.discordapp.com/avatars/287555395151593473/7cd9b7a57f803b74009137f8bb073941.webp?size=128",
+				ProfilePhoto:    "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
 				Comment:         "This user has opted out of ReviewDB. It means you cannot review this user.",
 				ReviewType:      1,
 				SenderDiscordID: "287555395151593473",
@@ -195,7 +195,7 @@ func main() {
 		if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && r.URL.Query().Get("noAds") != "true" {
 			reviews = append([]database.UserReview{{
 				SenderUsername:  "ReviewDB",
-				ProfilePhoto:    "https://cdn.discordapp.com/avatars/287555395151593473/7cd9b7a57f803b74009137f8bb073941.webp?size=128",
+				ProfilePhoto:    "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
 				Comment:         "If you like the plugins I make, please consider supporting me at: \nhttps://github.com/sponsors/mantikafasi\n You can disable this in settings",
 				ReviewType:      1,
 				SenderDiscordID: "287555395151593473",

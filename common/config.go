@@ -42,7 +42,7 @@ func init() {
 	err = json.NewDecoder(f).Decode(&Config)
 	f.Close()
 
-	f2, er2 := os.Open("out.example.json")
+	f2, er2 := os.Open("out.json") //this is list of users who opted out of reviewdb
 	if er2 != nil {
 		fmt.Println(er2)
 	}
