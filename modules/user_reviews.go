@@ -117,7 +117,7 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 
 func AddUserReviewsUser(code string, clientmod string) (string, error) {
 	//todo make this work exactly same as pyton version
-	token, err := ExchangeCodePlus(code, common.Config.Origin+"/URauth")
+	token, err := ExchangeCodePlus(code, common.Config.Origin + "/URauth")
 	if err != nil {
 		return "", err
 	}
@@ -134,6 +134,13 @@ func AddUserReviewsUser(code string, clientmod string) (string, error) {
 		ProfilePhoto: GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
 		UserType:     0,
 		ClientMod:    clientmod,
+	}
+
+
+	banned , err := database.DB.NewSelect().Model(&user).Where("discordid = ? and type = -1", discordUser.ID).Count(context.Background())
+
+	if banned != 0 {
+		return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB") //this is pretty much useless since it doesnt returns errors but whatever
 	}
 
 	count, err := database.DB.NewSelect().Model(user).Where("discordid = ? and token = ?", discordUser.ID, CalculateHash(token)).ScanAndCount(context.Background())
