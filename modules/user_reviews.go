@@ -137,8 +137,8 @@ func AddUserReviewsUser(code string, clientmod string) (string, error) {
 	}
 
 
-	banned , err := database.DB.NewSelect().Model(&user).Where("discordid = ? and type = -1", discordUser.ID).Count(context.Background())
-
+	banned , err := database.DB.NewSelect().Model(&database.URUser{}).Where("discordid = ? and type = -1", discordUser.ID).ScanAndCount(context.Background())
+	
 	if banned != 0 {
 		return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB") //this is pretty much useless since it doesnt returns errors but whatever
 	}
