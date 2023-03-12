@@ -56,6 +56,12 @@ type URUser struct {
 	ClientMod    string `bun:"client_mod" json:"client_mod"`
 }
 
+type AdminUser struct {
+	bun.BaseModel `bun:"table:ur_users"`
+	DiscordID     string `bun:"discordid,type:numeric"`
+	ProfilePhoto  string `bun:"profile_photo"`
+}
+
 type ReviewReport struct {
 	bun.BaseModel `bun:"table:ur_reports"`
 

@@ -252,7 +252,7 @@ func main() {
 	mux.HandleFunc("/admins", func(w http.ResponseWriter, r *http.Request) {
 		admins,err := modules.GetAdmins()
 		if err != nil {
-			io.WriteString(w, "An Error occurred\n")
+			io.WriteString(w, err.Error() + "\n")
 			return
 		}
 		jsonAdmins, _ := json.Marshal(admins)

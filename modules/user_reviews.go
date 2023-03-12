@@ -428,8 +428,14 @@ func BanUser(discordid string, token string) error {
 	return nil
 }
 
-func GetAdmins() (users []database.URUser, err error) {
-	users = []database.URUser{}
-	err = database.DB.NewSelect().Model(&users).Where("type = 1").Scan(context.Background(), &users)
+func GetAdmins() (users []string, err error) {
+	users = []string{}
+	userlist := []database.AdminUser{}
+	
+	err = database.DB.NewSelect().Distinct().Model(&database.AdminUser{}).Where("type = 1").Scan(context.Background(), &userlist)
+
+	for _, user := range userlist {
+		users = append(users, user.DiscordID)
+	}
 	return
 }
