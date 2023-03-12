@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/uptrace/bun"
 )
@@ -26,13 +27,15 @@ type UserInfo struct {
 type UserReview struct {
 	bun.BaseModel `bun:"table:userreviews"`
 
-	ID           int32  `bun:"id,pk,autoincrement" json:"id"`
-	UserID       int64  `bun:"userid,type:numeric" json:"-"`
-	Star         int32  `bun:"star" json:"star"`
-	SenderUserID int32  `bun:"senderuserid" json:"senderuserid"`
-	Comment      string `bun:"comment" json:"comment"`
-	ReviewType   int32  `bun:"reviewtype" json:"reviewtype"`
-	SystemMessage bool `bun:"-" json:"isSystemMessage"`
+	ID            int32     `bun:"id,pk,autoincrement" json:"id"`
+	UserID        int64     `bun:"userid,type:numeric" json:"-"`
+	Star          int32     `bun:"star" json:"star"`
+	SenderUserID  int32     `bun:"senderuserid" json:"senderuserid"`
+	Comment       string    `bun:"comment" json:"comment"`
+	ReviewType    int32     `bun:"reviewtype" json:"reviewtype"`
+	SystemMessage bool      `bun:"-" json:"isSystemMessage"`
+	TimestampStr  time.Time `bun:"timestamp" json:"-"`
+	Timestamp     int64     `bun:"-" json:"timestamp"`
 
 	User            *URUser     `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
 	SenderDiscordID string      `bun:"-" json:"senderdiscordid"`

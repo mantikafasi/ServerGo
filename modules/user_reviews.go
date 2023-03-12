@@ -38,6 +38,7 @@ func GetReviews(userID int64) ([]database.UserReview, error) {
 			reviews[i].SenderUsername = review.User.Username
 			reviews[i].Badges = GetBadgesOfUser(review.User.DiscordID)
 		}
+		reviews[i].Timestamp = review.TimestampStr.Unix()
 	}
 
 	return reviews, nil
