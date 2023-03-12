@@ -427,3 +427,9 @@ func BanUser(discordid string, token string) error {
 	}
 	return nil
 }
+
+func GetAdmins() (users []database.URUser, err error) {
+	users = []database.URUser{}
+	err = database.DB.NewSelect().Model(&users).Where("type = 1").Scan(context.Background(), &users)
+	return
+}

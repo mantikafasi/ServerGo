@@ -131,6 +131,7 @@ func main() {
 		w.Header().Add("Content-Type", "application/json")
 		io.WriteString(w, response)
 	})
+
 	mux.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
 
 		var data modules.SDB_RequestData
@@ -246,6 +247,16 @@ func main() {
 			return
 		}
 		http.Redirect(w, r, "receiveToken/"+token, http.StatusTemporaryRedirect)
+	})
+
+	mux.HandleFunc("/admins", func(w http.ResponseWriter, r *http.Request) {
+		admins,err := modules.GetAdmins()
+		if err != nil {
+			io.WriteString(w, "An Error occurred\n")
+			return
+		}
+		jsonAdmins, _ := json.Marshal(admins)
+		io.WriteString(w, string(jsonAdmins))
 	})
 
 	type UR_AuthResponse struct {

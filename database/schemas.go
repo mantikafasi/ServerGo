@@ -49,7 +49,7 @@ type URUser struct {
 
 	ID           int32  `bun:"id,pk,autoincrement" json:"id"`
 	DiscordID    string `bun:"discordid,type:numeric" json:"discordid"`
-	Token        string `bun:"token" json:"token"`
+	Token        string `bun:"token" json:"-"`
 	Username     string `bun:"username" json:"username"`
 	UserType     int32  `bun:"column:type" json:"-"`
 	ProfilePhoto string `bun:"profile_photo" json:"profile_photo"`
