@@ -202,7 +202,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 				DiscordID:    "287555395151593473",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",
 				Username:     "Warning",
-				Badges:       []database.UserBadge{},
+				Badges:       []modules.UserBadge{},
 			},
 		}}, reviews...)
 	}

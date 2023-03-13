@@ -26,27 +26,39 @@ type ReportData struct {
 }
 
 type Sender struct {
-	ID           int32                `json:"id"`
-	DiscordID    string               `json:"discordID"`
-	Username     string               `json:"username"`
-	ProfilePhoto string               `json:"profilePhoto"`
-	Badges       []database.UserBadge `json:"badges"`
+	ID           int32       `json:"id"`
+	DiscordID    string      `json:"discordID"`
+	Username     string      `json:"username"`
+	ProfilePhoto string      `json:"profilePhoto"`
+	Badges       []UserBadge `json:"badges"`
 }
 
 type UserReview struct {
 	bun.BaseModel `bun:"table:userreviews"`
 
-	ID            int32     `bun:"id,pk,autoincrement" json:"id"`
-	UserID        int64     `bun:"userid,type:numeric" json:"-"`
-	Sender        Sender    `bun:"-" json:"sender"`
-	Star          int32     `bun:"star" json:"star"`
-	Comment       string    `bun:"comment" json:"comment"`
-	ReviewType    int32     `bun:"reviewtype" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review
-	TimestampStr  time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
-	Timestamp     int64     `bun:"-" json:"timestamp"`
+	ID           int32     `bun:"id,pk,autoincrement" json:"id"`
+	UserID       int64     `bun:"userid,type:numeric" json:"-"`
+	Sender       Sender    `bun:"-" json:"sender"`
+	Star         int32     `bun:"star" json:"star"`
+	Comment      string    `bun:"comment" json:"comment"`
+	ReviewType   int32     `bun:"reviewtype" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review
+	TimestampStr time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
+	Timestamp    int64     `bun:"-" json:"timestamp"`
 
-	User            *database.URUser `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
-	SenderUserID  int32     `bun:"senderuserid" json:"-"`
+	User         *database.URUser `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
+	SenderUserID int32            `bun:"senderuserid" json:"-"`
+}
+
+type UserBadge struct {
+	bun.BaseModel `bun:"table:userbadges"`
+
+	ID               int32  `bun:"id,pk,autoincrement" json:"-"`
+	DiscordID        string `bun:"discordid,type:numeric" json:"-"`
+	BadgeName        string `bun:"badge_name" json:"name"`
+	BadgeIcon        string `bun:"badge_icon" json:"icon"`
+	RedirectURL      string `bun:"redirect_url" json:"redirectURL"`
+	BadgeType        int32  `bun:"badge_type" json:"type"`
+	BadgeDescription string `bun:"badge_description" json:"description"`
 }
 
 func GetReviews(userID int64) ([]UserReview, error) {
@@ -58,12 +70,18 @@ func GetReviews(userID int64) ([]UserReview, error) {
 	}
 
 	for i, review := range reviews {
+		dbBadges := GetBadgesOfUser(review.User.DiscordID)
+		badges := make([]UserBadge, len(dbBadges))
+		for i, b := range dbBadges {
+			badges[i] = UserBadge(b)
+		}
+
 		if review.User != nil {
 			reviews[i].Sender.DiscordID = review.User.DiscordID
 			reviews[i].Sender.ProfilePhoto = review.User.ProfilePhoto
 			reviews[i].Sender.Username = review.User.Username
 			reviews[i].Sender.ID = review.User.ID
-			reviews[i].Sender.Badges = GetBadgesOfUser(review.User.DiscordID)
+			reviews[i].Sender.Badges = badges
 		}
 		reviews[i].Timestamp = review.TimestampStr.Unix()
 	}
