@@ -145,6 +145,8 @@ func AddReview(userID Snowflake, token, comment string, reviewtype int32) (strin
 
 		return "An Error occurred while updating your review", err
 	}
+	//LogAction("UPDATE",review,senderUserID) TODO : DO THIS
+
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
 		return "An Error occurred while updating your review", err
@@ -386,7 +388,10 @@ func DeleteReview(reviewID int32, token string) (err error) {
 	}
 	userid := GetIDWithToken(token)
 
+
 	if (review.SenderUserID == userid) || IsUserAdmin(userid) || token == common.Config.AdminToken {
+		LogAction("DELETE",review,userid)
+
 		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", reviewID).Exec(context.Background())
 		return nil
 	}
@@ -507,3 +512,19 @@ func GetAdmins() (users []string, err error) {
 	}
 	return
 }
+
+func LogAction(action string, review database.UserReview, userid int32) {
+	log := database.ActionLog{}
+
+	log.Action = action
+	log.ReviewID = review.ID
+	log.SenderUserID = review.SenderUserID
+	log.Comment = review.Comment
+	log.ActionUserID = userid
+
+	_, err := database.DB.NewInsert().Model(&log).Exec(context.Background())
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+

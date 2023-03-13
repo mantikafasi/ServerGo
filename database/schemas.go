@@ -83,6 +83,20 @@ type UserBadge struct {
 	BadgeDescription string `bun:"badge_description" json:"badge_description"`
 }
 
+type ActionLog struct {
+	bun.BaseModel `bun:"table:actionlog"`
+
+	Action string `bun:"action" json:"action"`
+
+	ReviewID     int32  `bun:"id,pk,autoincrement" json:"id"`
+	UserID       int64  `bun:"userid,type:numeric" json:"-"`
+	SenderUserID int32  `bun:"senderuserid" json:"senderuserid"`
+	Comment      string `bun:"comment" json:"comment"`
+
+	UpdatedString string `bun:"updatedstring"`
+	ActionUserID  int32  `bun:"actionuserid"`
+}
+
 func createSchema() error {
 	models := []any{
 		(*StupitStat)(nil),
@@ -91,6 +105,7 @@ func createSchema() error {
 		(*URUser)(nil),
 		(*ReviewReport)(nil),
 		(*UserBadge)(nil),
+		(*ActionLog)(nil),
 	}
 
 	for _, model := range models {
