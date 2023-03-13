@@ -75,7 +75,7 @@ var ReviewDBAuth = func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), clientmod)
+	token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), clientmod, "")
 
 	if err != nil {
 		io.WriteString(w, `{"token": "", "successful": false}`)
@@ -195,9 +195,9 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 
 	if len(reviews) != 0 {
 		reviews = append([]modules.UserReview{{
-			ID:            0,
-			Comment:       "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
-			ReviewType:    3,
+			ID:         0,
+			Comment:    "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
+			ReviewType: 3,
 			Sender: modules.Sender{
 				DiscordID:    "287555395151593473",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",
@@ -216,17 +216,17 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 	common.SendStructResponse(w, response)
 }
 
-
 var HandleReviews = func(w http.ResponseWriter, r *http.Request) {
 	method := r.Method
-	
-	if method == "GET" {
+
+	switch method {
+	case "GET":
 		GetReviews(w, r)
-	} else if method == "PUT" {
+	case "PUT":
 		AddUserReview(w, r)
-	} else if method == "DELETE" {
+	case "DELETE":
 		DeleteReview(w, r)
-	} else if method == "REPORT" {
+	case "REPORT":
 		ReportReview(w, r)
 	}
 }

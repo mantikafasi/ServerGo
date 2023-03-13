@@ -182,9 +182,12 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 	return count, nil
 }
 
-func AddUserReviewsUser(code string, clientmod string) (string, error) {
+func AddUserReviewsUser(code string, clientmod string, authUrl string) (string, error) {
 	//todo make this work exactly same as pyton version
-	token, err := ExchangeCodePlus(code, common.Config.Origin+"/URauth")
+	if authUrl == "" {
+		authUrl = "/URauth"
+	}
+	token, err := ExchangeCodePlus(code, common.Config.Origin+authUrl)
 	if err != nil {
 		return "", err
 	}
