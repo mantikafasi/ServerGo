@@ -145,7 +145,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reviews, err := modules.GetReviews(userID)
+	reviews, err := modules.GetReviewsLegacy(userID)
 
 	for i, j := 0, len(reviews)-1; i < j; i, j = i+1, j-1 {
 		reviews[i], reviews[j] = reviews[j], reviews[i]

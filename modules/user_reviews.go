@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"server-go/common"
 	"server-go/database"
 
 	"github.com/patrickmn/go-cache"
+	"github.com/uptrace/bun"
 )
 
 type UR_RequestData struct {
@@ -23,7 +25,53 @@ type ReportData struct {
 	Token    string `json:"token"`
 }
 
-func GetReviews(userID int64) ([]database.UserReview, error) {
+type Sender struct {
+	ID           int64                `json:"id"`
+	DiscordID    string               `json:"discordID"`
+	Username     string               `json:"username"`
+	ProfilePhoto string               `json:"profilePhoto"`
+	Badges       []database.UserBadge `json:"badges"`
+}
+
+type UserReview struct {
+	bun.BaseModel `bun:"table:userreviews"`
+
+	ID            int32     `bun:"id,pk,autoincrement" json:"id"`
+	UserID        int64     `bun:"userid,type:numeric" json:"-"`
+	Sender        Sender    `bun:"-" json:"sender"`
+	Star          int32     `bun:"star" json:"star"`
+	Comment       string    `bun:"comment" json:"comment"`
+	ReviewType    int32     `bun:"reviewtype" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review
+	SystemMessage bool      `bun:"-" json:"isSystemMessage"`
+	TimestampStr  time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
+	Timestamp     int64     `bun:"-" json:"timestamp"`
+
+	User            *database.URUser `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
+	SenderUserID  int32     `bun:"senderuserid" json:"-"`
+}
+
+func GetReviews(userID int64) ([]UserReview, error) {
+	var reviews []UserReview
+
+	err := database.DB.NewSelect().Model(&reviews).Relation("User").Where("userid = ?", userID).OrderExpr("ID DESC").Limit(50).Scan(context.Background(), &reviews)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, review := range reviews {
+		if review.User != nil {
+			reviews[i].Sender.DiscordID = review.User.DiscordID
+			reviews[i].Sender.ProfilePhoto = review.User.ProfilePhoto
+			reviews[i].Sender.Username = review.User.Username
+			reviews[i].Sender.Badges = GetBadgesOfUser(review.User.DiscordID)
+		}
+		reviews[i].Timestamp = review.TimestampStr.Unix()
+	}
+
+	return reviews, nil
+}
+
+func GetReviewsLegacy(userID int64) ([]database.UserReview, error) {
 	var reviews []database.UserReview
 
 	err := database.DB.NewSelect().Model(&reviews).Relation("User").Where("userid = ?", userID).OrderExpr("ID DESC").Limit(50).Scan(context.Background(), &reviews)
@@ -118,7 +166,7 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 
 func AddUserReviewsUser(code string, clientmod string) (string, error) {
 	//todo make this work exactly same as pyton version
-	token, err := ExchangeCodePlus(code, common.Config.Origin + "/URauth")
+	token, err := ExchangeCodePlus(code, common.Config.Origin+"/URauth")
 	if err != nil {
 		return "", err
 	}
@@ -137,9 +185,8 @@ func AddUserReviewsUser(code string, clientmod string) (string, error) {
 		ClientMod:    clientmod,
 	}
 
+	banned, err := database.DB.NewSelect().Model(&database.URUser{}).Where("discordid = ? and type = -1", discordUser.ID).ScanAndCount(context.Background())
 
-	banned , err := database.DB.NewSelect().Model(&database.URUser{}).Where("discordid = ? and type = -1", discordUser.ID).ScanAndCount(context.Background())
-	
 	if banned != 0 {
 		return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB") //this is pretty much useless since it doesnt returns errors but whatever
 	}
@@ -431,7 +478,7 @@ func BanUser(discordid string, token string) error {
 func GetAdmins() (users []string, err error) {
 	users = []string{}
 	userlist := []database.AdminUser{}
-	
+
 	err = database.DB.NewSelect().Distinct().Model(&database.AdminUser{}).Where("type = 1").Scan(context.Background(), &userlist)
 
 	for _, user := range userlist {
