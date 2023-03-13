@@ -14,15 +14,14 @@ import (
 )
 
 type Response struct {
-	Successful bool   `json:"successful"`
+	Successful bool   `json:"success"`
 	Message    string `json:"message"`
 	Error      string `json:"error,omitempty"`
 }
 
 type ReviewDBAuthResponse struct {
-	Successful bool   `json:"successful"`
-	Message    string `json:"message"`
-	Token      string `json:"token"`
+	Response
+	Token string `json:"token"`
 }
 
 var AddUserReview = func(w http.ResponseWriter, r *http.Request) {
