@@ -62,7 +62,7 @@ Reports the specific user
 ```
 returns "Successfully Reported Review" if successful, error string if not
 
-## `Authroization`
+## `Authorization`
 To authorize you have 2 options 
 ### First Option
  Get autorization code within discord via oauth2 modal and make a request to /URAuth endpoint with the code and client mod you are using
