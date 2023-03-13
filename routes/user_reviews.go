@@ -162,7 +162,6 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 			Comment:         "This user has opted out of ReviewDB. It means you cannot review this user.",
 			ReviewType:      3,
 			SenderDiscordID: "287555395151593473",
-			SystemMessage:   true,
 			Badges:          []database.UserBadge{},
 		}})
 		jsonReviews, _ := json.Marshal(reviews)
@@ -191,7 +190,6 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
 				Username:     "ReviewDB",
 			},
-			SystemMessage: true,
 		}}, reviews...)
 	}
 
@@ -200,7 +198,6 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 			ID:            0,
 			Comment:       "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
 			ReviewType:    3,
-			SystemMessage: true,
 			Sender: modules.Sender{
 				DiscordID:    "287555395151593473",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",

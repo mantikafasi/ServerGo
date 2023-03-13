@@ -42,7 +42,6 @@ type UserReview struct {
 	Star          int32     `bun:"star" json:"star"`
 	Comment       string    `bun:"comment" json:"comment"`
 	ReviewType    int32     `bun:"reviewtype" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review
-	SystemMessage bool      `bun:"-" json:"isSystemMessage"`
 	TimestampStr  time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 	Timestamp     int64     `bun:"-" json:"timestamp"`
 
