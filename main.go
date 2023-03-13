@@ -168,6 +168,7 @@ func main() {
 
 		if slices.Contains(common.OptedOut, uint64(userID)) {
 			reviews := append([]database.UserReview{{
+				ID:              0,
 				SenderUsername:  "ReviewDB",
 				ProfilePhoto:    "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
 				Comment:         "This user has opted out of ReviewDB. It means you cannot review this user.",
@@ -206,6 +207,7 @@ func main() {
 
 		if len(reviews) != 0 {
 			reviews = append([]database.UserReview{{
+				ID:              0,
 				SenderUsername:  "Warning",
 				ProfilePhoto:    "https://cdn.discordapp.com/attachments/527211215785820190/1084846935350988840/Exclamation-Mark-Symbol-PNG-Clipart.png?size=128",
 				Comment:         "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
