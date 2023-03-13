@@ -54,7 +54,7 @@ var ReviewDBAuth = func(w http.ResponseWriter, r *http.Request) {
 		clientmod = "aliucord"
 	}
 
-	token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), clientmod, "/api/reviewdb/auth")
+	token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), clientmod, "")
 
 	if r.URL.Query().Get("returnType") == "json" {
 		if err != nil {
