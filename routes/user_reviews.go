@@ -14,14 +14,15 @@ import (
 )
 
 type Response struct {
-	Successful bool   `json:"success"`
-	Message    string `json:"message"`
-	Error      string `json:"error,omitempty"`
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Error   string `json:"error,omitempty"`
 }
 
 type ReviewDBAuthResponse struct {
-	Response
-	Token string `json:"token"`
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Token   string `json:"token"`
 }
 
 var AddUserReview = func(w http.ResponseWriter, r *http.Request) {
@@ -47,11 +48,11 @@ var AddUserReview = func(w http.ResponseWriter, r *http.Request) {
 
 	res, err := modules.AddReview(data.DiscordID, data.Token, data.Comment, int32(data.ReviewType))
 	if err != nil {
-		response.Successful = false
+		response.Success = false
 		response.Message = "An error occurred"
 		println(err.Error())
 	} else {
-		response.Successful = true
+		response.Success = true
 		response.Message = res
 	}
 
@@ -68,8 +69,8 @@ var ReviewDBAuth = func(w http.ResponseWriter, r *http.Request) {
 
 	if !slices.Contains(ClientMods, clientmod) {
 		common.SendStructResponse(w, ReviewDBAuthResponse{
-			Successful: false,
-			Message:    "Invalid clientMod",
+			Success: false,
+			Message: "Invalid clientMod",
 		})
 		return
 	}
@@ -82,8 +83,8 @@ var ReviewDBAuth = func(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := ReviewDBAuthResponse{
-		Token:      token,
-		Successful: true,
+		Token:   token,
+		Success: true,
 	}
 
 	response, _ := json.Marshal(res)
@@ -108,7 +109,7 @@ var ReportReview = func(w http.ResponseWriter, r *http.Request) {
 		common.SendStructResponse(w, response)
 		return
 	}
-	response.Successful = true
+	response.Success = true
 	response.Message = "Successfully Reported Review"
 	common.SendStructResponse(w, response)
 }
@@ -118,8 +119,8 @@ var DeleteReview = func(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&data)
 
 	responseData := Response{
-		Successful: false,
-		Message:    "",
+		Success: false,
+		Message: "",
 	}
 
 	if data.Token == "" || data.ReviewID == 0 {
@@ -137,7 +138,7 @@ var DeleteReview = func(w http.ResponseWriter, r *http.Request) {
 		w.Write(res)
 		return
 	}
-	responseData.Successful = true
+	responseData.Success = true
 	responseData.Message = "Successfully Deleted Review"
 	res, _ := json.Marshal(responseData)
 	w.Write(res)
@@ -175,7 +176,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		response.Successful = false
+		response.Success = false
 		response.Message = "An error occurred"
 		common.SendStructResponse(w, response)
 		return
@@ -214,6 +215,6 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Reviews = reviews
-	response.Successful = true
+	response.Success = true
 	common.SendStructResponse(w, response)
 }
