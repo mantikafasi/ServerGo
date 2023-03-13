@@ -138,8 +138,6 @@ func main() {
 
 	mux.HandleFunc("/reportReview", legacy_routes.ReportReview)
 
-	mux.HandleFunc("/api/reviewdb/report", routes.ReportReview)
-
 	mux.HandleFunc("/receiveToken/", routes.ReceiveToken)
 
 	mux.HandleFunc("/deleteReview", legacy_routes.DeleteReview)

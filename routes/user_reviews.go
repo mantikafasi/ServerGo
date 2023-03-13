@@ -225,9 +225,11 @@ var HandleReviews = func(w http.ResponseWriter, r *http.Request) {
 	
 	if method == "GET" {
 		GetReviews(w, r)
-	} else if method == "POST" {
+	} else if method == "PUT" {
 		AddUserReview(w, r)
 	} else if method == "DELETE" {
 		DeleteReview(w, r)
+	} else if method == "REPORT" {
+		ReportReview(w, r)
 	}
 }
