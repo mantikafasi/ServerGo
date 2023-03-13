@@ -11,6 +11,7 @@ import (
 
 	"server-go/common"
 	"server-go/database"
+	"server-go/legacy_routes"
 	"server-go/modules"
 	"server-go/routes"
 
@@ -109,29 +110,35 @@ func main() {
 
 	mux.HandleFunc("/interactions", routes.HandleInteractions)
 
+	//StupidityDB
+
 	mux.HandleFunc("/vote", routes.VoteStupidity)
 
 	mux.HandleFunc("/getuser", routes.GetStupidity)
 
-	mux.HandleFunc("/getUserReviews", routes.GetReviews)
-
-	mux.HandleFunc("/addUserReview", routes.AddUserReview)
-
 	mux.HandleFunc("/auth", routes.StupidityDBAuth)
+
+	//ReviewDB
+
+	mux.HandleFunc("/getUserReviews", legacy_routes.GetReviews)
+
+	mux.HandleFunc("/api/reviews", legacy_routes.GetReviews)
+
+	mux.HandleFunc("/addUserReview", legacy_routes.AddUserReview)
 
 	mux.HandleFunc("/admins", routes.Admins)
 
-	mux.HandleFunc("/URauth", routes.ReviewDBAuth)
+	mux.HandleFunc("/URauth", legacy_routes.ReviewDBAuth)
 
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
 	})
 
-	mux.HandleFunc("/reportReview", routes.ReportReview)
+	mux.HandleFunc("/reportReview", legacy_routes.ReportReview)
 
 	mux.HandleFunc("/receiveToken/", routes.ReceiveToken)
 
-	mux.HandleFunc("/deleteReview", routes.DeleteReview)
+	mux.HandleFunc("/deleteReview", legacy_routes.DeleteReview)
 
 	mux.HandleFunc("/getLastReviewID", func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("discordid")
