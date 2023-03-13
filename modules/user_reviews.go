@@ -516,6 +516,7 @@ func GetAdmins() (users []string, err error) {
 func LogAction(action string, review database.UserReview, userid int32) {
 	log := database.ActionLog{}
 
+	log.UserID = review.UserID
 	log.Action = action
 	log.ReviewID = review.ID
 	log.SenderUserID = review.SenderUserID
