@@ -26,7 +26,7 @@ type ReportData struct {
 }
 
 type Sender struct {
-	ID           int64                `json:"id"`
+	ID           int32                `json:"id"`
 	DiscordID    string               `json:"discordID"`
 	Username     string               `json:"username"`
 	ProfilePhoto string               `json:"profilePhoto"`
@@ -63,6 +63,7 @@ func GetReviews(userID int64) ([]UserReview, error) {
 			reviews[i].Sender.DiscordID = review.User.DiscordID
 			reviews[i].Sender.ProfilePhoto = review.User.ProfilePhoto
 			reviews[i].Sender.Username = review.User.Username
+			reviews[i].Sender.ID = review.User.ID
 			reviews[i].Sender.Badges = GetBadgesOfUser(review.User.DiscordID)
 		}
 		reviews[i].Timestamp = review.TimestampStr.Unix()
