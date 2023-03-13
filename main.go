@@ -204,6 +204,17 @@ func main() {
 			}}, reviews...)
 		}
 
+		if len(reviews) != 0 {
+			reviews = append([]database.UserReview{{
+				SenderUsername:  "Warning",
+				ProfilePhoto:    "https://cdn.discordapp.com/attachments/527211215785820190/1084846935350988840/Exclamation-Mark-Symbol-PNG-Clipart.png?size=128",
+				Comment:         "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
+				ReviewType:      1,
+				SenderDiscordID: "287555395151593473",
+				SystemMessage:   true,
+			}}, reviews...)
+		}
+
 		jsonReviews, _ := json.Marshal(reviews)
 		reviewsStr := string(jsonReviews)
 
@@ -250,9 +261,9 @@ func main() {
 	})
 
 	mux.HandleFunc("/admins", func(w http.ResponseWriter, r *http.Request) {
-		admins,err := modules.GetAdmins()
+		admins, err := modules.GetAdmins()
 		if err != nil {
-			io.WriteString(w, err.Error() + "\n")
+			io.WriteString(w, err.Error()+"\n")
 			return
 		}
 		jsonAdmins, _ := json.Marshal(admins)
