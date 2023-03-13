@@ -122,11 +122,7 @@ func main() {
 
 	mux.HandleFunc("/getUserReviews", legacy_routes.GetReviews)
 
-	mux.HandleFunc("/api/reviewdb/get", routes.GetReviews)
-
 	mux.HandleFunc("/addUserReview", legacy_routes.AddUserReview)
-
-	mux.HandleFunc("/api/reviewdb/add", routes.AddUserReview)
 
 	mux.HandleFunc("/admins", routes.Admins)
 
@@ -138,6 +134,8 @@ func main() {
 		io.WriteString(w, "An Error occurred\n")
 	})
 
+	mux.HandleFunc("/api/reviewdb/", routes.HandleReviews)
+
 	mux.HandleFunc("/reportReview", legacy_routes.ReportReview)
 
 	mux.HandleFunc("/api/reviewdb/report", routes.ReportReview)
@@ -145,8 +143,6 @@ func main() {
 	mux.HandleFunc("/receiveToken/", routes.ReceiveToken)
 
 	mux.HandleFunc("/deleteReview", legacy_routes.DeleteReview)
-
-	mux.HandleFunc("/api/reviewdb/delete", routes.DeleteReview)
 
 	mux.HandleFunc("/getLastReviewID", func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("discordid")

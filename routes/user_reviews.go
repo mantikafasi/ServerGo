@@ -218,3 +218,16 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 	response.Success = true
 	common.SendStructResponse(w, response)
 }
+
+
+var HandleReviews = func(w http.ResponseWriter, r *http.Request) {
+	method := r.Method
+	
+	if method == "GET" {
+		GetReviews(w, r)
+	} else if method == "POST" {
+		AddUserReview(w, r)
+	} else if method == "DELETE" {
+		DeleteReview(w, r)
+	}
+}
