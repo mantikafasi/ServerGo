@@ -78,7 +78,7 @@ var ReviewDBAuth = func(w http.ResponseWriter, r *http.Request) {
 	token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), clientmod, "/api/reviewdb/auth")
 
 	if err != nil {
-		io.WriteString(w, `{"token": "", "successful": false}`)
+		io.WriteString(w, `{"token": "", "success": false}`)
 		return
 	}
 
