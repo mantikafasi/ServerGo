@@ -34,7 +34,7 @@ type UserReview struct {
 	Comment       string    `bun:"comment" json:"comment"`
 	ReviewType    int32     `bun:"reviewtype" json:"reviewtype"`
 	SystemMessage bool      `bun:"-" json:"isSystemMessage"`
-	TimestampStr  time.Time `bun:"timestamp" pg:"omitempty" json:"-"`
+	TimestampStr  time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 	Timestamp     int64     `bun:"-" json:"timestamp"`
 
 	User            *URUser     `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
