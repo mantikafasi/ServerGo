@@ -272,7 +272,7 @@ func ReportReview(reviewID int32, token string) error {
 
 	err = SendReportWebhook(ReportWebhookData{
 		Username: "ReviewDB",
-		Content:  "Reported Reveiew",
+		Content:  "Reported Review",
 		Components: []WebhookComponent{
 			{
 				Type: 1,
