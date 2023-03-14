@@ -119,8 +119,12 @@ func AddReview(userID Snowflake, token, comment string, reviewtype int32) (strin
 	}
 
 	user, _ := GetDBUserViaID(senderUserID)
-	if user.UserType == -1 {
+	if user.UserType == -1 || user.WarningCount > 2 {
 		return "", errors.New("You have been banned from ReviewDB")
+	}
+
+	if user.BanEndDate.After(time.Now()) {
+		return "", errors.New("You have been banned from ReviewDB until " + user.BanEndDate.Format("2006-01-02 15:04:05"))
 	}
 
 	count, _ := GetReviewCountInLastHour(senderUserID)
@@ -287,10 +291,10 @@ func ReportReview(reviewID int32, token string) error {
 						},
 					},
 					{
-						Type:     2,
+						Type:     3,
 						Label:    "Ban User",
 						Style:    4,
-						CustomID: fmt.Sprintf("ban_user:%s", string(reportedUser.DiscordID)),
+						CustomID: fmt.Sprintf("ban_select"), //string(reportedUser.DiscordID)
 						Emoji: WebhookEmoji{
 							Name:     "banned",
 							ID:       "590237837299941382",
@@ -388,9 +392,8 @@ func DeleteReview(reviewID int32, token string) (err error) {
 	}
 	userid := GetIDWithToken(token)
 
-
 	if (review.SenderUserID == userid) || IsUserAdmin(userid) || token == common.Config.AdminToken {
-		LogAction("DELETE",review,userid)
+		LogAction("DELETE", review, userid)
 
 		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", reviewID).Exec(context.Background())
 		return nil
@@ -528,4 +531,3 @@ func LogAction(action string, review database.UserReview, userid int32) {
 		fmt.Println(err)
 	}
 }
-

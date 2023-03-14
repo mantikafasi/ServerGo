@@ -12,6 +12,9 @@ import (
 
 	"server-go/common"
 
+	"github.com/diamondburned/arikawa/v3/api"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"golang.org/x/oauth2"
 )
 
@@ -28,14 +31,6 @@ var oauthEndpoint = oauth2.Endpoint{
 	AuthStyle: oauth2.AuthStyleInParams,
 }
 
-type InteractionResponse struct {
-	Type int `json:"type"` // 1 = Pong ,4 = Respond
-	Data struct {
-		Content string  `json:"content"`
-		Embeds  []Embed `json:"embeds"`
-	} `json:"data"`
-}
-
 type EmbedFooter struct {
 	Text         string `json:"text"`
 	IconURL      string `json:"icon_url"`
@@ -49,6 +44,7 @@ type InteractionsData struct {
 	}
 	Message struct {
 		Content string `json:"content"`
+		ID      string `json:"id"`
 	}
 
 	Member struct {
@@ -61,11 +57,12 @@ type InteractionsData struct {
 }
 
 func Interactions(data InteractionsData) (string, error) {
+
 	if data.Type == 1 {
 		return "{\"type\":1}", nil //copilot I hope you die
 	}
 
-	response := InteractionResponse{}
+	response := api.InteractionResponse{}
 
 	response.Type = 4
 
@@ -75,8 +72,8 @@ func Interactions(data InteractionsData) (string, error) {
 
 	if data.Type == 3 && IsUserAdminDC(userid) {
 
-		response.Data.Embeds = []Embed{{
-			Footer: EmbedFooter{
+		response.Data.Embeds = &[]discord.Embed{{
+			Footer: &discord.EmbedFooter{
 				Text: fmt.Sprintf("Admin: %s#%s (%s)", data.Member.User.Username, data.Member.User.Discriminator, data.Member.User.ID),
 			},
 		}}
@@ -85,29 +82,68 @@ func Interactions(data InteractionsData) (string, error) {
 		if action[0] == "delete_review" {
 			err := DeleteReview(int32(firstVariable), common.Config.AdminToken)
 			if err == nil {
-				response.Data.Content = "Successfully Deleted review with id " + action[1]
+				response.Data.Content = option.NewNullableString("Successfully Deleted review with id " + action[1])
 			} else {
-				response.Data.Content = err.Error()
+				response.Data.Content = option.NewNullableString(err.Error())
 			}
-		} else if action[0] == "ban_user" {
+		} else if action[0] == "ban_select" {
+
 			err := BanUser(action[1], common.Config.AdminToken)
 			if err == nil {
-				response.Data.Content = "Successfully banned user with id " + action[1]
+				response.Data.Content = option.NewNullableString("Successfully banned user with id " + action[1])
 			} else {
-				response.Data.Content = err.Error()
+				response.Data.Content = option.NewNullableString(err.Error())
 			}
+
+			component := WebhookComponent{
+				Type: 1,
+				Components: []WebhookComponent{
+					{
+						Type: 3,
+						CustomID: "ban_user",
+						Options: []ComponentOption{
+							{
+								Label: "1 day",
+								Value: "1",
+							},
+							{
+								Label: "3 days",
+								Value: "3",
+							},		
+							{
+								Label: "1 week",
+								Value: "7",
+							},
+							{
+								Label: "1 month",
+								Value: "30",
+							},
+						},
+						
+					},
+				},
+				Style: 1,
+			}
+
+			type Response struct {
+				Components []WebhookComponent `json:"components"`
+			}
+
+			UpdateWebhook(data.Message.ID, Response{Components: []WebhookComponent{component}})
 
 		} else if action[0] == "delete_and_ban" {
 			err := DeleteReview(int32(firstVariable), common.Config.AdminToken)
 			err2 := BanUser(action[2], common.Config.AdminToken)
 			if err == nil && err2 == nil {
-				response.Data.Content = "Successfully Deleted review with id " + action[1] + " and banned user with id " + action[2]
+				response.Data.Content = option.NewNullableString("Successfully Deleted review with id " + action[1] + " and banned user with id " + action[2])
 			} else {
-				response.Data.Content = err.Error() + err2.Error() // I hope this doesnt create error
+				response.Data.Content = option.NewNullableString(err.Error() + err2.Error()) // I hope this doesnt create error
 			}
+		} else if action[0] == "ban_user" {
+			
 		}
 	}
-	if response.Data.Content != "" {
+	if response.Data.Content.Val != "" {
 		b, err := json.Marshal(response)
 		if err != nil {
 			return "", err
@@ -115,6 +151,13 @@ func Interactions(data InteractionsData) (string, error) {
 		return string(b), nil
 	}
 	return "", errors.New("invalid interaction")
+}
+
+func UpdateWebhook(messageId string, payload interface{}) {
+	jsonPayload, _ := json.Marshal(payload)
+	req,_ := http.NewRequest(http.MethodPatch, common.Config.DiscordWebhook+"/messages/"+messageId, strings.NewReader(string(jsonPayload)))
+	req.Header.Set("Content-Type", "application/json")
+	http.DefaultClient.Do(req)
 }
 
 func ExchangeCodePlus(code, redirectURL string) (string, error) {
@@ -188,7 +231,13 @@ type WebhookComponent struct {
 	Label      string             `json:"label"`
 	CustomID   string             `json:"custom_id"`
 	Emoji      WebhookEmoji       `json:"emoji,omitempty"`
+	Options    []ComponentOption  `json:"options,omitempty"`
 	Components []WebhookComponent `json:"components"`
+}
+
+type ComponentOption struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
 }
 
 type ReportWebhookData struct {
