@@ -237,7 +237,6 @@ var HandleReviews = func(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		GetReviews(w, r)
 	case "PUT":
-	case "POST":
 		AddUserReview(w, r)
 	case "DELETE":
 		DeleteReview(w, r)
