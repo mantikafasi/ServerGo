@@ -125,11 +125,11 @@ func AddReview(userID Snowflake, token, comment string, reviewtype int32) (strin
 
 	count, _ := GetReviewCountInLastHour(senderUserID)
 	if count > 20 {
-		return "You are reviewing too much.", nil
+		return "", errors.New("You are reviewing too much")
 	}
 
 	if common.ProfanityDetector.IsProfane(comment) {
-		return "Your review contains profanity.", nil
+		return "", errors.New("Your review contains profanity")
 	}
 
 	review := &database.UserReview{

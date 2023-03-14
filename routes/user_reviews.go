@@ -49,7 +49,7 @@ var AddUserReview = func(w http.ResponseWriter, r *http.Request) {
 	res, err := modules.AddReview(data.DiscordID, data.Token, data.Comment, int32(data.ReviewType))
 	if err != nil {
 		response.Success = false
-		response.Message = "An error occurred"
+		response.Message = err.Error()
 		println(err.Error())
 	} else {
 		response.Success = true
