@@ -26,7 +26,10 @@ type ReviewDBAuthResponse struct {
 }
 
 var AddUserReview = func(w http.ResponseWriter, r *http.Request) {
-	response := Response{}
+	response := struct {
+		Response
+		Updated bool `json:"updated"`
+	}{}
 
 	var data modules.UR_RequestData
 	json.NewDecoder(r.Body).Decode(&data)
@@ -54,6 +57,9 @@ var AddUserReview = func(w http.ResponseWriter, r *http.Request) {
 	} else {
 		response.Success = true
 		response.Message = res
+		if res == "Updated your review" { // I will fix this once I delete old api
+			response.Updated = true
+		}
 	}
 
 	common.SendStructResponse(w, response)
