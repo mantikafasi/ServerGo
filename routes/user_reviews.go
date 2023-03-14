@@ -144,11 +144,19 @@ var DeleteReview = func(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
+const (
+	AdFlag      = 0b00000001
+	WarningFlag = 0b00000010
+)
+
 var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 	type ReviewResponse struct {
 		Response
 		Reviews []modules.UserReview `json:"reviews"`
 	}
+
+	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
+	flags := int32(flags64)
 
 	userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 	reviews, err := modules.GetReviews(userID)
@@ -181,7 +189,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && r.URL.Query().Get("noAds") != "true" {
+	if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && flags&AdFlag == AdFlag {
 		reviews = append([]modules.UserReview{{
 			Comment:    "If you like the plugins I make, please consider supporting me at: \nhttps://github.com/sponsors/mantikafasi\n You can disable this in settings",
 			ReviewType: 2,
@@ -193,7 +201,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 		}}, reviews...)
 	}
 
-	if len(reviews) != 0 {
+	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) {
 		reviews = append([]modules.UserReview{{
 			ID:         0,
 			Comment:    "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",

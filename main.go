@@ -130,6 +130,8 @@ func main() {
 
 	mux.HandleFunc("/api/reviewdb/auth", routes.ReviewDBAuth)
 
+	mux.HandleFunc("/api/reviewdb/report", routes.ReportReview)
+
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
 	})
