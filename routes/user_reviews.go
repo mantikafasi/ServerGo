@@ -162,13 +162,15 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 		Reviews []modules.UserReview `json:"reviews"`
 	}
 
-	var userID int64
-	if r.URL.Query().Get("discordid") == "" {
-		userID = chi.URLParam(r, "discordid")
-	} else {
-		userID, _ = strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
-	}
+	var userIDString string;
 
+	if r.URL.Query().Get("discordid") == "" {
+		userIDString = chi.URLParam(r, "discordid")
+	} else {
+		userIDString = r.URL.Query().Get("discordid")
+	}
+	
+	userID, _ := strconv.ParseInt(userIDString, 10, 64)
 	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
 	flags := int32(flags64)
 
