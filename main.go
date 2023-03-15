@@ -41,7 +41,7 @@ var TotalRequestCounter = prometheus.NewCounter(prometheus.CounterOpts{
 func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 
 	metric := strings.NewReplacer("{", "", "}", "", "/", "").Replace(pattern)
-	
+
 	if metric == "" {
 		metric = "root"
 	}
@@ -121,6 +121,8 @@ func main() {
 	mux.HandleFunc("/auth", routes.StupidityDBAuth)
 
 	//ReviewDB
+
+	mux.HandleFunc("/api/reviewdb/users", routes.GetUserInfo)
 
 	mux.HandleFunc("/getUserReviews", legacy_routes.GetReviews)
 

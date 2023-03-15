@@ -176,6 +176,15 @@ func GetIDWithToken(token string) (id int32) {
 	return
 }
 
+func GetDBUserViaToken(token string) (user database.URUser, err error) {
+	err = database.DB.
+		NewSelect().
+		Model(&user).
+		Where("token = ?", CalculateHash(token)).
+		Scan(context.Background(), &user)
+	return
+}
+
 func GetReviewCountInLastHour(userID int32) (int, error) {
 	//return 0, nil
 	count, err := database.DB.

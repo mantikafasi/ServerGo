@@ -35,8 +35,8 @@ var AddUserReview = func(w http.ResponseWriter, r *http.Request) {
 	var data modules.UR_RequestData
 	json.NewDecoder(r.Body).Decode(&data)
 
-	if (chi.URLParam(r, "discordid") != "") {
-		discordid , _ := strconv.ParseUint(chi.URLParam(r, "discordid"), 10, 64)
+	if chi.URLParam(r, "discordid") != "" {
+		discordid, _ := strconv.ParseUint(chi.URLParam(r, "discordid"), 10, 64)
 		data.DiscordID = modules.Snowflake(discordid)
 	}
 
@@ -167,7 +167,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 		Reviews []modules.UserReview `json:"reviews"`
 	}
 
-	var userIDString string;
+	var userIDString string
 
 	if r.URL.Query().Get("discordid") == "" {
 		userIDString = chi.URLParam(r, "discordid")
@@ -242,6 +242,20 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 	response.Reviews = reviews
 	response.Success = true
 	common.SendStructResponse(w, response)
+}
+
+func GetUserInfo(w http.ResponseWriter, r *http.Request) {
+	var data modules.UR_RequestData
+	json.NewDecoder(r.Body).Decode(&data)
+
+	user, err := modules.GetDBUserViaToken(data.Token)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	user.Badges = modules.GetBadgesOfUser(user.DiscordID)
+
+	json.NewEncoder(w).Encode(user)
 }
 
 var HandleReviews = func(w http.ResponseWriter, r *http.Request) {
