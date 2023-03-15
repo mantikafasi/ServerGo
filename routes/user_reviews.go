@@ -35,6 +35,11 @@ var AddUserReview = func(w http.ResponseWriter, r *http.Request) {
 	var data modules.UR_RequestData
 	json.NewDecoder(r.Body).Decode(&data)
 
+	if (chi.URLParam(r, "discordid") != "") {
+		discordid , _ := strconv.ParseUint(chi.URLParam(r, "discordid"), 10, 64)
+		data.DiscordID = modules.Snowflake(discordid)
+	}
+
 	if len(data.Comment) > 1000 {
 		response.Message = "Comment Too Long"
 	} else if len(strings.TrimSpace(data.Comment)) == 0 {
