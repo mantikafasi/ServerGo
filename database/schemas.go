@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"server-go/modules"
 	"time"
 
 	"github.com/uptrace/bun"
@@ -47,16 +48,16 @@ type UserReview struct {
 type URUser struct {
 	bun.BaseModel `bun:"table:ur_users"`
 
-	ID           int32       `bun:"id,pk,autoincrement" json:"ID"`
-	DiscordID    string      `bun:"discordid,type:numeric" json:"discordID"`
-	Token        string      `bun:"token" json:"-"`
-	Username     string      `bun:"username" json:"username"`
-	UserType     int32       `bun:"column:type" json:"-"`
-	ProfilePhoto string      `bun:"profile_photo" json:"profilePhoto"`
-	ClientMod    string      `bun:"client_mod" json:"clientMod"`
-	WarningCount int32       `bun:"warning_count" json:"warningCount"`
-	BanEndDate   time.Time   `bun:"ban_end_date" json:"banEndDate"`
-	Badges       []UserBadge `bun:"-" json:"badges"`
+	ID           int32               `bun:"id,pk,autoincrement" json:"ID"`
+	DiscordID    string              `bun:"discordid,type:numeric" json:"discordID"`
+	Token        string              `bun:"token" json:"-"`
+	Username     string              `bun:"username" json:"username"`
+	UserType     int32               `bun:"column:type" json:"-"`
+	ProfilePhoto string              `bun:"profile_photo" json:"profilePhoto"`
+	ClientMod    string              `bun:"client_mod" json:"clientMod"`
+	WarningCount int32               `bun:"warning_count" json:"warningCount"`
+	BanEndDate   time.Time           `bun:"ban_end_date" json:"banEndDate"`
+	Badges       []modules.UserBadge `bun:"-" json:"badges"`
 }
 
 type AdminUser struct {

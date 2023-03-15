@@ -253,7 +253,14 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	user.Badges = modules.GetBadgesOfUser(user.DiscordID)
+
+	dbBadges := modules.GetBadgesOfUser(user.DiscordID)
+	badges := make([]modules.UserBadge, len(dbBadges))
+	for i, b := range dbBadges {
+		badges[i] = modules.UserBadge(b)
+	}
+
+	user.Badges = badges
 
 	json.NewEncoder(w).Encode(user)
 }
