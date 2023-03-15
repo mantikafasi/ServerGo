@@ -265,6 +265,19 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+func GetAllBadges(w http.ResponseWriter, r *http.Request) {
+	legacyBadges,err := modules.GetAllBadges()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	badges := make([]database.UserBadge, len(legacyBadges))
+	for i, b := range badges {
+		badges[i] = database.UserBadge(b)
+	}
+	json.NewEncoder(w).Encode(badges)
+}
+
 var HandleReviews = func(w http.ResponseWriter, r *http.Request) {
 	method := r.Method
 

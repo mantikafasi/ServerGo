@@ -138,6 +138,8 @@ func main() {
 
 	mux.HandleFunc("/api/reviewdb/users/{discordid}/reviews", routes.HandleReviews)
 
+	mux.HandleFunc("/api/reviewdb/badges", routes.GetAllBadges)
+
 	mux.HandleFunc("/api/reviewdb/reports", routes.ReportReview)
 
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
