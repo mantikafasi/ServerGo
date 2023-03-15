@@ -126,28 +126,32 @@ func Interactions(data InteractionsData) (string, error) {
 			//UpdateWebhook(data.Message.ID, Response{Components: []WebhookComponent{component}})
 
 		} else if action[0] == "delete_and_ban" {
-			component := BanTimeSelectComponent(action[1])
+			component := BanTimeSelectComponent(action[2] + ":" + action[1])
 			response.Data.Components = &component
 
 			err := DeleteReview(int32(firstVariable), common.Config.AdminToken)
 			if err == nil {
-				response.Data.Content = option.NewNullableString("Successfully Deleted review with id " + action[1] +"\n Select ban duration")
+				response.Data.Content = option.NewNullableString("Successfully Deleted review with id " + action[1] + "\nSelect ban duration")
 			} else {
 				response.Data.Content = option.NewNullableString(err.Error()) // I hope this doesnt create error
 			}
 		} else if action[0] == "ban_user" {
-			
+
 			banDuration, _ := strconv.ParseInt(data.Data.Values[0], 10, 32)
 
 			err := BanUser(action[1], common.Config.AdminToken, int32(banDuration))
 			if err == nil {
-				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days",action[1],int32(banDuration))	)
+				if len(action) == 3 {
+					response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days and deleted review with id %s", action[1], int32(banDuration), action[2]))
+				} else {
+					response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days", action[1], int32(banDuration)))
+				}
 			} else {
 				response.Data.Content = option.NewNullableString(err.Error())
 			}
-			response.Type = 7
+			response.Type = 7 // update message
 
-			response.Data.Components = &discord.ContainerComponents{}
+			response.Data.Components = &discord.ContainerComponents{} // remove components
 		}
 	}
 	if response.Data.Content.Val != "" {
