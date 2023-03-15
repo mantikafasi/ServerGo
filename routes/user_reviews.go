@@ -268,7 +268,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 	type UserBadge struct {
 		database.UserBadgeLegacy
-		DiscordID string `json:"discordid"`
+		DiscordID string `json:"discordID"`
 	}
 
 	legacyBadges, err := modules.GetAllBadges()
