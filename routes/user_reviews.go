@@ -247,8 +247,14 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	var data modules.UR_RequestData
 	json.NewDecoder(r.Body).Decode(&data)
+	//modules.GetLastReviewID(user.DiscordID)
+	type UserInfo struct {
+		database.URUser
+		LastReviewID int32 `json:"lastReviewID"`
+	}
 
 	user, err := modules.GetDBUserViaToken(data.Token)
+	response := UserInfo{user, modules.GetLastReviewID(user.DiscordID)}
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -260,9 +266,9 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 		badges[i] = database.UserBadge(b)
 	}
 
-	user.Badges = badges
+	response.Badges = badges
 
-	json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(response)
 }
 
 func GetAllBadges(w http.ResponseWriter, r *http.Request) {
