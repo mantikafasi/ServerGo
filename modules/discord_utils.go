@@ -40,7 +40,8 @@ type EmbedFooter struct {
 type InteractionsData struct {
 	Type int `json:"type"` // 1 = ping
 	Data struct {
-		ID string `json:"custom_id"`
+		ID     string   `json:"custom_id"`
+		Values []string `json:"values"`
 	}
 	Message struct {
 		Content string `json:"content"`
@@ -56,6 +57,35 @@ type InteractionsData struct {
 	} `json:"member"`
 }
 
+func BanTimeSelectComponent(userid string) discord.ContainerComponents {
+	return discord.ContainerComponents{
+		&discord.ActionRowComponent{
+			&discord.StringSelectComponent{
+				CustomID:    discord.ComponentID("ban_user:" + userid),
+				Placeholder: "Select ban time",
+				Options: []discord.SelectOption{
+					{
+						Label: "1 day",
+						Value: "1",
+					},
+					{
+						Label: "3 days",
+						Value: "3",
+					},
+					{
+						Label: "1 week",
+						Value: "7",
+					},
+					{
+						Label: "1 month",
+						Value: "30",
+					},
+				},
+			},
+		},
+	}
+}
+
 func Interactions(data InteractionsData) (string, error) {
 
 	if data.Type == 1 {
@@ -65,6 +95,8 @@ func Interactions(data InteractionsData) (string, error) {
 	response := api.InteractionResponse{}
 
 	response.Type = 4
+
+	response.Data = &api.InteractionResponseData{}
 
 	userid, _ := strconv.ParseInt(data.Member.User.ID, 10, 64)
 
@@ -88,51 +120,34 @@ func Interactions(data InteractionsData) (string, error) {
 			}
 		} else if action[0] == "ban_select" {
 
-			component := discord.ContainerComponents{
-				&discord.ActionRowComponent{
-					&discord.StringSelectComponent{
-						CustomID: "ban_user",
-						Options: []discord.SelectOption{
-							{
-								Label: "1 day",
-								Value: "1",
-							},
-							{
-								Label: "3 days",
-								Value: "3",
-							},
-							{
-								Label: "1 week",
-								Value: "7",
-							},
-							{
-								Label: "1 month",
-								Value: "30",
-							},
-						},
-					},
-				},
-			}
-
+			component := BanTimeSelectComponent(action[1])
 			response.Data.Content = option.NewNullableString("Select ban duration")
 			response.Data.Components = &component
 			//UpdateWebhook(data.Message.ID, Response{Components: []WebhookComponent{component}})
 
 		} else if action[0] == "delete_and_ban" {
+			component := BanTimeSelectComponent(action[1])
+			response.Data.Components = &component
+
 			err := DeleteReview(int32(firstVariable), common.Config.AdminToken)
-			err2 := BanUser(action[2], common.Config.AdminToken)
-			if err == nil && err2 == nil {
-				response.Data.Content = option.NewNullableString("Successfully Deleted review with id " + action[1] + " and banned user with id " + action[2])
+			if err == nil {
+				response.Data.Content = option.NewNullableString("Successfully Deleted review with id " + action[1] +"\n Select ban duration")
 			} else {
-				response.Data.Content = option.NewNullableString(err.Error() + err2.Error()) // I hope this doesnt create error
+				response.Data.Content = option.NewNullableString(err.Error()) // I hope this doesnt create error
 			}
 		} else if action[0] == "ban_user" {
-			err := BanUser(action[1], common.Config.AdminToken)
+			
+			banDuration, _ := strconv.ParseInt(data.Data.Values[0], 10, 32)
+
+			err := BanUser(action[1], common.Config.AdminToken, int32(banDuration))
 			if err == nil {
-				response.Data.Content = option.NewNullableString("Successfully banned user with id " + action[1])
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days",action[1],int32(banDuration))	)
 			} else {
 				response.Data.Content = option.NewNullableString(err.Error())
 			}
+			response.Type = 7
+
+			response.Data.Components = &discord.ContainerComponents{}
 		}
 	}
 	if response.Data.Content.Val != "" {

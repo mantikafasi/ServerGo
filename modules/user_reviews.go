@@ -124,7 +124,7 @@ func AddReview(userID Snowflake, token, comment string, reviewtype int32) (strin
 	}
 
 	if user.BanEndDate.After(time.Now()) {
-		return "", errors.New("You have been banned from ReviewDB until " + user.BanEndDate.Format("2006-01-02 15:04:05"))
+		return "", errors.New("You have been banned from ReviewDB until " + user.BanEndDate.Format("2006-01-02 15:04:05") + "UTC")
 	}
 
 	count, _ := GetReviewCountInLastHour(senderUserID)
@@ -294,7 +294,7 @@ func ReportReview(reviewID int32, token string) error {
 						Type:     2,
 						Label:    "Ban User",
 						Style:    4,
-						CustomID: fmt.Sprintf("ban_select"), //string(reportedUser.DiscordID)
+						CustomID: fmt.Sprintf("ban_select:" + reportedUser.DiscordID), //string(reportedUser.DiscordID)
 						Emoji: WebhookEmoji{
 							Name:     "banned",
 							ID:       "590237837299941382",
@@ -480,7 +480,7 @@ func GetLastReviewID(userID string) int32 {
 	return review.ID
 }
 
-func BanUser(discordid string, token string) error {
+func BanUser(discordid string, token string, banDuration int32) error {
 	users := []database.URUser{}
 
 	if !IsUserAdmin(GetIDWithToken(token)) && token != common.Config.AdminToken {
@@ -493,10 +493,16 @@ func BanUser(discordid string, token string) error {
 		if users[user].UserType == 1 {
 			return errors.New("You can't ban an admin")
 		}
-		users[user].UserType = -1
+		if users[user].WarningCount >= 3 {
+			_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("type = -1").Exec(context.Background())
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 	}
 
-	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("type = -1").Exec(context.Background())
+	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("ban_end_date = ?", time.Now().AddDate(0, 0, int(banDuration))).Set("warning_count = warning_count + 1").Exec(context.Background())
 	//_, err := database.DB.NewUpdate().Model(&users).Where("discordid = ?", discordid).Exec(context.Background())
 	if err != nil {
 		return err
