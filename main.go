@@ -21,7 +21,7 @@ import (
 )
 
 type Cors struct {
-	handler *http.ServeMux
+	handler *chi.Mux
 }
 
 func (c *Cors) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +40,8 @@ var TotalRequestCounter = prometheus.NewCounter(prometheus.CounterOpts{
 
 func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 
-	metric := strings.Replace(pattern, "/", "", -1)
+	metric := strings.NewReplacer("{", "", "}", "", "/", "").Replace(pattern)
+	
 	if metric == "" {
 		metric = "root"
 	}
@@ -136,7 +137,6 @@ func main() {
 	mux.HandleFunc("/api/reviewdb/users/{discordid}/reviews", routes.HandleReviews)
 
 	mux.HandleFunc("/api/reviewdb/reports", routes.ReportReview)
-	
 
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")

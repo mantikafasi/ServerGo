@@ -169,7 +169,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 	} else {
 		userIDString = r.URL.Query().Get("discordid")
 	}
-	
+
 	userID, _ := strconv.ParseInt(userIDString, 10, 64)
 	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
 	flags := int32(flags64)
@@ -199,7 +199,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		response.Success = false
-		response.Message = "An error occurred"
+		response.Message = err.Error()
 		common.SendStructResponse(w, response)
 		return
 	}
