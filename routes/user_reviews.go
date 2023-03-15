@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-chi/chi"
 	"golang.org/x/exp/slices"
 )
 
@@ -161,10 +162,16 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 		Reviews []modules.UserReview `json:"reviews"`
 	}
 
+	var userID int64
+	if r.URL.Query().Get("discordid") == "" {
+		userID = chi.URLParam(r, "discordid")
+	} else {
+		userID, _ = strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
+	}
+
 	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
 	flags := int32(flags64)
 
-	userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 	reviews, err := modules.GetReviews(userID)
 	response := ReviewResponse{}
 

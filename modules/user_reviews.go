@@ -503,7 +503,6 @@ func BanUser(discordid string, token string, banDuration int32) error {
 	}
 
 	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("ban_end_date = ?", time.Now().AddDate(0, 0, int(banDuration))).Set("warning_count = warning_count + 1").Exec(context.Background())
-	//_, err := database.DB.NewUpdate().Model(&users).Where("discordid = ?", discordid).Exec(context.Background())
 	if err != nil {
 		return err
 	}

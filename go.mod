@@ -14,6 +14,7 @@ require (
 
 require (
 	github.com/fatih/color v1.14.1 // indirect
+	github.com/go-chi/chi/v5 v5.0.8 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 )
@@ -24,6 +25,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/diamondburned/arikawa v1.3.14 // indirect
 	github.com/diamondburned/arikawa/v3 v3.2.0
+	github.com/go-chi/chi v1.5.4
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/gorilla/schema v1.2.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect

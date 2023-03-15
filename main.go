@@ -15,6 +15,7 @@ import (
 	"server-go/modules"
 	"server-go/routes"
 
+	"github.com/go-chi/chi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -98,7 +99,7 @@ func main() {
 	prometheus.MustRegister(URUserCounter)
 	prometheus.MustRegister(TotalRequestCounter)
 
-	mux := &Cors{http.NewServeMux()}
+	mux := &Cors{chi.NewRouter()}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "artgallery/index.html")
@@ -131,6 +132,11 @@ func main() {
 	mux.HandleFunc("/api/reviewdb/auth", routes.ReviewDBAuth)
 
 	mux.HandleFunc("/api/reviewdb/report", routes.ReportReview)
+
+	mux.HandleFunc("/api/reviewdb/users/{discordid}/reviews", routes.HandleReviews)
+
+	mux.HandleFunc("/api/reviewdb/reports", routes.ReportReview)
+	
 
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
