@@ -54,7 +54,7 @@ var VoteStupidity = func(w http.ResponseWriter, r *http.Request) {
 	var data modules.SDB_RequestData
 	json.NewDecoder(r.Body).Decode(&data)
 
-	res := modules.VoteStupidity(data.DiscordID, data.Token, data.Stupidity)
+	res := modules.VoteStupidity(data.DiscordID, data.Token, data.Stupidity, data.SenderDiscordID)
 
 	io.WriteString(w, res)
 }

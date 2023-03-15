@@ -11,9 +11,10 @@ import (
 )
 
 type SDB_RequestData struct {
-	DiscordID int64  `json:"discordid"`
-	Token     string `json:"token"`
-	Stupidity int32  `json:"stupidity"`
+	DiscordID       int64  `json:"discordid"`
+	Token           string `json:"token"`
+	Stupidity       int32  `json:"stupidity"`
+	SenderDiscordID string `json:"senderdiscordid"`
 }
 
 func CalculateHash(token string) string {
@@ -63,8 +64,13 @@ func GetDiscordIDWithToken(token string) string {
 	return user.DiscordID
 }
 
-func VoteStupidity(discordID int64, token string, stupidity int32) string {
-	senderID := GetDiscordIDWithToken(token)
+func VoteStupidity(discordID int64, token string, stupidity int32, senderDiscordID string) string {
+	var senderID string
+	if token == common.Config.StupidityBotToken {
+		senderID = senderDiscordID
+	} else {
+		senderID = GetDiscordIDWithToken(token)
+	}
 
 	stupit := &database.StupitStat{DiscordID: discordID, Stupidity: stupidity, SenderID: senderID}
 

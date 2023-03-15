@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"github.com/TwiN/go-away"
+
+	goaway "github.com/TwiN/go-away"
 )
 
 type ConfigStr struct {
@@ -19,9 +20,11 @@ type ConfigStr struct {
 	BotToken            string    `json:"bot_token"`
 	DiscordWebhook      string    `json:"discord_webhook"`
 	AdminToken          string    `json:"admin_token"`
+	StupidityBotToken   string    `json:"stupidity_bot_token"`
 }
 
 var ProfanityDetector *goaway.ProfanityDetector
+
 type ConfigDB struct {
 	IP       string `json:"ip"`
 	User     string `json:"user"`
@@ -57,5 +60,5 @@ func init() {
 		fmt.Println(er3)
 	}
 	json.NewDecoder(f3).Decode(&profaneWords)
-	ProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(profaneWords,nil,nil)
+	ProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(profaneWords, nil, nil)
 }
