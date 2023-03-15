@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"server-go/modules"
 	"time"
 
 	"github.com/uptrace/bun"
@@ -38,26 +37,38 @@ type UserReview struct {
 	TimestampStr  time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 	Timestamp     int64     `bun:"-" json:"timestamp"`
 
-	User            *URUser     `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
-	SenderDiscordID string      `bun:"-" json:"senderdiscordid"`
-	SenderUsername  string      `bun:"-" json:"username"`
-	ProfilePhoto    string      `bun:"-" json:"profile_photo"`
-	Badges          []UserBadge `bun:"-" json:"badges"`
+	User            *URUser           `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
+	SenderDiscordID string            `bun:"-" json:"senderdiscordid"`
+	SenderUsername  string            `bun:"-" json:"username"`
+	ProfilePhoto    string            `bun:"-" json:"profile_photo"`
+	Badges          []UserBadgeLegacy `bun:"-" json:"badges"`
+}
+
+type UserBadge struct {
+	bun.BaseModel `bun:"table:userbadges"`
+
+	ID               int32  `bun:"id,pk,autoincrement" json:"-"`
+	DiscordID        string `bun:"discordid,type:numeric" json:"-"`
+	BadgeName        string `bun:"badge_name" json:"name"`
+	BadgeIcon        string `bun:"badge_icon" json:"icon"`
+	RedirectURL      string `bun:"redirect_url" json:"redirectURL"`
+	BadgeType        int32  `bun:"badge_type" json:"type"`
+	BadgeDescription string `bun:"badge_description" json:"description"`
 }
 
 type URUser struct {
 	bun.BaseModel `bun:"table:ur_users"`
 
-	ID           int32               `bun:"id,pk,autoincrement" json:"ID"`
-	DiscordID    string              `bun:"discordid,type:numeric" json:"discordID"`
-	Token        string              `bun:"token" json:"-"`
-	Username     string              `bun:"username" json:"username"`
-	UserType     int32               `bun:"column:type" json:"-"`
-	ProfilePhoto string              `bun:"profile_photo" json:"profilePhoto"`
-	ClientMod    string              `bun:"client_mod" json:"clientMod"`
-	WarningCount int32               `bun:"warning_count" json:"warningCount"`
-	BanEndDate   time.Time           `bun:"ban_end_date" json:"banEndDate"`
-	Badges       []modules.UserBadge `bun:"-" json:"badges"`
+	ID           int32       `bun:"id,pk,autoincrement" json:"ID"`
+	DiscordID    string      `bun:"discordid,type:numeric" json:"discordID"`
+	Token        string      `bun:"token" json:"-"`
+	Username     string      `bun:"username" json:"username"`
+	UserType     int32       `bun:"column:type" json:"-"`
+	ProfilePhoto string      `bun:"profile_photo" json:"profilePhoto"`
+	ClientMod    string      `bun:"client_mod" json:"clientMod"`
+	WarningCount int32       `bun:"warning_count" json:"warningCount"`
+	BanEndDate   time.Time   `bun:"ban_end_date" json:"banEndDate"`
+	Badges       []UserBadge `bun:"-" json:"badges"`
 }
 
 type AdminUser struct {
@@ -75,7 +86,7 @@ type ReviewReport struct {
 	ReporterID int32 `bun:"reporterid"`
 }
 
-type UserBadge struct {
+type UserBadgeLegacy struct {
 	bun.BaseModel `bun:"table:userbadges"`
 
 	ID               int32  `bun:"id,pk,autoincrement" json:"-"`
@@ -108,7 +119,7 @@ func createSchema() error {
 		(*UserReview)(nil),
 		(*URUser)(nil),
 		(*ReviewReport)(nil),
-		(*UserBadge)(nil),
+		(*UserBadgeLegacy)(nil),
 		(*ActionLog)(nil),
 	}
 

@@ -26,11 +26,11 @@ type ReportData struct {
 }
 
 type Sender struct {
-	ID           int32       `json:"id"`
-	DiscordID    string      `json:"discordID"`
-	Username     string      `json:"username"`
-	ProfilePhoto string      `json:"profilePhoto"`
-	Badges       []UserBadge `json:"badges"`
+	ID           int32                `json:"id"`
+	DiscordID    string               `json:"discordID"`
+	Username     string               `json:"username"`
+	ProfilePhoto string               `json:"profilePhoto"`
+	Badges       []database.UserBadge `json:"badges"`
 }
 
 type UserReview struct {
@@ -49,18 +49,6 @@ type UserReview struct {
 	SenderUserID int32            `bun:"senderuserid" json:"-"`
 }
 
-type UserBadge struct {
-	bun.BaseModel `bun:"table:userbadges"`
-
-	ID               int32  `bun:"id,pk,autoincrement" json:"-"`
-	DiscordID        string `bun:"discordid,type:numeric" json:"-"`
-	BadgeName        string `bun:"badge_name" json:"name"`
-	BadgeIcon        string `bun:"badge_icon" json:"icon"`
-	RedirectURL      string `bun:"redirect_url" json:"redirectURL"`
-	BadgeType        int32  `bun:"badge_type" json:"type"`
-	BadgeDescription string `bun:"badge_description" json:"description"`
-}
-
 func GetReviews(userID int64) ([]UserReview, error) {
 	var reviews []UserReview
 
@@ -71,9 +59,9 @@ func GetReviews(userID int64) ([]UserReview, error) {
 
 	for i, review := range reviews {
 		dbBadges := GetBadgesOfUser(review.User.DiscordID)
-		badges := make([]UserBadge, len(dbBadges))
+		badges := make([]database.UserBadge, len(dbBadges))
 		for i, b := range dbBadges {
-			badges[i] = UserBadge(b)
+			badges[i] = database.UserBadge(b)
 		}
 
 		if review.User != nil {
@@ -410,8 +398,8 @@ func DeleteReview(reviewID int32, token string) (err error) {
 	return errors.New("You are not allowed to delete this review")
 }
 
-func GetBadgesOfUser(discordid string) []database.UserBadge {
-	userBadges := []database.UserBadge{}
+func GetBadgesOfUser(discordid string) []database.UserBadgeLegacy {
+	userBadges := []database.UserBadgeLegacy{}
 
 	badges, _ := GetAllBadges()
 	for _, badge := range badges {
@@ -424,15 +412,15 @@ func GetBadgesOfUser(discordid string) []database.UserBadge {
 	return userBadges
 }
 
-func GetAllBadges() (badges []database.UserBadge, err error) {
+func GetAllBadges() (badges []database.UserBadgeLegacy, err error) {
 
 	cachedBadges, found := common.Cache.Get("badges")
 	if found {
-		badges = cachedBadges.([]database.UserBadge)
+		badges = cachedBadges.([]database.UserBadgeLegacy)
 		return
 	}
 
-	badges = []database.UserBadge{}
+	badges = []database.UserBadgeLegacy{}
 	err = database.DB.NewSelect().Model(&badges).Scan(context.Background(), &badges)
 
 	users := []database.URUser{}
@@ -441,7 +429,7 @@ func GetAllBadges() (badges []database.UserBadge, err error) {
 
 	for _, user := range users {
 		if user.UserType == 1 {
-			badges = append(badges, database.UserBadge{
+			badges = append(badges, database.UserBadgeLegacy{
 				DiscordID:        user.DiscordID,
 				BadgeName:        "Admin",
 				BadgeIcon:        "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
@@ -449,7 +437,7 @@ func GetAllBadges() (badges []database.UserBadge, err error) {
 				BadgeDescription: "This user is an admin of ReviewDB.",
 			})
 		} else {
-			badges = append(badges, database.UserBadge{
+			badges = append(badges, database.UserBadgeLegacy{
 				DiscordID:        user.DiscordID,
 				BadgeName:        "Banned",
 				BadgeIcon:        "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",

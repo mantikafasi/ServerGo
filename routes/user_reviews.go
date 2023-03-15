@@ -190,7 +190,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 			Comment:         "This user has opted out of ReviewDB. It means you cannot review this user.",
 			ReviewType:      3,
 			SenderDiscordID: "287555395151593473",
-			Badges:          []database.UserBadge{},
+			Badges:          []database.UserBadgeLegacy{},
 		}})
 		jsonReviews, _ := json.Marshal(reviews)
 
@@ -230,7 +230,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 				DiscordID:    "287555395151593473",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",
 				Username:     "Warning",
-				Badges:       []modules.UserBadge{},
+				Badges:       []database.UserBadge{},
 			},
 		}}, reviews...)
 	}
@@ -255,9 +255,9 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dbBadges := modules.GetBadgesOfUser(user.DiscordID)
-	badges := make([]modules.UserBadge, len(dbBadges))
+	badges := make([]database.UserBadge, len(dbBadges))
 	for i, b := range dbBadges {
-		badges[i] = modules.UserBadge(b)
+		badges[i] = database.UserBadge(b)
 	}
 
 	user.Badges = badges

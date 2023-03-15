@@ -137,7 +137,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 			ReviewType:      1,
 			SenderDiscordID: "287555395151593473",
 			SystemMessage:   true,
-			Badges:          []database.UserBadge{},
+			Badges:          []database.UserBadgeLegacy{},
 		}})
 		jsonReviews, _ := json.Marshal(reviews)
 
@@ -176,7 +176,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 			ReviewType:      1,
 			SenderDiscordID: "287555395151593473",
 			SystemMessage:   true,
-			Badges:          []database.UserBadge{},
+			Badges:          []database.UserBadgeLegacy{},
 		}}, reviews...)
 	}
 
