@@ -278,7 +278,7 @@ func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 	}
 	badges := make([]UserBadge, len(legacyBadges))
 	for i, b := range legacyBadges {
-		badges[i] = UserBadge{b, b.DiscordID}
+		badges[i] = UserBadge{database.UserBadge(b), b.DiscordID}
 	}
 	json.NewEncoder(w).Encode(badges)
 }
