@@ -267,7 +267,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 
 func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 	type UserBadge struct {
-		database.UserBadge
+		database.UserBadgeLegacy
 		DiscordID string `json:"discordid"`
 	}
 
@@ -278,7 +278,7 @@ func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 	}
 	badges := make([]UserBadge, len(legacyBadges))
 	for i, b := range legacyBadges {
-		badges[i] = UserBadge(b)
+		badges[i] = UserBadge{b, b.DiscordID}
 	}
 	json.NewEncoder(w).Encode(badges)
 }
