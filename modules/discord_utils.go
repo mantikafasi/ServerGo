@@ -88,20 +88,11 @@ func Interactions(data InteractionsData) (string, error) {
 			}
 		} else if action[0] == "ban_select" {
 
-			err := BanUser(action[1], common.Config.AdminToken)
-			if err == nil {
-				response.Data.Content = option.NewNullableString("Successfully banned user with id " + action[1])
-			} else {
-				response.Data.Content = option.NewNullableString(err.Error())
-			}
-
-			component := WebhookComponent{
-				Type: 1,
-				Components: []WebhookComponent{
-					{
-						Type: 3,
+			component := discord.ContainerComponents{
+				&discord.ActionRowComponent{
+					&discord.StringSelectComponent{
 						CustomID: "ban_user",
-						Options: []ComponentOption{
+						Options: []discord.SelectOption{
 							{
 								Label: "1 day",
 								Value: "1",
@@ -109,7 +100,7 @@ func Interactions(data InteractionsData) (string, error) {
 							{
 								Label: "3 days",
 								Value: "3",
-							},		
+							},
 							{
 								Label: "1 week",
 								Value: "7",
@@ -119,17 +110,13 @@ func Interactions(data InteractionsData) (string, error) {
 								Value: "30",
 							},
 						},
-						
 					},
 				},
-				Style: 1,
 			}
 
-			type Response struct {
-				Components []WebhookComponent `json:"components"`
-			}
-
-			UpdateWebhook(data.Message.ID, Response{Components: []WebhookComponent{component}})
+			response.Data.Content = option.NewNullableString("Select ban duration")
+			response.Data.Components = &component
+			//UpdateWebhook(data.Message.ID, Response{Components: []WebhookComponent{component}})
 
 		} else if action[0] == "delete_and_ban" {
 			err := DeleteReview(int32(firstVariable), common.Config.AdminToken)
@@ -140,7 +127,12 @@ func Interactions(data InteractionsData) (string, error) {
 				response.Data.Content = option.NewNullableString(err.Error() + err2.Error()) // I hope this doesnt create error
 			}
 		} else if action[0] == "ban_user" {
-			
+			err := BanUser(action[1], common.Config.AdminToken)
+			if err == nil {
+				response.Data.Content = option.NewNullableString("Successfully banned user with id " + action[1])
+			} else {
+				response.Data.Content = option.NewNullableString(err.Error())
+			}
 		}
 	}
 	if response.Data.Content.Val != "" {
@@ -155,7 +147,7 @@ func Interactions(data InteractionsData) (string, error) {
 
 func UpdateWebhook(messageId string, payload interface{}) {
 	jsonPayload, _ := json.Marshal(payload)
-	req,_ := http.NewRequest(http.MethodPatch, common.Config.DiscordWebhook+"/messages/"+messageId, strings.NewReader(string(jsonPayload)))
+	req, _ := http.NewRequest(http.MethodPatch, common.Config.DiscordWebhook+"/messages/"+messageId, strings.NewReader(string(jsonPayload)))
 	req.Header.Set("Content-Type", "application/json")
 	http.DefaultClient.Do(req)
 }
