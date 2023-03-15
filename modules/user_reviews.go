@@ -291,7 +291,7 @@ func ReportReview(reviewID int32, token string) error {
 						},
 					},
 					{
-						Type:     3,
+						Type:     2,
 						Label:    "Ban User",
 						Style:    4,
 						CustomID: fmt.Sprintf("ban_select"), //string(reportedUser.DiscordID)
