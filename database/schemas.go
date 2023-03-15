@@ -47,15 +47,15 @@ type UserReview struct {
 type URUser struct {
 	bun.BaseModel `bun:"table:ur_users"`
 
-	ID           int32       `bun:"id,pk,autoincrement" json:"id"`
-	DiscordID    string      `bun:"discordid,type:numeric" json:"discordid"`
+	ID           int32       `bun:"id,pk,autoincrement" json:"ID"`
+	DiscordID    string      `bun:"discordid,type:numeric" json:"discordID"`
 	Token        string      `bun:"token" json:"-"`
 	Username     string      `bun:"username" json:"username"`
 	UserType     int32       `bun:"column:type" json:"-"`
-	ProfilePhoto string      `bun:"profile_photo" json:"profile_photo"`
-	ClientMod    string      `bun:"client_mod" json:"client_mod"`
-	WarningCount int32       `bun:"warning_count" json:"warning_count"`
-	BanEndDate   time.Time   `bun:"ban_end_date" json:"ban_end_date"`
+	ProfilePhoto string      `bun:"profile_photo" json:"profilePhoto"`
+	ClientMod    string      `bun:"client_mod" json:"clientMod"`
+	WarningCount int32       `bun:"warning_count" json:"warningCount"`
+	BanEndDate   time.Time   `bun:"ban_end_date" json:"banEndDate"`
 	Badges       []UserBadge `bun:"-" json:"badges"`
 }
 
