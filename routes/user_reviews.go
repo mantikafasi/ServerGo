@@ -266,14 +266,19 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetAllBadges(w http.ResponseWriter, r *http.Request) {
-	legacyBadges,err := modules.GetAllBadges()
+	type UserBadge struct {
+		database.UserBadge
+		DiscordID string `json:"discordid"`
+	}
+
+	legacyBadges, err := modules.GetAllBadges()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	badges := make([]database.UserBadge, len(legacyBadges))
+	badges := make([]UserBadge, len(legacyBadges))
 	for i, b := range legacyBadges {
-		badges[i] = database.UserBadge(b)
+		badges[i] = UserBadge(b)
 	}
 	json.NewEncoder(w).Encode(badges)
 }
