@@ -209,7 +209,7 @@ var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && flags&AdFlag == AdFlag {
+	if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && !(flags&AdFlag == AdFlag) {
 		reviews = append([]modules.UserReview{{
 			Comment:    "If you like the plugins I make, please consider supporting me at: \nhttps://github.com/sponsors/mantikafasi\n You can disable this in settings",
 			ReviewType: 2,
