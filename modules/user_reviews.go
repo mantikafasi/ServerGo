@@ -105,10 +105,13 @@ func GetReviewsLegacy(userID int64) ([]database.UserReview, error) {
 
 func GetDBUserViaDiscordID(discordID string) (*database.URUser, error) {
 	var user database.URUser
-
-	err := database.DB.NewSelect().Model(&user).Where("discordid = ?", discordID).Scan(context.Background())
+	count, err := database.DB.NewSelect().Model(&user).Where("discordid = ?", discordID).ScanAndCount(context.Background())
 	if err != nil {
 		return nil, err
+	}
+
+	if count == 0 {
+		return nil, nil
 	}
 
 	return &user, nil
@@ -124,7 +127,7 @@ func AddReview(data UR_RequestData) (string, error) {
 		}
 		senderUserID = user.ID
 
-		if user.ID == 0 {
+		if user == nil {
 			err, senderUserID = CreateUserViaBot(data.Sender.Username, data.Sender.ProfilePhoto, data.Sender.DiscordID)
 			if err != nil {
 				return "", err
@@ -577,6 +580,7 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (e
 	user.ClientMod = "discordbot"
 	user.ProfilePhoto = profilePhoto
 	user.Token = "0"
+
 	_, err := database.DB.NewInsert().Model(&user).Exec(context.Background())
 	if err != nil {
 		return err, 0
