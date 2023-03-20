@@ -41,7 +41,7 @@ var AddUserReview = func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := modules.AddReview(data.DiscordID, data.Token, data.Comment, int32(data.ReviewType))
+	res, err := modules.AddReview(data)
 	if err != nil {
 		println(err.Error())
 	}

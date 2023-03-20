@@ -18,6 +18,11 @@ type UR_RequestData struct {
 	Token      string    `json:"token"`
 	Comment    string    `json:"comment"`
 	ReviewType int       `json:"reviewtype"`
+	Sender     struct {
+		Username     string `json:"username"`
+		ProfilePhoto string `json:"profile_photo"`
+		DiscordID    string `json:"discordid"`
+	} `json:"user"`
 }
 
 type ReportData struct {
@@ -98,9 +103,35 @@ func GetReviewsLegacy(userID int64) ([]database.UserReview, error) {
 	return reviews, nil
 }
 
-func AddReview(userID Snowflake, token, comment string, reviewtype int32) (string, error) {
+func GetDBUserViaDiscordID(discordID Snowflake) (*database.URUser, error) {
+	var user database.URUser
 
-	senderUserID := GetIDWithToken(token)
+	err := database.DB.NewSelect().Model(&user).Where("discordid = ?", discordID).Scan(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func AddReview(data UR_RequestData) (string, error) {
+	var senderUserID int32
+	if data.Token == common.Config.StupidityBotToken {
+
+		user, err := GetDBUserViaDiscordID(data.DiscordID) //todo fix
+		if err != nil {
+			return "", err
+		}
+
+		if user == nil {
+			err, senderUserID = CreateUserViaBot(data.Sender.Username, data.Sender.ProfilePhoto, data.Sender.DiscordID)
+			if err != nil {
+				return "", err
+			}
+		}
+	} else {
+		senderUserID = GetIDWithToken(data.Token)
+	}
 
 	if senderUserID == 0 {
 		return "", errors.New("invalid token")
@@ -120,19 +151,20 @@ func AddReview(userID Snowflake, token, comment string, reviewtype int32) (strin
 		return "", errors.New("You are reviewing too much")
 	}
 
-	if common.ProfanityDetector.IsProfane(comment) {
+	if common.ProfanityDetector.IsProfane(data.Comment) {
 		return "", errors.New("Your review contains profanity")
 	}
 
 	review := &database.UserReview{
-		UserID:       int64(userID),
+
+		UserID:       int64(data.DiscordID),
 		SenderUserID: senderUserID,
-		Comment:      comment,
+		Comment:      data.Comment,
 		Star:         -1,
-		ReviewType:   reviewtype,
+		ReviewType:   int32(data.ReviewType),
 	}
 
-	res, err := database.DB.NewUpdate().Where("userid = ? AND senderuserid = ?", userID, senderUserID).Model(review).Exec(context.Background())
+	res, err := database.DB.NewUpdate().Where("userid = ? AND senderuserid = ?", data.DiscordID, senderUserID).Model(review).Exec(context.Background())
 	if err != nil {
 
 		return "An Error occurred while updating your review", err
@@ -532,4 +564,24 @@ func LogAction(action string, review database.UserReview, userid int32) {
 	if err != nil {
 		fmt.Println(err)
 	}
+}
+
+func CreateUserViaBot(discordid string, username string, profilePhoto string) (error, int32) {
+	user := database.URUser{}
+
+	user.DiscordID = discordid
+	user.Username = username
+	user.UserType = 0
+	user.WarningCount = 0
+	user.ClientMod = "discordbot"
+	user.ProfilePhoto = profilePhoto
+
+	_, err := database.DB.NewInsert().Model(&user).Exec(context.Background())
+	if err != nil {
+		return err, 0
+	}
+
+	database.DB.NewSelect().Model(&user).Where("discordid = ?", discordid).Scan(context.Background(), &user)
+
+	return nil, user.ID
 }
