@@ -103,7 +103,7 @@ func GetReviewsLegacy(userID int64) ([]database.UserReview, error) {
 	return reviews, nil
 }
 
-func GetDBUserViaDiscordID(discordID Snowflake) (*database.URUser, error) {
+func GetDBUserViaDiscordID(discordID string) (*database.URUser, error) {
 	var user database.URUser
 
 	err := database.DB.NewSelect().Model(&user).Where("discordid = ?", discordID).Scan(context.Background())
@@ -118,12 +118,12 @@ func AddReview(data UR_RequestData) (string, error) {
 	var senderUserID int32
 	if data.Token == common.Config.StupidityBotToken {
 
-		user, err := GetDBUserViaDiscordID(data.DiscordID) //todo fix
+		user, err := GetDBUserViaDiscordID(data.Sender.DiscordID) //todo fix
 		if err != nil {
 			return "", err
 		}
 
-		if user == nil {
+		if user.ID == 0 {
 			err, senderUserID = CreateUserViaBot(data.Sender.Username, data.Sender.ProfilePhoto, data.Sender.DiscordID)
 			if err != nil {
 				return "", err
