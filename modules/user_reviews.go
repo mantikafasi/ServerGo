@@ -144,6 +144,11 @@ func AddReview(data UR_RequestData) (string, error) {
 	}
 
 	user, _ := GetDBUserViaID(senderUserID)
+
+	if !(data.ReviewType == 0 || data.ReviewType == 1) && user.UserType != 1 {
+		return "", errors.New("Invalid review type")
+	}
+
 	if user.UserType == -1 || user.WarningCount > 2 {
 		return "", errors.New("You have been banned from ReviewDB")
 	}
