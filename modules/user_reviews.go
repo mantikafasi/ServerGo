@@ -105,13 +105,13 @@ func GetReviewsLegacy(userID int64) ([]database.UserReview, error) {
 
 func GetDBUserViaDiscordID(discordID string) (*database.URUser, error) {
 	var user database.URUser
-	count, err := database.DB.NewSelect().Model(&user).Where("discordid = ?", discordID).ScanAndCount(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	err := database.DB.NewSelect().Model(&user).Where("discordid = ?", discordID).Scan(context.Background())
 
-	if count == 0 {
-		return nil, nil
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" { //SOMEONE TELL ME BETTER WAY TO DO THIS
+			return nil, nil
+		}
+		return nil, err
 	}
 
 	return &user, nil
@@ -121,18 +121,20 @@ func AddReview(data UR_RequestData) (string, error) {
 	var senderUserID int32
 	if data.Token == common.Config.StupidityBotToken {
 
-		user, err := GetDBUserViaDiscordID(data.Sender.DiscordID) //todo fix
+		user, err := GetDBUserViaDiscordID(data.Sender.DiscordID)
 		if err != nil {
 			return "", err
 		}
-		senderUserID = user.ID
 
 		if user == nil {
 			err, senderUserID = CreateUserViaBot(data.Sender.Username, data.Sender.ProfilePhoto, data.Sender.DiscordID)
 			if err != nil {
 				return "", err
 			}
+		} else {
+			senderUserID = user.ID
 		}
+
 	} else {
 		senderUserID = GetIDWithToken(data.Token)
 	}
