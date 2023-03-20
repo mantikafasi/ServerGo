@@ -22,7 +22,7 @@ type UR_RequestData struct {
 		Username     string `json:"username"`
 		ProfilePhoto string `json:"profile_photo"`
 		DiscordID    string `json:"discordid"`
-	} `json:"user"`
+	} `json:"sender"`
 }
 
 type ReportData struct {
