@@ -581,7 +581,7 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (e
 	user.WarningCount = 0
 	user.ClientMod = "discordbot"
 	user.ProfilePhoto = profilePhoto
-	user.Token = "0"
+	user.Token = discordid
 
 	_, err := database.DB.NewInsert().Model(&user).Exec(context.Background())
 	if err != nil {
