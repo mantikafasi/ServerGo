@@ -127,7 +127,7 @@ func AddReview(data UR_RequestData) (string, error) {
 		}
 
 		if user == nil {
-			err, senderUserID = CreateUserViaBot(data.Sender.Username, data.Sender.ProfilePhoto, data.Sender.DiscordID)
+			err, senderUserID = CreateUserViaBot(data.Sender.DiscordID, data.Sender.Username, data.Sender.ProfilePhoto)
 			if err != nil {
 				return "", err
 			}
