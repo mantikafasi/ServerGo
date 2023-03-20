@@ -40,7 +40,7 @@ var TotalRequestCounter = prometheus.NewCounter(prometheus.CounterOpts{
 
 func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 
-	metric := strings.NewReplacer("{", "", "}", "", "/", "").Replace(pattern)
+	metric := strings.NewReplacer("{", "", "}", "", "/", "","*","").Replace(pattern)
 
 	if metric == "" {
 		metric = "root"
@@ -102,13 +102,16 @@ func main() {
 
 	mux := &Cors{chi.NewRouter()}
 
+
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "artgallery/index.html")
 	})
+	
+	mux.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("artgallery/static"))))
 
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("artgallery/static"))))
 
-	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("artgallery/assets"))))
+	mux.Handle("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir("artgallery/assets"))))
 
 	mux.HandleFunc("/interactions", routes.HandleInteractions)
 

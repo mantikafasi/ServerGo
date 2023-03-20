@@ -26,7 +26,7 @@ type ReviewDBAuthResponse struct {
 	Token   string `json:"token"`
 }
 
-var AddUserReview = func(w http.ResponseWriter, r *http.Request) {
+func AddUserReview(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Response
 		Updated bool `json:"updated"`
@@ -73,7 +73,7 @@ var AddUserReview = func(w http.ResponseWriter, r *http.Request) {
 
 var ClientMods []string = []string{"aliucord", "betterdiscord", "powercordv2", "replugged", "enmity", "vencord", "vendetta"}
 
-var ReviewDBAuth = func(w http.ResponseWriter, r *http.Request) {
+func ReviewDBAuth(w http.ResponseWriter, r *http.Request) {
 	clientmod := r.URL.Query().Get("clientMod")
 	if clientmod == "" {
 		clientmod = "aliucord"
@@ -103,7 +103,7 @@ var ReviewDBAuth = func(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(response))
 }
 
-var ReportReview = func(w http.ResponseWriter, r *http.Request) {
+func ReportReview(w http.ResponseWriter, r *http.Request) {
 	var data modules.ReportData
 	json.NewDecoder(r.Body).Decode(&data)
 
@@ -126,7 +126,7 @@ var ReportReview = func(w http.ResponseWriter, r *http.Request) {
 	common.SendStructResponse(w, response)
 }
 
-var DeleteReview = func(w http.ResponseWriter, r *http.Request) {
+func DeleteReview(w http.ResponseWriter, r *http.Request) {
 	var data modules.ReportData //both reportdata and deletedata are same
 	json.NewDecoder(r.Body).Decode(&data)
 
@@ -161,7 +161,7 @@ const (
 	WarningFlag = 0b00000010
 )
 
-var GetReviews = func(w http.ResponseWriter, r *http.Request) {
+func GetReviews(w http.ResponseWriter, r *http.Request) {
 	type ReviewResponse struct {
 		Response
 		Reviews []modules.UserReview `json:"reviews"`
