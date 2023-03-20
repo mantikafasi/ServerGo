@@ -576,13 +576,13 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (e
 	user.WarningCount = 0
 	user.ClientMod = "discordbot"
 	user.ProfilePhoto = profilePhoto
-
+	user.Token = "0"
 	_, err := database.DB.NewInsert().Model(&user).Exec(context.Background())
 	if err != nil {
 		return err, 0
 	}
 
-	database.DB.NewSelect().Model(&user).Where("discordid = ?", discordid).Scan(context.Background(), &user)
+	database.DB.NewSelect().Model(&user).Where("discordid = ?", discordid).Limit(1).Scan(context.Background(), &user)
 
 	return nil, user.ID
 }
