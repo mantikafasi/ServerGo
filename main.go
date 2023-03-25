@@ -20,16 +20,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-type Cors struct {
-	handler *chi.Mux
-}
-
-func (c *Cors) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-
-	c.handler.ServeHTTP(w, r)
+type Mux struct {
+	*chi.Mux
 }
 
 var Counters = map[string]prometheus.Counter{}
@@ -37,30 +29,6 @@ var TotalRequestCounter = prometheus.NewCounter(prometheus.CounterOpts{
 	Name: "total_request",
 	Help: "Total request count",
 })
-
-func (c *Cors) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
-
-	metric := strings.NewReplacer("{", "", "}", "", "/", "","*","").Replace(pattern)
-
-	if metric == "" {
-		metric = "root"
-	}
-
-	if _, exists := Counters[metric]; !exists {
-		Counters[metric] = prometheus.NewCounter(prometheus.CounterOpts{
-			Name: metric,
-			Help: "Number of requests on " + pattern,
-		})
-		prometheus.MustRegister(Counters[metric])
-	}
-
-	c.handler.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-		TotalRequestCounter.Inc()
-		Counters[metric].Inc()
-		handler(w, r)
-	})
-}
-
 var URUserCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
 	Name: "user_count",
 	Help: "Count of user reviews users",
@@ -87,8 +55,33 @@ var ReviewCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
 	return float64(count)
 })
 
-func (c *Cors) Handle(pattern string, handler http.Handler) {
-	c.handler.Handle(pattern, handler)
+func (c *Mux) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+
+	metric := strings.NewReplacer("{", "", "}", "", "/", "", "*", "").Replace(pattern)
+
+	if metric == "" {
+		metric = "root"
+	}
+
+	if _, exists := Counters[metric]; !exists {
+		Counters[metric] = prometheus.NewCounter(prometheus.CounterOpts{
+			Name: metric,
+			Help: "Number of requests on " + pattern,
+		})
+		prometheus.MustRegister(Counters[metric])
+	}
+	Counters[metric].Inc()
+
+	c.Handle(pattern, http.HandlerFunc(handler))
+}
+
+func cors(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		handler.ServeHTTP(w, r)
+	})
 }
 
 func main() {
@@ -100,16 +93,15 @@ func main() {
 	prometheus.MustRegister(URUserCounter)
 	prometheus.MustRegister(TotalRequestCounter)
 
-	mux := &Cors{chi.NewRouter()}
+	mux := Mux{chi.NewRouter()}
 
-
+	mux.Use(cors)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "artgallery/index.html")
 	})
-	
-	mux.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("artgallery/static"))))
 
+	mux.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("artgallery/static"))))
 
 	mux.Handle("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir("artgallery/assets"))))
 
@@ -139,7 +131,11 @@ func main() {
 
 	mux.HandleFunc("/api/reviewdb/report", routes.ReportReview)
 
-	mux.HandleFunc("/api/reviewdb/users/{discordid}/reviews", routes.HandleReviews)
+	mux.Route("/api/reviewdb/users/{discordid}/reviews", func(r chi.Router) {
+		r.Get("/", routes.GetReviews)
+		r.Post("/", routes.AddUserReview)
+		r.Delete("/", routes.DeleteReview)
+	})
 
 	mux.HandleFunc("/api/reviewdb/badges", routes.GetAllBadges)
 
