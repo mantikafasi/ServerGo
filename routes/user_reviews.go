@@ -40,7 +40,7 @@ func AddUserReview(w http.ResponseWriter, r *http.Request) {
 		data.DiscordID = modules.Snowflake(discordid)
 	}
 
-	if len(data.Comment) > 1000 {
+	if len(data.Comment) > 40730 {
 		response.Message = "Comment Too Long"
 	} else if len(strings.TrimSpace(data.Comment)) == 0 {
 		response.Message = "Write Something Guh"
