@@ -23,6 +23,7 @@ type ConfigStr struct {
 	StupidityBotToken   string    `json:"stupidity_bot_token"`
 }
 
+var LightProfanityDetector *goaway.ProfanityDetector
 var ProfanityDetector *goaway.ProfanityDetector
 
 type ConfigDB struct {
@@ -55,10 +56,20 @@ func init() {
 
 	var profaneWords []string
 
-	f3, er3 := os.Open("profanewordlist.json")
+	f3, er3 := os.Open("profanewords.json")
 	if er3 != nil {
 		fmt.Println(er3)
 	}
+	var lightProfaneWords []string
+
+	f4, er4 := os.Open("lightprofanewords.json")
+	if er4 != nil {
+		fmt.Println(er4)
+	}
+	
 	json.NewDecoder(f3).Decode(&profaneWords)
+	json.NewDecoder(f4).Decode(&lightProfaneWords)
+
 	ProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(profaneWords, nil, nil)
+	LightProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(lightProfaneWords, nil, nil)
 }

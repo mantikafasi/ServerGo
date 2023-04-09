@@ -162,8 +162,13 @@ func AddReview(data UR_RequestData) (string, error) {
 		return "", errors.New("You are reviewing too much")
 	}
 
-	if common.ProfanityDetector.IsProfane(data.Comment) {
+	if common.LightProfanityDetector.IsProfane(data.Comment) {
 		return "", errors.New("Your review contains profanity")
+	}
+	
+	if common.ProfanityDetector.IsProfane(data.Comment) {
+		BanUser(user.DiscordID, common.Config.AdminToken, 7)
+		return "", errors.New("Because of trying to post a profane review, you have been banned from ReviewDB for 1 week")
 	}
 
 	review := &database.UserReview{
