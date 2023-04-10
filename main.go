@@ -70,9 +70,13 @@ func (c *Mux) HandleFunc(pattern string, handler func(http.ResponseWriter, *http
 		})
 		prometheus.MustRegister(Counters[metric])
 	}
-	Counters[metric].Inc()
 
-	c.Handle(pattern, http.HandlerFunc(handler))
+	c.Mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+		TotalRequestCounter.Inc()
+		Counters[metric].Inc()
+
+		handler(w, r)
+	})
 }
 
 func cors(handler http.Handler) http.Handler {
@@ -133,11 +137,7 @@ func main() {
 
 	mux.HandleFunc("/api/reviewdb/report", routes.ReportReview)
 
-	mux.Route("/api/reviewdb/users/{discordid}/reviews", func(r chi.Router) {
-		r.Get("/", routes.GetReviews)
-		r.Post("/", routes.AddUserReview)
-		r.Delete("/", routes.DeleteReview)
-	})
+	mux.HandleFunc("/api/reviewdb/users/{discordid}/reviews", routes.HandleReviews)
 
 	mux.HandleFunc("/api/reviewdb/badges", routes.GetAllBadges)
 
