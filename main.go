@@ -141,6 +141,8 @@ func main() {
 
 	mux.HandleFunc("/api/reviewdb/reports", routes.ReportReview)
 
+	mux.HandleFunc("/api/reviewdb/reviews", routes.SearchReview)
+
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
 	})

@@ -26,12 +26,16 @@ type ReviewDBAuthResponse struct {
 	Token   string `json:"token"`
 }
 
+type ReviewResponse struct {
+	Response
+	Reviews []modules.UserReview `json:"reviews"`
+}
+
 func AddUserReview(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Response
 		Updated bool `json:"updated"`
 	}{}
-
 
 	var data modules.UR_RequestData
 	json.NewDecoder(r.Body).Decode(&data)
@@ -163,11 +167,6 @@ const (
 )
 
 func GetReviews(w http.ResponseWriter, r *http.Request) {
-	type ReviewResponse struct {
-		Response
-		Reviews []modules.UserReview `json:"reviews"`
-	}
-
 	var userIDString string
 
 	if r.URL.Query().Get("discordid") == "" {
@@ -303,4 +302,29 @@ var HandleReviews = func(w http.ResponseWriter, r *http.Request) {
 	case "REPORT":
 		ReportReview(w, r)
 	}
+}
+
+func SearchReview(w http.ResponseWriter, r *http.Request) {
+	type SearchRequestData struct {
+		Query string `json:"query"`
+		Token string `json:"token"`
+	}
+	response := ReviewResponse{}
+
+	var data SearchRequestData
+	json.NewDecoder(r.Body).Decode(&data)
+
+	reviews, err := modules.SearchReviews(data.Query,data.Token)
+	if err != nil {
+		response.Success = false
+		response.Message = err.Error()
+		common.SendStructResponse(w, response)
+		return
+	}
+
+	response.Success = true
+	response.Reviews = reviews
+	response.Message = "Success"
+
+	common.SendStructResponse(w, response)
 }

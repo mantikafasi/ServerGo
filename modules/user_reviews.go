@@ -117,6 +117,44 @@ func GetDBUserViaDiscordID(discordID string) (*database.URUser, error) {
 	return &user, nil
 }
 
+func SearchReviews(query string,token string) ([]UserReview, error) {
+	var reviews []UserReview
+
+	user,err := GetDBUserViaToken(token)
+	
+	if err != nil {
+		return nil, err
+	}
+	if user.UserType != 1 {
+		return nil, errors.New("You are not allowed to use this route")
+	}
+
+	err = database.DB.NewSelect().Model(&reviews).Relation("User").Where("comment LIKE ?", "%"+query+"%").OrderExpr("ID DESC").Limit(100).Scan(context.Background(), &reviews)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, review := range reviews {
+		dbBadges := GetBadgesOfUser(review.User.DiscordID)
+		badges := make([]database.UserBadge, len(dbBadges))
+		for i, b := range dbBadges {
+			badges[i] = database.UserBadge(b)
+		}
+
+		if review.User != nil {
+			reviews[i].Sender.DiscordID = review.User.DiscordID
+			reviews[i].Sender.ProfilePhoto = review.User.ProfilePhoto
+			reviews[i].Sender.Username = review.User.Username
+			reviews[i].Sender.ID = review.User.ID
+			reviews[i].Sender.Badges = badges
+		}
+		reviews[i].Timestamp = review.TimestampStr.Unix()
+	}
+
+	return reviews, nil
+}
+	
+
 func AddReview(data UR_RequestData) (string, error) {
 	var senderUserID int32
 	if data.Token == common.Config.StupidityBotToken {
