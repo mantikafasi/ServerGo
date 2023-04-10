@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"server-go/common"
 	"server-go/modules"
-	"strings"
+
+	"github.com/go-chi/chi"
 )
 
 var HandleInteractions = func(w http.ResponseWriter, r *http.Request) {
@@ -35,6 +36,6 @@ var HandleInteractions = func(w http.ResponseWriter, r *http.Request) {
 }
 
 var ReceiveToken = func(w http.ResponseWriter, r *http.Request) {
-	token := strings.TrimPrefix(r.URL.Path, "/receiveToken/")
+	token := chi.URLParam(r, "token")
 	io.WriteString(w, "You have successfully logged in! Your token is: "+token+"\n\n You can now close this window.")
 }

@@ -107,6 +107,8 @@ func main() {
 
 	mux.HandleFunc("/interactions", routes.HandleInteractions)
 
+	mux.HandleFunc("/receiveToken/{token}", routes.ReceiveToken)
+
 	//StupidityDB
 
 	mux.HandleFunc("/vote", routes.VoteStupidity)
