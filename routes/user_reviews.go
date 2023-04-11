@@ -196,6 +196,10 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			}, Comment: "This user has opted out of ReviewDB. It means you cannot review this user.",
 			ReviewType: 3,
 		}})
+		response.Reviews = reviews
+		response.Success = true
+		common.SendStructResponse(w, response)
+		return
 	} else {
 		reviews, err = modules.GetReviews(userID)
 	}
