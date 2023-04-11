@@ -185,7 +185,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	response := ReviewResponse{}
 
 	if slices.Contains(common.OptedOut, uint64(userID)) {
-		reviews := append([]modules.UserReview{{
+		reviews = append([]modules.UserReview{{
 			ID: 0,
 			Sender: modules.Sender{
 				ID:           0,
@@ -196,10 +196,6 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			}, Comment: "This user has opted out of ReviewDB. It means you cannot review this user.",
 			ReviewType: 3,
 		}})
-		jsonReviews, _ := json.Marshal(reviews)
-
-		io.WriteString(w, string(jsonReviews))
-		return
 	} else {
 		reviews, err = modules.GetReviews(userID)
 	}
