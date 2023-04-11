@@ -445,9 +445,9 @@ func GetReports() (reports []database.ReviewReport, err error) {
 }
 
 func IsUserAdminDC(discordid int64) bool {
-	user := database.URUser{}
-	database.DB.NewSelect().Model(&user).Where("discordid = ?", discordid).Scan(context.Background(), &user)
-	if user.UserType == 1 {
+	count,_ := database.DB.NewSelect().Model(&users).Where("discordid = ? and type = 1", discordid).Count(context.Background())
+
+	if count > 0 {
 		return true
 	}
 	return false
