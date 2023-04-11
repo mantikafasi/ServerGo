@@ -188,6 +188,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		reviews := append([]modules.UserReview{{
 			ID: 0,
 			Sender: modules.Sender{
+				ID:           0,
 				Username:     "ReviewDB",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
 				DiscordID:    "287555395151593473",
