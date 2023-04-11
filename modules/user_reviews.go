@@ -117,11 +117,11 @@ func GetDBUserViaDiscordID(discordID string) (*database.URUser, error) {
 	return &user, nil
 }
 
-func SearchReviews(query string,token string) ([]UserReview, error) {
+func SearchReviews(query string, token string) ([]UserReview, error) {
 	var reviews []UserReview
 
-	user,err := GetDBUserViaToken(token)
-	
+	user, err := GetDBUserViaToken(token)
+
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,6 @@ func SearchReviews(query string,token string) ([]UserReview, error) {
 
 	return reviews, nil
 }
-	
 
 func AddReview(data UR_RequestData) (string, error) {
 	var senderUserID int32
@@ -203,7 +202,7 @@ func AddReview(data UR_RequestData) (string, error) {
 	if common.LightProfanityDetector.IsProfane(data.Comment) {
 		return "", errors.New("Your review contains profanity")
 	}
-	
+
 	if common.ProfanityDetector.IsProfane(data.Comment) {
 		BanUser(user.DiscordID, common.Config.AdminToken, 7)
 		return "", errors.New("Because of trying to post a profane review, you have been banned from ReviewDB for 1 week")
@@ -445,7 +444,7 @@ func GetReports() (reports []database.ReviewReport, err error) {
 }
 
 func IsUserAdminDC(discordid int64) bool {
-	count,_ := database.DB.NewSelect().Model(&database.URUser{}).Where("discordid = ? and type = 1", discordid).Count(context.Background())
+	count, _ := database.DB.NewSelect().Model(&database.URUser{}).Where("discordid = ? and type = 1", discordid).Count(context.Background())
 
 	if count > 0 {
 		return true

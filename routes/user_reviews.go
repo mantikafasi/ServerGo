@@ -179,23 +179,28 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
 	flags := int32(flags64)
 
-	reviews, err := modules.GetReviews(userID)
+	var reviews []modules.UserReview
+	var err error
+
 	response := ReviewResponse{}
 
 	if slices.Contains(common.OptedOut, uint64(userID)) {
-		reviews := append([]database.UserReview{{
-			ID:              0,
-			SenderUsername:  "ReviewDB",
-			ProfilePhoto:    "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
-			Comment:         "This user has opted out of ReviewDB. It means you cannot review this user.",
-			ReviewType:      3,
-			SenderDiscordID: "287555395151593473",
-			Badges:          []database.UserBadgeLegacy{},
+		reviews := append([]modules.UserReview{{
+			ID: 0,
+			Sender: modules.Sender{
+				Username:     "ReviewDB",
+				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
+				DiscordID:    "287555395151593473",
+				Badges:       []database.UserBadge{},
+			}, Comment: "This user has opted out of ReviewDB. It means you cannot review this user.",
+			ReviewType: 3,
 		}})
 		jsonReviews, _ := json.Marshal(reviews)
 
 		io.WriteString(w, string(jsonReviews))
 		return
+	} else {
+		reviews, err = modules.GetReviews(userID)
 	}
 
 	for i, j := 0, len(reviews)-1; i < j; i, j = i+1, j-1 {
@@ -314,7 +319,7 @@ func SearchReview(w http.ResponseWriter, r *http.Request) {
 	var data SearchRequestData
 	json.NewDecoder(r.Body).Decode(&data)
 
-	reviews, err := modules.SearchReviews(data.Query,data.Token)
+	reviews, err := modules.SearchReviews(data.Query, data.Token)
 	if err != nil {
 		response.Success = false
 		response.Message = err.Error()
