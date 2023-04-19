@@ -251,13 +251,22 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUserInfo(w http.ResponseWriter, r *http.Request) {
-	var data modules.UR_RequestData
-	json.NewDecoder(r.Body).Decode(&data)
 	//modules.GetLastReviewID(user.DiscordID)
+	var data modules.UR_RequestData
+
 	type UserInfo struct {
 		database.URUser
 		LastReviewID int32 `json:"lastReviewID"`
 		UserType     int   `json:"type"`
+	}
+
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		json.NewDecoder(r.Body).Decode(&data)
+	} else {
+		data = modules.UR_RequestData{
+			Token: token,
+		}
 	}
 
 	user, err := modules.GetDBUserViaToken(data.Token)
