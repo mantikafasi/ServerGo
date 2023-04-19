@@ -257,10 +257,11 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	type UserInfo struct {
 		database.URUser
 		LastReviewID int32 `json:"lastReviewID"`
+		UserType     int   `json:"type"`
 	}
 
 	user, err := modules.GetDBUserViaToken(data.Token)
-	response := UserInfo{user, modules.GetLastReviewID(user.DiscordID)}
+	response := UserInfo{user, modules.GetLastReviewID(user.DiscordID), int(user.UserType)}
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
