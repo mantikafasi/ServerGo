@@ -97,6 +97,14 @@ func main() {
 	prometheus.MustRegister(URUserCounter)
 	prometheus.MustRegister(TotalRequestCounter)
 
+	optedOutUsers ,err:= modules.GetOptedOutUsers()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	
+	common.OptedOut = append(common.OptedOut, optedOutUsers... )
+
 	mux := Mux{chi.NewRouter()}
 
 	mux.Use(cors)
@@ -145,6 +153,8 @@ func main() {
 
 	mux.HandleFunc("/api/reviewdb/reviews", routes.SearchReview)
 
+	mux.HandleFunc("/api/reviewdb/settings/{setting}", routes.Settings)
+
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
 	})
@@ -165,7 +175,7 @@ func main() {
 
 	mux.Handle("/metrics", promhttp.Handler())
 
-	err := http.ListenAndServe(":"+common.Config.Port, mux)
+	err = http.ListenAndServe(":"+common.Config.Port, mux)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
 

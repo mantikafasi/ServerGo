@@ -36,7 +36,7 @@ var AddUserReview = func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if slices.Contains(common.OptedOut, uint64(data.DiscordID)) {
+	if slices.Contains(common.OptedOut, string(data.DiscordID)) {
 		io.WriteString(w, "This user opted out")
 		return
 	}

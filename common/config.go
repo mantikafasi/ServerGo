@@ -35,7 +35,7 @@ type ConfigDB struct {
 
 var Config *ConfigStr
 
-var OptedOut []uint64
+var OptedOut []string
 
 func init() {
 	f, err := os.Open("config.json")
@@ -45,14 +45,6 @@ func init() {
 
 	err = json.NewDecoder(f).Decode(&Config)
 	f.Close()
-
-	f2, er2 := os.Open("out.json") //this is list of users who opted out of reviewdb
-	if er2 != nil {
-		fmt.Println(er2)
-	}
-
-	er2 = json.NewDecoder(f2).Decode(&OptedOut)
-	f2.Close()
 
 	var profaneWords []string
 

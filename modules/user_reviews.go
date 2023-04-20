@@ -2,8 +2,10 @@ package modules
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"server-go/common"
@@ -638,4 +640,43 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (e
 	database.DB.NewSelect().Model(&user).Where("discordid = ?", discordid).Limit(1).Scan(context.Background(), &user)
 
 	return nil, user.ID
+}
+
+func OptOutUser(discordid string) error {
+	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("opted_out = true").Exec(context.Background())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func OptInUser(discordid string) error {
+	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("opted_out = false").Exec(context.Background())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetOptedOutUsers() (users []string, err error) {
+
+	f2, er2 := os.Open("out.json") //this is list of users who opted out of reviewdb
+	if er2 != nil {
+		fmt.Println(er2)
+	}
+
+	er2 = json.NewDecoder(f2).Decode(&users)
+
+	f2.Close()
+
+	userlist := []database.URUser{}
+
+
+	err = database.DB.NewSelect().Distinct().Model(&database.URUser{}).Where("opted_out = true").Scan(context.Background(), &userlist)
+
+	for _, user := range userlist {
+		users = append(users, user.DiscordID)
+	}
+
+	return
 }

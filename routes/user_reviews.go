@@ -344,3 +344,43 @@ func SearchReview(w http.ResponseWriter, r *http.Request) {
 
 	common.SendStructResponse(w, response)
 }
+
+
+func Settings(w http.ResponseWriter, r *http.Request) {
+
+	setting := chi.URLParam(r, "setting")
+	token := r.Header.Get("Authorization")
+
+	if token == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	user, err := modules.GetDBUserViaToken(token)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	switch setting {
+	case "optout":
+		err := modules.OptOutUser(user.DiscordID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	case "optin":
+		err := modules.OptInUser(user.DiscordID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		return
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	optedOutUsers, err := modules.GetOptedOutUsers()
+	common.OptedOut = optedOutUsers
+}
