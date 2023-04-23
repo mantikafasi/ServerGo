@@ -651,7 +651,7 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (e
 
 func SetSettings(settings Settings) (error) {
 
-	_, err := database.DB.NewUpdate().Model(settings).Where("discordid = ?", settings.DiscordID).Exec(context.Background())
+	_, err := database.DB.NewUpdate().Model(&settings).Where("discordid = ?", settings.DiscordID).Exec(context.Background())
 	if err != nil {
 		return err
 	}
