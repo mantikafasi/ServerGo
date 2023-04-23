@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"server-go/common"
@@ -51,7 +52,7 @@ func AddUserReview(w http.ResponseWriter, r *http.Request) {
 		response.Message = "Write Something Guh"
 	}
 
-	if slices.Contains(common.OptedOut, uint64(data.DiscordID)) {
+	if slices.Contains(common.OptedOut, fmt.Sprint(data.DiscordID)) {
 		response.Message = "This user opted out"
 	}
 
@@ -184,7 +185,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	response := ReviewResponse{}
 
-	if slices.Contains(common.OptedOut, uint64(userID)) {
+	if slices.Contains(common.OptedOut, fmt.Sprint(userID)) {
 		reviews = append([]modules.UserReview{{
 			ID: 0,
 			Sender: modules.Sender{

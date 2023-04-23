@@ -2,6 +2,7 @@ package legacy_routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"server-go/common"
@@ -128,7 +129,7 @@ var DeleteReview = func(w http.ResponseWriter, r *http.Request) {
 var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 
-	if slices.Contains(common.OptedOut, uint64(userID)) {
+	if slices.Contains(common.OptedOut, fmt.Sprint(userID)) {
 		reviews := append([]database.UserReview{{
 			ID:              0,
 			SenderUsername:  "ReviewDB",

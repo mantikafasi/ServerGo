@@ -97,13 +97,13 @@ func main() {
 	prometheus.MustRegister(URUserCounter)
 	prometheus.MustRegister(TotalRequestCounter)
 
-	optedOutUsers ,err:= modules.GetOptedOutUsers()
+	optedOutUsers, err := modules.GetOptedOutUsers()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	
-	common.OptedOut = append(common.OptedOut, optedOutUsers... )
+
+	common.OptedOut = append(common.OptedOut, optedOutUsers...)
 
 	mux := Mux{chi.NewRouter()}
 
