@@ -372,6 +372,7 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 		settings, err := modules.GetSettings(user.DiscordID)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Printf("err: %v\n", err)
 			return
 		}
 		json.NewEncoder(w).Encode(settings)
@@ -380,6 +381,7 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 		err := modules.SetSettings(settings)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Printf("err: %v\n", err)
 			return
 		}
 		w.WriteHeader(200)

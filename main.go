@@ -153,7 +153,7 @@ func main() {
 
 	mux.HandleFunc("/api/reviewdb/reviews", routes.SearchReview)
 
-	mux.HandleFunc("/api/reviewdb/settings/{setting}", routes.Settings)
+	mux.HandleFunc("/api/reviewdb/settings", routes.Settings)
 
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
