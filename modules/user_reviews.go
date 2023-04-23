@@ -56,6 +56,13 @@ type UserReview struct {
 	SenderUserID int32            `bun:"senderuserid" json:"-"`
 }
 
+type Settings struct {
+	bun.BaseModel `bun:"table:ur_users"`
+
+	DiscordID string `bun:"discordid"`
+	Opt       bool   `json:"opt" bun:"opted_out"`
+}
+
 func GetReviews(userID int64) ([]UserReview, error) {
 	var reviews []UserReview
 
@@ -642,20 +649,21 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (e
 	return nil, user.ID
 }
 
-func OptOutUser(discordid string) error {
-	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("opted_out = true").Exec(context.Background())
+func SetSettings(settings Settings) (error) {
+
+	_, err := database.DB.NewUpdate().Model(settings).Where("discordid = ?", settings.DiscordID).Exec(context.Background())
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func OptInUser(discordid string) error {
-	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("opted_out = false").Exec(context.Background())
-	if err != nil {
-		return err
-	}
-	return nil
+func GetSettings(discordid string) (Settings, error) {
+	settings := Settings{}
+
+	err := database.DB.NewSelect().Model(&settings).Where("discordid = ?", discordid).Limit(1).Scan(context.Background(), &settings)
+
+	return settings, err
 }
 
 func GetOptedOutUsers() (users []string, err error) {
@@ -670,7 +678,6 @@ func GetOptedOutUsers() (users []string, err error) {
 	f2.Close()
 
 	userlist := []database.URUser{}
-
 
 	err = database.DB.NewSelect().Distinct().Model(&database.URUser{}).Where("opted_out = true").Scan(context.Background(), &userlist)
 

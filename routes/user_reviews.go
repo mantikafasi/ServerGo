@@ -346,10 +346,8 @@ func SearchReview(w http.ResponseWriter, r *http.Request) {
 	common.SendStructResponse(w, response)
 }
 
-
 func Settings(w http.ResponseWriter, r *http.Request) {
 
-	setting := chi.URLParam(r, "setting")
 	token := r.Header.Get("Authorization")
 
 	if token == "" {
@@ -357,29 +355,34 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var settings modules.Settings
+
+	json.NewDecoder(r.Body).Decode(&settings)
+
 	user, err := modules.GetDBUserViaToken(token)
+
+	settings.DiscordID = user.DiscordID
+
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+	switch r.Method {
+	case "GET":
+		settings, err := modules.GetSettings(user.DiscordID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode(settings)
 
-	switch setting {
-	case "optout":
-		err := modules.OptOutUser(user.DiscordID)
+	case "PATCH":
+		err := modules.SetSettings(settings)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-	case "optin":
-		err := modules.OptInUser(user.DiscordID)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		return
-	default:
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		w.WriteHeader(200)
 	}
 
 	optedOutUsers, err := modules.GetOptedOutUsers()
