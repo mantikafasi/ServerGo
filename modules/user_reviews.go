@@ -66,7 +66,12 @@ type Settings struct {
 func GetReviews(userID int64) ([]UserReview, error) {
 	var reviews []UserReview
 
-	err := database.DB.NewSelect().Model(&reviews).Relation("User").Where("userid = ?", userID).OrderExpr("ID DESC").Limit(50).Scan(context.Background(), &reviews)
+	err := database.DB.NewSelect().
+		Model(&reviews).
+		Relation("User").
+		Where("userid = ?", userID).
+		Where("\"user\".\"opted_out\" = 'f'").
+		OrderExpr("ID DESC").Limit(50).Scan(context.Background(), &reviews)
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +195,10 @@ func AddReview(data UR_RequestData) (string, error) {
 	}
 
 	user, _ := GetDBUserViaID(senderUserID)
+
+	if (user.OptedOut) {
+		return "", errors.New("You have opted out of ReviewDB")
+	}
 
 	if !(data.ReviewType == 0 || data.ReviewType == 1) && user.UserType != 1 {
 		return "", errors.New("Invalid review type")
