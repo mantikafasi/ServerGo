@@ -483,11 +483,6 @@ func DeleteReview(reviewID int32, token string) (err error) {
 	}
 	user ,err := GetDBUserViaToken(token)
 
-	if err != nil {
-		fmt.Println(err.Error())
-		return errors.New("An error occured while trying to delete this review")
-	}
-
 	if (review.SenderDiscordID == user.DiscordID) || IsUserAdmin(user.ID) || token == common.Config.AdminToken {
 		LogAction("DELETE", review, user.ID)
 
