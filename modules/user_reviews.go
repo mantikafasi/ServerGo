@@ -346,7 +346,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string) (string, 
 
 func GetReview(id int32) (rep database.UserReview, err error) {
 	rep = database.UserReview{}
-	err = database.DB.NewSelect().Model(&rep).Relation("User").Where("id = ?", id).Scan(context.Background(), &rep)
+	err = database.DB.NewSelect().Model(&rep).Relation("User").Where("user_review.id = ?", id).Scan(context.Background(), &rep)
 	return
 }
 
@@ -488,6 +488,7 @@ func GetDBUserViaID(id int32) (user database.URUser, err error) {
 func DeleteReview(reviewID int32, token string) (err error) {
 	review, err := GetReview(reviewID)
 	if err != nil {
+		fmt.Println(err.Error())
 		return errors.New("Invalid Review ID")
 	}
 	user ,err := GetDBUserViaToken(token)
