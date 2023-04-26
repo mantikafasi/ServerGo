@@ -492,7 +492,7 @@ func DeleteReview(reviewID int32, token string) (err error) {
 	}
 	user ,err := GetDBUserViaToken(token)
 
-	if (review.SenderDiscordID == user.DiscordID) || IsUserAdmin(user.ID) || token == common.Config.AdminToken {
+	if (review.User.DiscordID == user.DiscordID) || IsUserAdmin(user.ID) || token == common.Config.AdminToken {
 		LogAction("DELETE", review, user.ID)
 
 		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", reviewID).Exec(context.Background())
