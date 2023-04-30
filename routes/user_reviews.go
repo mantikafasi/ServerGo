@@ -219,11 +219,11 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		response.HasNextPage = true
 	}
 
+	reviews = reviews[:len(reviews)-1]
+
 	for i, j := 0, len(reviews)-1; i < j; i, j = i+1, j-1 {
 		reviews[i], reviews[j] = reviews[j], reviews[i]
 	}
-
-	reviews = reviews[:len(reviews)-1]
 
 	if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && !(flags&AdFlag == AdFlag) {
 		reviews = append([]modules.UserReview{{
