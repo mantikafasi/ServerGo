@@ -235,6 +235,7 @@ func AddReview(data UR_RequestData) (string, error) {
 		Comment:      data.Comment,
 		Star:         -1,
 		ReviewType:   int32(data.ReviewType),
+		TimestampStr: time.Now(),
 	}
 
 	res, err := database.DB.NewUpdate().Where("userid = ? AND senderuserid = ?", data.DiscordID, senderUserID).OmitZero().Model(review).Exec(context.Background())
