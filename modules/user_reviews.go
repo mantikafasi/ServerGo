@@ -63,7 +63,7 @@ type Settings struct {
 	Opt       bool   `json:"opt" bun:"opted_out"`
 }
 
-func GetReviews(userID int64) ([]UserReview, error) {
+func GetReviews(userID int64, offset int) ([]UserReview, error) {
 	var reviews []UserReview
 
 	err := database.DB.NewSelect().
@@ -71,7 +71,9 @@ func GetReviews(userID int64) ([]UserReview, error) {
 		Relation("User").
 		Where("userid = ?", userID).
 		Where("\"user\".\"opted_out\" = 'f'").
-		OrderExpr("ID DESC").Limit(50).Scan(context.Background(), &reviews)
+		OrderExpr("ID DESC").Limit(50).
+		Offset(offset).
+		Scan(context.Background(), &reviews)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +198,7 @@ func AddReview(data UR_RequestData) (string, error) {
 
 	user, _ := GetDBUserViaID(senderUserID)
 
-	if (user.OptedOut) {
+	if user.OptedOut {
 		return "", errors.New("You have opted out of ReviewDB")
 	}
 
@@ -491,7 +493,7 @@ func DeleteReview(reviewID int32, token string) (err error) {
 		fmt.Println(err.Error())
 		return errors.New("Invalid Review ID")
 	}
-	user ,err := GetDBUserViaToken(token)
+	user, err := GetDBUserViaToken(token)
 
 	if (review.User.DiscordID == user.DiscordID) || IsUserAdmin(user.ID) || token == common.Config.AdminToken {
 		LogAction("DELETE", review, user.ID)
@@ -659,7 +661,7 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (e
 	return nil, user.ID
 }
 
-func SetSettings(settings Settings) (error) {
+func SetSettings(settings Settings) error {
 
 	_, err := database.DB.NewUpdate().Model(&settings).Where("discordid = ?", settings.DiscordID).Exec(context.Background())
 	if err != nil {

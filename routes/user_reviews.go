@@ -178,6 +178,8 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	userID, _ := strconv.ParseInt(userIDString, 10, 64)
 	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+
 	flags := int32(flags64)
 
 	var reviews []modules.UserReview
@@ -202,7 +204,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		common.SendStructResponse(w, response)
 		return
 	} else {
-		reviews, err = modules.GetReviews(userID)
+		reviews, err = modules.GetReviews(userID,offset)
 	}
 
 	for i, j := 0, len(reviews)-1; i < j; i, j = i+1, j-1 {
