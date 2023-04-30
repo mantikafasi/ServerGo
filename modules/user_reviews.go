@@ -71,7 +71,7 @@ func GetReviews(userID int64, offset int) ([]UserReview, error) {
 		Relation("User").
 		Where("userid = ?", userID).
 		Where("\"user\".\"opted_out\" = 'f'").
-		OrderExpr("ID DESC").Limit(50).
+		OrderExpr("ID DESC").Limit(51).
 		Offset(offset).
 		Scan(context.Background(), &reviews)
 	if err != nil {

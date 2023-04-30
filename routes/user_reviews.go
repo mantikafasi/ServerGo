@@ -29,7 +29,8 @@ type ReviewDBAuthResponse struct {
 
 type ReviewResponse struct {
 	Response
-	Reviews []modules.UserReview `json:"reviews"`
+	HasNextPage bool                 `json:"hasNextPage"`
+	Reviews     []modules.UserReview `json:"reviews"`
 }
 
 func AddUserReview(w http.ResponseWriter, r *http.Request) {
@@ -204,11 +205,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		common.SendStructResponse(w, response)
 		return
 	} else {
-		reviews, err = modules.GetReviews(userID,offset)
-	}
-
-	for i, j := 0, len(reviews)-1; i < j; i, j = i+1, j-1 {
-		reviews[i], reviews[j] = reviews[j], reviews[i]
+		reviews, err = modules.GetReviews(userID, offset)
 	}
 
 	if err != nil {
@@ -217,6 +214,16 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		common.SendStructResponse(w, response)
 		return
 	}
+
+	if len(reviews) == 51 {
+		response.HasNextPage = true
+	}
+
+	for i, j := 0, len(reviews)-1; i < j; i, j = i+1, j-1 {
+		reviews[i], reviews[j] = reviews[j], reviews[i]
+	}
+
+	reviews = reviews[:len(reviews)-1]
 
 	if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && !(flags&AdFlag == AdFlag) {
 		reviews = append([]modules.UserReview{{
