@@ -80,52 +80,6 @@ var ReviewDBAuth = func(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "receiveToken/"+token, http.StatusTemporaryRedirect)
 }
 
-var ReportReview = func(w http.ResponseWriter, r *http.Request) {
-	var data modules.ReportData
-	json.NewDecoder(r.Body).Decode(&data)
-
-	if data.Token == "" || data.ReviewID == 0 {
-		io.WriteString(w, "Invalid Request")
-		return
-	}
-	err := modules.ReportReview(data.ReviewID, data.Token)
-	if err != nil {
-		io.WriteString(w, err.Error())
-		return
-	}
-	io.WriteString(w, "Successfully Reported Review")
-}
-
-var DeleteReview = func(w http.ResponseWriter, r *http.Request) {
-	var data modules.ReportData //both reportdata and deletedata are same
-	json.NewDecoder(r.Body).Decode(&data)
-
-	responseData := Response{
-		Successful: false,
-		Message:    "",
-	}
-
-	if data.Token == "" || data.ReviewID == 0 {
-		responseData.Message = "Invalid Request"
-		res, _ := json.Marshal(responseData)
-
-		w.Write(res)
-		return
-	}
-
-	err := modules.DeleteReview(data.ReviewID, data.Token)
-	if err != nil {
-		responseData.Message = err.Error()
-		res, _ := json.Marshal(responseData)
-		w.Write(res)
-		return
-	}
-	responseData.Successful = true
-	responseData.Message = "Successfully Deleted Review"
-	res, _ := json.Marshal(responseData)
-	w.Write(res)
-}
-
 var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 
