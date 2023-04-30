@@ -237,7 +237,7 @@ func AddReview(data UR_RequestData) (string, error) {
 		ReviewType:   int32(data.ReviewType),
 	}
 
-	res, err := database.DB.NewUpdate().Where("userid = ? AND senderuserid = ?", data.DiscordID, senderUserID).Model(review).Exec(context.Background())
+	res, err := database.DB.NewUpdate().Where("userid = ? AND senderuserid = ?", data.DiscordID, senderUserID).OmitZero().Model(review).Exec(context.Background())
 	if err != nil {
 
 		return "An Error occurred while updating your review", err
