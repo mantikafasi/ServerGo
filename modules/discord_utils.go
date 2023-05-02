@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/diamondburned/arikawa/v3/state"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -17,6 +19,12 @@ import (
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"golang.org/x/oauth2"
 )
+
+var ArikawaState *state.State
+
+func init() {
+	ArikawaState = state.New("Bot " + os.Getenv("BOT_TOKEN"))
+}
 
 type DiscordUser struct {
 	ID            string `json:"id"`
