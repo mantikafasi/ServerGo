@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/diamondburned/arikawa/v3/discord"
 	"os"
+	"strconv"
 	"time"
 
 	"server-go/common"
@@ -377,6 +379,11 @@ func ReportReview(reviewID int32, token string) error {
 		ReporterID: user.ID,
 	}
 
+	reviewedUsername := "?"
+	if reviewedUser, err := ArikawaState.User(discord.UserID(review.UserID)); err != nil {
+		reviewedUsername = reviewedUser.Tag()
+	}
+
 	err = SendReportWebhook(ReportWebhookData{
 		Username: "ReviewDB",
 		Content:  "Reported Review",
@@ -422,7 +429,7 @@ func ReportReview(reviewID int32, token string) error {
 			{
 				Fields: []ReportWebhookEmbedField{
 					{
-						Name:  "ID",
+						Name:  "Review ID",
 						Value: fmt.Sprint(review.ID),
 					},
 					{
@@ -431,15 +438,15 @@ func ReportReview(reviewID int32, token string) error {
 					},
 					{
 						Name:  "Author",
-						Value: fmt.Sprintf("%v (%v - <@%v> - %v)", reportedUser.Username, reportedUser.ID, reportedUser.DiscordID, reportedUser.DiscordID),
+						Value: formatUser(reportedUser.Username, reportedUser.ID, reportedUser.DiscordID),
 					},
 					{
 						Name:  "Reviewed User",
-						Value: fmt.Sprintf("%v - <@%v>", review.UserID, review.UserID),
+						Value: formatUser(reviewedUsername, 0, strconv.FormatInt(review.UserID, 10)),
 					},
 					{
 						Name:  "Reporter",
-						Value: fmt.Sprintf("%v (%v - <@%v> - %v)", user.Username, user.ID, user.DiscordID, user.DiscordID),
+						Value: formatUser(user.Username, user.ID, user.DiscordID),
 					},
 				},
 			},
@@ -452,6 +459,10 @@ func ReportReview(reviewID int32, token string) error {
 
 	database.DB.NewInsert().Model(&report).Exec(context.Background())
 	return nil
+}
+
+func formatUser(username string, id int32, discordId string) string {
+	return fmt.Sprintf("**Username**: %v\n**Discord ID**: %v (%v)\n**ReviewDB ID**: %v", username, discordId, discordId, id)
 }
 
 func GetReports() (reports []database.ReviewReport, err error) {
