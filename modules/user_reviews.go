@@ -422,28 +422,24 @@ func ReportReview(reviewID int32, token string) error {
 			{
 				Fields: []ReportWebhookEmbedField{
 					{
-						Name:  "Reporter ID",
-						Value: fmt.Sprint(user.ID),
-					},
-					{
-						Name:  "Reporter Username",
-						Value: fmt.Sprint(user.Username),
-					},
-					{
-						Name:  "Reported User Username",
-						Value: fmt.Sprint(reportedUser.Username),
-					},
-					{
-						Name:  "Reported Review ID",
+						Name:  "ID",
 						Value: fmt.Sprint(review.ID),
 					},
 					{
-						Name:  "Reported Review Content",
+						Name:  "Content",
 						Value: fmt.Sprint(review.Comment),
 					},
 					{
-						Name:  "Reported User ID",
-						Value: fmt.Sprint(reportedUser.ID),
+						Name:  "Author",
+						Value: fmt.Sprintf("%v (%v - <@%v> - %v)", reportedUser.Username, reportedUser.ID, reportedUser.DiscordID, reportedUser.DiscordID),
+					},
+					{
+						Name:  "Reviewed User",
+						Value: fmt.Sprintf("%v - <@%v>", review.UserID, review.UserID),
+					},
+					{
+						Name:  "Reporter",
+						Value: fmt.Sprintf("%v (%v - <@%v> - %v)", user.Username, user.ID, user.DiscordID, user.DiscordID),
 					},
 				},
 			},
