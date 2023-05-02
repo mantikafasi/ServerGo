@@ -8,7 +8,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/state"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 

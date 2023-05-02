@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/diamondburned/arikawa/v3/discord"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/diamondburned/arikawa/v3/discord"
 
 	"server-go/common"
 	"server-go/database"
@@ -429,23 +430,23 @@ func ReportReview(reviewID int32, token string) error {
 			{
 				Fields: []ReportWebhookEmbedField{
 					{
-						Name:  "Review ID",
+						Name:  "**Review ID**",
 						Value: fmt.Sprint(review.ID),
 					},
 					{
-						Name:  "Content",
+						Name:  "**Content**",
 						Value: fmt.Sprint(review.Comment),
 					},
 					{
-						Name:  "Author",
+						Name:  "**Author**",
 						Value: formatUser(reportedUser.Username, reportedUser.ID, reportedUser.DiscordID),
 					},
 					{
-						Name:  "Reviewed User",
+						Name:  "**Reviewed User**",
 						Value: formatUser(reviewedUsername, 0, strconv.FormatInt(review.UserID, 10)),
 					},
 					{
-						Name:  "Reporter",
+						Name:  "**Reporter**",
 						Value: formatUser(user.Username, user.ID, user.DiscordID),
 					},
 				},
@@ -462,7 +463,10 @@ func ReportReview(reviewID int32, token string) error {
 }
 
 func formatUser(username string, id int32, discordId string) string {
-	return fmt.Sprintf("**Username**: %v\n**Discord ID**: %v (<@%v>)\n**ReviewDB ID**: %v", username, discordId, discordId, id)
+	if id == 0 {
+		return fmt.Sprintf("Username: %v\nDiscord ID: %v (<@%v>)", username, discordId, discordId)
+	}
+	return fmt.Sprintf("Username: %v\nDiscord ID: %v (<@%v>)\nReviewDB ID: %v", username, discordId, discordId, id)
 }
 
 func GetReports() (reports []database.ReviewReport, err error) {
