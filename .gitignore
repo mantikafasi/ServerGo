@@ -2,6 +2,7 @@
 constantants/constantants.go
 config.json
 server-go
+server-go.exe
 artgallery
 *.py
 *.exe
