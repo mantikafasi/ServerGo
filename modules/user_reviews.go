@@ -380,7 +380,7 @@ func ReportReview(reviewID int32, token string) error {
 	}
 
 	reviewedUsername := "?"
-	if reviewedUser, err := ArikawaState.User(discord.UserID(review.UserID)); err != nil {
+	if reviewedUser, err := ArikawaState.User(discord.UserID(review.UserID)); err == nil {
 		reviewedUsername = reviewedUser.Tag()
 	}
 
@@ -462,7 +462,7 @@ func ReportReview(reviewID int32, token string) error {
 }
 
 func formatUser(username string, id int32, discordId string) string {
-	return fmt.Sprintf("**Username**: %v\n**Discord ID**: %v (%v)\n**ReviewDB ID**: %v", username, discordId, discordId, id)
+	return fmt.Sprintf("**Username**: %v\n**Discord ID**: %v (<@%v>)\n**ReviewDB ID**: %v", username, discordId, discordId, id)
 }
 
 func GetReports() (reports []database.ReviewReport, err error) {
