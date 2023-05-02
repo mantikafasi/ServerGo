@@ -23,7 +23,7 @@ import (
 var ArikawaState *state.State
 
 func init() {
-	ArikawaState = state.New("Bot " + os.Getenv("BOT_TOKEN"))
+	ArikawaState = state.New("Bot " + common.Config.BotToken)
 }
 
 type DiscordUser struct {
