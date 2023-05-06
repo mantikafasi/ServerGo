@@ -433,6 +433,17 @@ func ReportReview(reviewID int32, token string) error {
 							Animated: true,
 						},
 					},
+					{
+						Type:     2,
+						Label:    "Ban Reporter",
+						Style:    4,
+						CustomID: fmt.Sprintf("ban_select:" + user.DiscordID),
+						Emoji: WebhookEmoji{
+							Name:     "banned",
+							ID:       "590237837299941382",
+							Animated: true,
+						},
+					},
 				},
 			},
 		},
