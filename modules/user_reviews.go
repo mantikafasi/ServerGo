@@ -363,6 +363,10 @@ func ReportReview(reviewID int32, token string) error {
 		return errors.New("Invalid Token, please reauthenticate")
 	}
 
+	if user.BanEndDate.After(time.Now()) || user.UserType == -1 {
+		return errors.New("You cant report reviews while banned")
+	}
+
 	count, _ := database.DB.NewSelect().Model(&database.ReviewReport{}).Where("reviewid = ? AND reporterid = ?", reviewID, user.ID).Count(context.Background())
 	if count > 0 {
 		return errors.New("You have already reported this review")
