@@ -285,7 +285,7 @@ func GetDBUserViaToken(token string) (user database.URUser, err error) {
 func GetReviewCountInLastHour(userID int32) (int, error) {
 	//return 0, nil
 	count, err := database.DB.
-		NewSelect().Table("user_reviews").
+		NewSelect().Table("userreviews").
 		Where("userid = ? AND timestamp > now() - interval '1 hour'", userID).
 		Count(context.Background())
 	if err != nil {
@@ -365,6 +365,12 @@ func ReportReview(reviewID int32, token string) error {
 
 	if user.BanEndDate.After(time.Now()) || user.UserType == -1 {
 		return errors.New("You cant report reviews while banned")
+	}
+
+	reportCount , _ := GetReportCountInLastHour(user.ID)
+
+	if reportCount > 5 {
+		return errors.New("You are reporting too much")
 	}
 
 	count, _ := database.DB.NewSelect().Model(&database.ReviewReport{}).Where("reviewid = ? AND reporterid = ?", reviewID, user.ID).Count(context.Background())
@@ -714,4 +720,15 @@ func GetOptedOutUsers() (users []string, err error) {
 	}
 
 	return
+}
+
+func GetReportCountInLastHour(userID int32) (int, error) {
+	count, err := database.DB.
+		NewSelect().Table("ur_reports").
+		Where("reporterid = ? AND timestamp > now() - interval '1 hour'", userID).
+		Count(context.Background())
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
