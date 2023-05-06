@@ -369,7 +369,7 @@ func ReportReview(reviewID int32, token string) error {
 
 	reportCount , _ := GetReportCountInLastHour(user.ID)
 
-	if reportCount > 5 {
+	if reportCount > 20 {
 		return errors.New("You are reporting too much")
 	}
 
