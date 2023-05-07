@@ -229,6 +229,7 @@ func AddReview(data UR_RequestData) (string, error) {
 	if common.ProfanityDetector.IsProfane(data.Comment) {
 		BanUser(user.DiscordID, common.Config.AdminToken, 7)
 		SendReportWebhook(ReportWebhookData{
+			Username: "ReviewDB",
 			Content: "User <@" + user.DiscordID + "> has been banned for 1 week for trying to post a profane review",
 			Embeds: []Embed{
 				{
