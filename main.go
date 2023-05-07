@@ -13,6 +13,7 @@ import (
 	"server-go/database"
 	"server-go/modules"
 	"server-go/routes"
+	"server-go/legacy_routes"
 
 	"github.com/go-chi/chi"
 	"github.com/prometheus/client_golang/prometheus"
@@ -134,6 +135,8 @@ func main() {
 	mux.HandleFunc("/auth", routes.StupidityDBAuth)
 
 	//ReviewDB
+
+	mux.HandleFunc("/URAuth", legacy_routes.ReviewDBAuth)
 
 	mux.HandleFunc("/api/reviewdb/users", routes.GetUserInfo)
 
