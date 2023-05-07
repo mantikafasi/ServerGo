@@ -317,16 +317,15 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		return token, nil
 	}
 
-	result, err := database.DB.NewInsert().Model(user).Exec(context.Background())
+	_, err = database.DB.NewInsert().Model(user).Exec(context.Background())
 	if err != nil {
 		return "An Error occurred", err
 	}
-	lastInsertedID, _ := result.LastInsertId()
-
+	
 	SendLoggerWebhook(WebhookData{
 		Username:  "ReviewDB",
 		AvatarURL: GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
-		Content:   fmt.Sprintf("User %s (<@%s>) has been registered to ReviewDB\nReviewDB ID:%d", discordUser.Username+"#"+discordUser.Discriminator, discordUser.ID, lastInsertedID),
+		Content:   fmt.Sprintf("User %s (<@%s>) has been registered to ReviewDB", discordUser.Username+"#"+discordUser.Discriminator, discordUser.ID),
 	})
 
 	return token, nil
