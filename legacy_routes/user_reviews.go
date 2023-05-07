@@ -55,7 +55,7 @@ var ReviewDBAuth = func(w http.ResponseWriter, r *http.Request) {
 		clientmod = "aliucord"
 	}
 
-	token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), clientmod, "",r.Header.Get("X-Forwarded-For")  )
+	token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), clientmod, "",r.Header.Get("CF-Connecting-IP")  )
 
 	if r.URL.Query().Get("returnType") == "json" {
 		if err != nil {
@@ -82,6 +82,8 @@ var ReviewDBAuth = func(w http.ResponseWriter, r *http.Request) {
 
 var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
+
+	println(r.Header.Get("CF-Connecting-IP")) // test ip
 
 	if slices.Contains(common.OptedOut, fmt.Sprint(userID)) {
 		reviews := append([]database.UserReview{{
