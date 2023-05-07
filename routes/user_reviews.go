@@ -97,6 +97,7 @@ func ReviewDBAuth(w http.ResponseWriter, r *http.Request) {
 	token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), clientmod, "/api/reviewdb/auth", r.Header.Get("X-Forwarded-For"))
 
 	if err != nil {
+		println(err.Error())
 		io.WriteString(w, `{"token": "", "success": false}`)
 		return
 	}
