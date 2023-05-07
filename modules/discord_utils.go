@@ -288,11 +288,7 @@ func SendLoggerWebhook(data WebhookData) error {
 }
 
 func GetProfilePhotoURL(userid string, avatar string) string {
-	if strings.HasPrefix(avatar, "a_") {
-		return fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.gif", userid, avatar)
-	} else {
-		return fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.png", userid, avatar)
-	}
+	return fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.%s", userid, avatar, common.Ternary(strings.HasPrefix(avatar, "a_"), "gif", "png"))
 }
 
 type Snowflake uint64

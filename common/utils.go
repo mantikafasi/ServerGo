@@ -19,3 +19,10 @@ func SendStructResponse(w http.ResponseWriter, response interface{}) {
 	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+func Ternary[T any](b bool, ifTrue, ifFalse T) T {
+	if b {
+		return ifTrue
+	}
+	return ifFalse
+}
