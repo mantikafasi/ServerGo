@@ -316,6 +316,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		ProfilePhoto: GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
 		UserType:     0,
 		ClientMod:    clientmod,
+		IpHash:       CalculateHash(ip),
 	}
 
 	banned, err := database.DB.NewSelect().Model(&database.URUser{}).Where("discordid = ? and type = -1", discordUser.ID).ScanAndCount(context.Background())
@@ -367,7 +368,7 @@ func ReportReview(reviewID int32, token string) error {
 		return errors.New("You cant report reviews while banned")
 	}
 
-	reportCount , _ := GetReportCountInLastHour(user.ID)
+	reportCount, _ := GetReportCountInLastHour(user.ID)
 
 	if reportCount > 20 {
 		return errors.New("You are reporting too much")
