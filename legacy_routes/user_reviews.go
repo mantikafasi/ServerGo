@@ -83,8 +83,6 @@ var ReviewDBAuth = func(w http.ResponseWriter, r *http.Request) {
 var GetReviews = func(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseInt(r.URL.Query().Get("discordid"), 10, 64)
 
-	println(r.Header.Get("CF-Connecting-IP")) // test ip
-
 	if slices.Contains(common.OptedOut, fmt.Sprint(userID)) {
 		reviews := append([]database.UserReview{{
 			ID:              0,
