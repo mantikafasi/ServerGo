@@ -30,7 +30,7 @@ type ReviewDBAuthResponse struct {
 type ReviewResponse struct {
 	Response
 	HasNextPage bool                 `json:"hasNextPage"`
-	Reviews     []modules.UserReview `json:"reviews"`
+	Reviews     []database.UserReview `json:"reviews"`
 }
 
 func AddUserReview(w http.ResponseWriter, r *http.Request) {
@@ -184,15 +184,15 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	flags := int32(flags64)
 
-	var reviews []modules.UserReview
+	var reviews []database.UserReview
 	var err error
 
 	response := ReviewResponse{}
 
 	if slices.Contains(common.OptedOut, fmt.Sprint(userID)) {
-		reviews = append([]modules.UserReview{{
+		reviews = append([]database.UserReview{{
 			ID: 0,
-			Sender: modules.Sender{
+			Sender: database.Sender{
 				ID:           0,
 				Username:     "ReviewDB",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
@@ -226,10 +226,10 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && !(flags&AdFlag == AdFlag) {
-		reviews = append([]modules.UserReview{{
+		reviews = append([]database.UserReview{{
 			Comment:    "If you like the plugins I make, please consider supporting me at: \nhttps://github.com/sponsors/mantikafasi\n You can disable this in settings",
 			ReviewType: 2,
-			Sender: modules.Sender{
+			Sender: database.Sender{
 				DiscordID:    "287555395151593473",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
 				Username:     "ReviewDB",
@@ -238,11 +238,11 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) {
-		reviews = append([]modules.UserReview{{
+		reviews = append([]database.UserReview{{
 			ID:         0,
 			Comment:    "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
 			ReviewType: 3,
-			Sender: modules.Sender{
+			Sender: database.Sender{
 				DiscordID:    "287555395151593473",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",
 				Username:     "Warning",
@@ -252,7 +252,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if reviews == nil { //we dont want to send null
-		reviews = []modules.UserReview{}
+		reviews = []database.UserReview{}
 	}
 
 	response.Reviews = reviews

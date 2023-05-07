@@ -11,7 +11,6 @@ import (
 
 	"server-go/common"
 	"server-go/database"
-	"server-go/legacy_routes"
 	"server-go/modules"
 	"server-go/routes"
 
@@ -138,17 +137,9 @@ func main() {
 
 	mux.HandleFunc("/api/reviewdb/users", routes.GetUserInfo)
 
-	mux.HandleFunc("/getUserReviews", legacy_routes.GetReviews)
-
-	mux.HandleFunc("/addUserReview", legacy_routes.AddUserReview)
-
 	mux.HandleFunc("/admins", routes.Admins)
 
-	mux.HandleFunc("/URauth", legacy_routes.ReviewDBAuth)
-
 	mux.HandleFunc("/api/reviewdb/auth", routes.ReviewDBAuth)
-
-	mux.HandleFunc("/api/reviewdb/report", routes.ReportReview)
 
 	mux.HandleFunc("/api/reviewdb/users/{discordid}/reviews", routes.HandleReviews)
 

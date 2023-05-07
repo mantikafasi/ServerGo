@@ -24,24 +24,28 @@ type UserInfo struct {
 	Token     string `bun:"token"`
 }
 
+type Sender struct {
+	ID           int32                `json:"id"`
+	DiscordID    string               `json:"discordID"`
+	Username     string               `json:"username"`
+	ProfilePhoto string               `json:"profilePhoto"`
+	Badges       []UserBadge `json:"badges"`
+}
+
 type UserReview struct {
 	bun.BaseModel `bun:"table:userreviews"`
 
-	ID            int32     `bun:"id,pk,autoincrement" json:"id"`
-	UserID        int64     `bun:"userid,type:numeric" json:"-"`
-	Star          int32     `bun:"star" json:"star"`
-	SenderUserID  int32     `bun:"senderuserid" json:"senderuserid"`
-	Comment       string    `bun:"comment" json:"comment"`
-	ReviewType    int32     `bun:"reviewtype" json:"reviewtype"`
-	SystemMessage bool      `bun:"-" json:"isSystemMessage"`
-	TimestampStr  time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
-	Timestamp     int64     `bun:"-" json:"timestamp"`
+	ID           int32     `bun:"id,pk,autoincrement" json:"id"`
+	UserID       int64     `bun:"userid,type:numeric" json:"-"`
+	Sender       Sender    `bun:"-" json:"sender"`
+	Star         int32     `bun:"star" json:"star"`
+	Comment      string    `bun:"comment" json:"comment"`
+	ReviewType   int32     `bun:"reviewtype" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review
+	TimestampStr time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
+	Timestamp    int64     `bun:"-" json:"timestamp"`
 
-	User            *URUser           `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
-	SenderDiscordID string            `bun:"-" json:"senderdiscordid"`
-	SenderUsername  string            `bun:"-" json:"username"`
-	ProfilePhoto    string            `bun:"-" json:"profile_photo"`
-	Badges          []UserBadgeLegacy `bun:"-" json:"badges"`
+	User         *URUser `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
+	SenderUserID int32            `bun:"senderuserid" json:"-"`
 }
 
 type UserBadge struct {
@@ -88,18 +92,6 @@ type ReviewReport struct {
 	ReporterID int32 `bun:"reporterid"`
 }
 
-type UserBadgeLegacy struct {
-	bun.BaseModel `bun:"table:userbadges"`
-
-	ID               int32  `bun:"id,pk,autoincrement" json:"-"`
-	DiscordID        string `bun:"discordid,type:numeric" json:"-"`
-	BadgeName        string `bun:"badge_name" json:"badge_name"`
-	BadgeIcon        string `bun:"badge_icon" json:"badge_icon"`
-	RedirectURL      string `bun:"redirect_url" json:"redirect_url"`
-	BadgeType        int32  `bun:"badge_type" json:"badge_type"`
-	BadgeDescription string `bun:"badge_description" json:"badge_description"`
-}
-
 type ActionLog struct {
 	bun.BaseModel `bun:"table:actionlog"`
 
@@ -121,7 +113,6 @@ func createSchema() error {
 		(*UserReview)(nil),
 		(*URUser)(nil),
 		(*ReviewReport)(nil),
-		(*UserBadgeLegacy)(nil),
 		(*ActionLog)(nil),
 	}
 
