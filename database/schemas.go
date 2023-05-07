@@ -70,6 +70,7 @@ type URUser struct {
 	BanEndDate   time.Time   `bun:"ban_end_date" json:"banEndDate"`
 	Badges       []UserBadge `bun:"-" json:"badges"`
 	OptedOut     bool        `bun:"opted_out" json:"-"`
+	IpHash       string      `bun:"ip_hash" json:"-"`
 }
 
 type AdminUser struct {

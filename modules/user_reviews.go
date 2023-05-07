@@ -294,7 +294,7 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 	return count, nil
 }
 
-func AddUserReviewsUser(code string, clientmod string, authUrl string) (string, error) {
+func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string) (string, error) {
 	//todo make this work exactly same as pyton version
 	if authUrl == "" {
 		authUrl = "/URauth"
