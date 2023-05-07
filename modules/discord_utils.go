@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/diamondburned/arikawa/v3/state"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/diamondburned/arikawa/v3/state"
 
 	"server-go/common"
 
@@ -258,7 +259,7 @@ type ComponentOption struct {
 	Value string `json:"value"`
 }
 
-type ReportWebhookData struct {
+type WebhookData struct {
 	Content    string             `json:"content"`
 	Username   string             `json:"username"`
 	AvatarURL  string             `json:"avatar_url"`
@@ -266,11 +267,21 @@ type ReportWebhookData struct {
 	Components []WebhookComponent `json:"components"`
 }
 
-func SendReportWebhook(data ReportWebhookData) error {
+func SendReportWebhook(data WebhookData) error {
 	body, err := json.Marshal(data)
 	var resp *http.Response
 
 	resp, err = http.Post(common.Config.DiscordWebhook, "application/json", strings.NewReader(string(body)))
+	bodyBytes, err := io.ReadAll(resp.Body)
+	print(string(bodyBytes))
+	return err
+}
+
+func SendLoggerWebhook(data WebhookData) error {
+	body, err := json.Marshal(data)
+	var resp *http.Response
+
+	resp, err = http.Post(common.Config.LoggerWebhook, "application/json", strings.NewReader(string(body)))
 	bodyBytes, err := io.ReadAll(resp.Body)
 	print(string(bodyBytes))
 	return err

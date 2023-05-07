@@ -21,6 +21,7 @@ type ConfigStr struct {
 	DiscordWebhook      string    `json:"discord_webhook"`
 	AdminToken          string    `json:"admin_token"`
 	StupidityBotToken   string    `json:"stupidity_bot_token"`
+	LoggerWebhook       string    `json:"logger_webhook"`
 }
 
 var LightProfanityDetector *goaway.ProfanityDetector
@@ -58,7 +59,7 @@ func init() {
 	if er4 != nil {
 		fmt.Println(er4)
 	}
-	
+
 	json.NewDecoder(f3).Decode(&profaneWords)
 	json.NewDecoder(f4).Decode(&lightProfaneWords)
 

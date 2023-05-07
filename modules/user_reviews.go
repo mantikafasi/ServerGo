@@ -228,19 +228,23 @@ func AddReview(data UR_RequestData) (string, error) {
 
 	if common.ProfanityDetector.IsProfane(data.Comment) {
 		BanUser(user.DiscordID, common.Config.AdminToken, 7)
-		SendReportWebhook(ReportWebhookData{
+		SendLoggerWebhook(WebhookData{
 			Username: "ReviewDB",
-			Content: "User <@" + user.DiscordID + "> has been banned for 1 week for trying to post a profane review",
+			Content:  "User <@" + user.DiscordID + "> has been banned for 1 week for trying to post a profane review",
 			Embeds: []Embed{
 				{
 					Fields: []ReportWebhookEmbedField{
 						{
-							Name:   "Review Content",
-							Value:  data.Comment,
+							Name:  "Review Content",
+							Value: data.Comment,
 						},
 						{
-							Name:   "ReviewDB ID",
-							Value:  strconv.Itoa(int(senderUserID)),
+							Name:  "ReviewDB ID",
+							Value: strconv.Itoa(int(senderUserID)),
+						},
+						{
+							Name:  "Reviewed Profile",
+							Value: "<@" + strconv.FormatInt(int64(data.DiscordID), 10) + ">",
 						},
 					},
 				},
@@ -362,6 +366,12 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		return token, nil
 	}
 
+	SendLoggerWebhook(WebhookData{
+		Username:  "ReviewDB",
+		AvatarURL: discordUser.Avatar,
+		Content:   fmt.Sprintf("User <@%s> (%s)has been registered to ReviewDB", discordUser.ID, discordUser.Username+"#"+discordUser.Discriminator),
+	})
+
 	_, err = database.DB.NewInsert().Model(user).Exec(context.Background())
 	if err != nil {
 		return "An Error occurred", err
@@ -414,7 +424,7 @@ func ReportReview(reviewID int32, token string) error {
 		reviewedUsername = reviewedUser.Tag()
 	}
 
-	err = SendReportWebhook(ReportWebhookData{
+	err = SendReportWebhook(WebhookData{
 		Username: "ReviewDB",
 		Content:  "Reported Review",
 		Components: []WebhookComponent{
