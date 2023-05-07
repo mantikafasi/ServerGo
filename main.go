@@ -136,7 +136,7 @@ func main() {
 
 	//ReviewDB
 
-	mux.HandleFunc("/URAuth", legacy_routes.ReviewDBAuth)
+	mux.HandleFunc("/URauth", legacy_routes.ReviewDBAuth)
 
 	mux.HandleFunc("/api/reviewdb/users", routes.GetUserInfo)
 
