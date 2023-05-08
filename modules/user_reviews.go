@@ -325,7 +325,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	SendLoggerWebhook(WebhookData{
 		Username:  discordUser.Username+"#"+discordUser.Discriminator,
 		AvatarURL: GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
-		Content:   fmt.Sprintf("User <@%s> has been registered to ReviewDB", discordUser.ID),
+		Content:   fmt.Sprintf("User <@%s> has been registered to ReviewDB from %s", discordUser.ID,clientmod),
 	})
 
 	return token, nil
