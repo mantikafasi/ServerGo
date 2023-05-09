@@ -376,7 +376,9 @@ func ReportReview(reviewID int32, token string) error {
 		reviewedUsername = reviewedUser.Tag()
 	}
 
-	err = SendReportWebhook(WebhookData{
+
+
+	webhookData := WebhookData{
 		Username: "ReviewDB",
 		Content:  "Reported Review",
 		Components: []WebhookComponent{
@@ -413,18 +415,7 @@ func ReportReview(reviewID int32, token string) error {
 							ID:       "590237837299941382",
 							Animated: true,
 						},
-					},
-					{
-						Type:     2,
-						Label:    "Ban Reporter",
-						Style:    4,
-						CustomID: fmt.Sprintf("ban_select:" + user.DiscordID),
-						Emoji: WebhookEmoji{
-							Name:     "banned",
-							ID:       "590237837299941382",
-							Animated: true,
-						},
-					},
+					},	
 				},
 			},
 		},
@@ -454,7 +445,23 @@ func ReportReview(reviewID int32, token string) error {
 				},
 			},
 		},
-	})
+	}
+
+	if (reportedUser.DiscordID != user.DiscordID) {
+		webhookData.Components = append(webhookData.Components, WebhookComponent{
+				Type:     2,
+				Label:    "Ban Reporter",
+				Style:    4,
+				CustomID: fmt.Sprintf("ban_select: " + user.DiscordID),
+				Emoji: WebhookEmoji{
+					Name:     "banned",
+					ID:       "590237837299941382",
+					Animated: true,
+				},
+			},)
+	}
+
+	SendReportWebhook(webhookData)
 
 	if err != nil {
 		println(err.Error())
