@@ -448,7 +448,7 @@ func ReportReview(reviewID int32, token string) error {
 	}
 
 	if (reportedUser.DiscordID != user.DiscordID) {
-		webhookData.Components = append(webhookData.Components[0].Components, WebhookComponent{
+		webhookData.Components[0].Components = append(webhookData.Components[0].Components, WebhookComponent{
 				Type:     2,
 				Label:    "Ban Reporter",
 				Style:    4,
