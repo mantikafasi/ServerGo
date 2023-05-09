@@ -452,7 +452,7 @@ func ReportReview(reviewID int32, token string) error {
 				Type:     2,
 				Label:    "Ban Reporter",
 				Style:    4,
-				CustomID: fmt.Sprintf("ban_select: " + user.DiscordID),
+				CustomID: fmt.Sprintf("ban_select:" + user.DiscordID),
 				Emoji: WebhookEmoji{
 					Name:     "banned",
 					ID:       "590237837299941382",
@@ -461,7 +461,7 @@ func ReportReview(reviewID int32, token string) error {
 			},)
 	}
 
-	SendReportWebhook(webhookData)
+	err = SendReportWebhook(webhookData)
 
 	if err != nil {
 		println(err.Error())
