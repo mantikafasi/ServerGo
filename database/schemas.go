@@ -77,7 +77,7 @@ type URUser struct {
 	IpHash       string      `bun:"ip_hash" json:"-"`
 	BanID        int32       `bun:"ban_id" json:"-"`
 
-	ReviewDBBanLog *ReviewDBBanLog `bun:"rel:has-one,join:ban_id=id" json:"ban_info"`
+	BanInfo *ReviewDBBanLog `bun:"rel:has-one,join:ban_id=id" json:"ban_info"`
 }
 
 type AdminUser struct {

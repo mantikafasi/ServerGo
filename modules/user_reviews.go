@@ -251,7 +251,7 @@ func GetDBUserViaToken(token string) (user database.URUser, err error) {
 		NewSelect().
 		Model(&user).
 		Where("token = ?", CalculateHash(token)).
-		Relation("ReviewDBBanLog").
+		Relation("BanInfo").
 		Scan(context.Background(), &user)
 	return
 }
@@ -451,7 +451,7 @@ func ReportReview(reviewID int32, token string) error {
 			Type:     2,
 			Label:    "Ban Reporter",
 			Style:    4,
-			CustomID: fmt.Sprintf("ban_select:" + user.DiscordID),
+			CustomID: fmt.Sprintf("ban_select:" + user.DiscordID + ":" + "0"),
 			Emoji: WebhookEmoji{
 				Name:     "banned",
 				ID:       "590237837299941382",
