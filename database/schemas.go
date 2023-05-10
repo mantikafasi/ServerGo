@@ -25,10 +25,10 @@ type UserInfo struct {
 }
 
 type Sender struct {
-	ID           int32                `json:"id"`
-	DiscordID    string               `json:"discordID"`
-	Username     string               `json:"username"`
-	ProfilePhoto string               `json:"profilePhoto"`
+	ID           int32       `json:"id"`
+	DiscordID    string      `json:"discordID"`
+	Username     string      `json:"username"`
+	ProfilePhoto string      `json:"profilePhoto"`
 	Badges       []UserBadge `json:"badges"`
 }
 
@@ -45,7 +45,7 @@ type UserReview struct {
 	Timestamp    int64     `bun:"-" json:"timestamp"`
 
 	User         *URUser `bun:"rel:belongs-to,join:senderuserid=id" json:"-"`
-	SenderUserID int32            `bun:"senderuserid" json:"-"`
+	SenderUserID int32   `bun:"senderuserid" json:"-"`
 }
 
 type UserBadge struct {
@@ -75,6 +75,7 @@ type URUser struct {
 	Badges       []UserBadge `bun:"-" json:"badges"`
 	OptedOut     bool        `bun:"opted_out" json:"-"`
 	IpHash       string      `bun:"ip_hash" json:"-"`
+	BanID        int32       `bun:"ban_id" json:"-"`
 }
 
 type AdminUser struct {
@@ -92,15 +93,28 @@ type ReviewReport struct {
 	ReporterID int32 `bun:"reporterid"`
 }
 
+type ReviewDBBanLog struct {
+	bun.BaseModel `bun:"table:reviewdb_bans"`
+
+	ID             int32     `bun:"id,pk,autoincrement"`
+	DiscordID      string    `bun:"discord_id"`
+	ReviewID       int32     `bun:"review_id"`
+	ReviewContent  string    `bun:"review_content"`
+	AdminDiscordID string    `bun:"admin_discord_id"`
+	BanEndDate     time.Time `bun:"ban_end_date"`
+	Timestamp      time.Time `bun:"timestamp,default:current_timestamp"`
+}
+
 type ActionLog struct {
 	bun.BaseModel `bun:"table:actionlog"`
 
 	Action string `bun:"action" json:"action"`
 
-	ReviewID     int32  `bun:"id,pk,autoincrement" json:"id"`
-	UserID       int64  `bun:"userid,type:numeric" json:"-"`
-	SenderUserID int32  `bun:"senderuserid" json:"senderuserid"`
-	Comment      string `bun:"comment" json:"comment"`
+	ReviewID        int32  `bun:"id,pk,autoincrement" json:"id"`
+	UserID          int64  `bun:"userid,type:numeric" json:"-"`
+	SenderUserID    int32  `bun:"senderuserid" json:"senderuserid"`
+	SenderDiscordID string `bun:"senderdiscordid,type:numeric" json:"senderdiscordid"`
+	Comment         string `bun:"comment" json:"comment"`
 
 	UpdatedString string `bun:"updatedstring"`
 	ActionUserID  int32  `bun:"actionuserid"`
@@ -114,6 +128,7 @@ func createSchema() error {
 		(*URUser)(nil),
 		(*ReviewReport)(nil),
 		(*ActionLog)(nil),
+		(*ReviewDBBanLog)(nil),
 	}
 
 	for _, model := range models {

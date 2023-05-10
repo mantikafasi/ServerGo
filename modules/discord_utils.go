@@ -13,6 +13,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/state"
 
 	"server-go/common"
+	"server-go/database"
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -65,11 +66,16 @@ type InteractionsData struct {
 	} `json:"member"`
 }
 
-func BanTimeSelectComponent(userid string) discord.ContainerComponents {
+
+func BanTimeSelectComponent(userid string) discord.ContainerComponents{
+	return BanTimeSelectComponentWithID(userid, "ban_user")
+}
+
+func BanTimeSelectComponentWithID(userid string,componentID string) discord.ContainerComponents {
 	return discord.ContainerComponents{
 		&discord.ActionRowComponent{
 			&discord.StringSelectComponent{
-				CustomID:    discord.ComponentID("ban_user:" + userid),
+				CustomID:    discord.ComponentID(componentID + ":" + userid),
 				Placeholder: "Select ban time",
 				Options: []discord.SelectOption{
 					{
@@ -134,34 +140,62 @@ func Interactions(data InteractionsData) (string, error) {
 			//UpdateWebhook(data.Message.ID, Response{Components: []WebhookComponent{component}})
 
 		} else if action[0] == "delete_and_ban" {
-			component := BanTimeSelectComponent(action[2] + ":" + action[1])
-			response.Data.Components = &component
 
-			err := DeleteReview(int32(firstVariable), common.Config.AdminToken)
+			banDuration, _ := strconv.ParseInt(data.Data.Values[0], 10, 32)
+			reviewid, err := strconv.ParseInt(action[2], 10, 32)
+			review := database.UserReview{}
+
 			if err == nil {
-				response.Data.Content = option.NewNullableString("Successfully Deleted review with id " + action[1] + "\nSelect ban duration")
-			} else {
-				response.Data.Content = option.NewNullableString(err.Error()) // I hope this doesnt create error
+				review, _ = GetReview(int32(reviewid))
 			}
+			
+			err = BanUser(action[1], common.Config.AdminToken, int32(banDuration),review)
+			err2 := DeleteReview(int32(reviewid), common.Config.AdminToken)
+			
+			if err == nil && err2 == nil {
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully deleted review with id %s and banned user %s for %d days",action[2], action[1], int32(banDuration)))
+			} else if err == nil && err2 != nil {
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days and failed to delete review with id %s",action[1], int32(banDuration),action[2]))
+				fmt.Println(err)
+			} else if err != nil && err2 != nil {
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Failed to delete review with id %s and failed to ban user %s for %d days",action[2], action[1], int32(banDuration)))
+				fmt.Println(err, err2)
+			} else {
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Failed to ban user with id %s and deleted review with id %s",action[1],action[2] ))
+			}
+
+			response.Type = 7 // update message
+
+			response.Data.Components = &discord.ContainerComponents{} // remove components
+
+		} else if action[0] == "select_delete_and_ban" {
+			component := BanTimeSelectComponentWithID(action[2] + ":" + action[1],"delete_and_ban")
+			response.Data.Components = &component
+			response.Data.Content = option.NewNullableString("Select ban duration & delete review")
+		
 		} else if action[0] == "ban_user" {
 
 			banDuration, _ := strconv.ParseInt(data.Data.Values[0], 10, 32)
+			reviewid, err := strconv.ParseInt(action[2], 10, 32)
+			review := database.UserReview{}
 
-			err := BanUser(action[1], common.Config.AdminToken, int32(banDuration))
 			if err == nil {
-				if len(action) == 3 {
-					response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days and deleted review with id %s", action[1], int32(banDuration), action[2]))
-				} else {
-					response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days", action[1], int32(banDuration)))
-				}
+				review, _ = GetReview(int32(reviewid))
+			}
+			
+			err = BanUser(action[1], common.Config.AdminToken, int32(banDuration),review)
+			if err == nil {
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days", action[1], int32(banDuration)))
 			} else {
 				response.Data.Content = option.NewNullableString(err.Error())
 			}
 			response.Type = 7 // update message
 
 			response.Data.Components = &discord.ContainerComponents{} // remove components
+			
 		}
 	}
+
 	if response.Data.Content.Val != "" {
 		b, err := json.Marshal(response)
 		if err != nil {
@@ -274,6 +308,7 @@ func SendReportWebhook(data WebhookData) error {
 	resp, err = http.Post(common.Config.DiscordWebhook, "application/json", strings.NewReader(string(body)))
 	bodyBytes, err := io.ReadAll(resp.Body)
 	print(string(bodyBytes))
+	print(string(body))
 	return err
 }
 

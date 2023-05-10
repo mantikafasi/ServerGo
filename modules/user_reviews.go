@@ -177,8 +177,18 @@ func AddReview(data UR_RequestData) (string, error) {
 		return "", errors.New("Your review contains profanity")
 	}
 
+	review := &database.UserReview{
+
+		UserID:       int64(data.DiscordID),
+		SenderUserID: senderUserID,
+		Comment:      data.Comment,
+		Star:         -1,
+		ReviewType:   int32(data.ReviewType),
+		TimestampStr: time.Now(),
+	}
+
 	if common.ProfanityDetector.IsProfane(data.Comment) {
-		BanUser(user.DiscordID, common.Config.AdminToken, 7)
+		BanUser(user.DiscordID, common.Config.AdminToken, 7,*review)
 		SendLoggerWebhook(WebhookData{
 			Username: "ReviewDB",
 			Content:  "User <@" + user.DiscordID + "> has been banned for 1 week for trying to post a profane review",
@@ -202,16 +212,6 @@ func AddReview(data UR_RequestData) (string, error) {
 			},
 		})
 		return "", errors.New("Because of trying to post a profane review, you have been banned from ReviewDB for 1 week")
-	}
-
-	review := &database.UserReview{
-
-		UserID:       int64(data.DiscordID),
-		SenderUserID: senderUserID,
-		Comment:      data.Comment,
-		Star:         -1,
-		ReviewType:   int32(data.ReviewType),
-		TimestampStr: time.Now(),
 	}
 
 	res, err := database.DB.NewUpdate().Where("userid = ? AND senderuserid = ?", data.DiscordID, senderUserID).OmitZero().Model(review).Exec(context.Background())
@@ -398,7 +398,7 @@ func ReportReview(reviewID int32, token string) error {
 						Type:     2,
 						Label:    "Ban User",
 						Style:    4,
-						CustomID: fmt.Sprintf("ban_select:" + reportedUser.DiscordID), //string(reportedUser.DiscordID)
+						CustomID: fmt.Sprintf("ban_select:%d:%d",reportedUser.DiscordID , reviewID), //string(reportedUser.DiscordID)
 						Emoji: WebhookEmoji{
 							Name:     "banned",
 							ID:       "590237837299941382",
@@ -409,7 +409,7 @@ func ReportReview(reviewID int32, token string) error {
 						Type:     2,
 						Label:    "Delete Review and Ban User",
 						Style:    4,
-						CustomID: fmt.Sprintf("delete_and_ban:%d:%s", reviewID, string(reportedUser.DiscordID)),
+						CustomID: fmt.Sprintf("select_delete_and_ban:%d:%s", reviewID, string(reportedUser.DiscordID)),
 						Emoji: WebhookEmoji{
 							Name:     "banned",
 							ID:       "590237837299941382",
@@ -604,11 +604,33 @@ func GetLastReviewID(userID string) int32 {
 	return review.ID
 }
 
-func BanUser(discordid string, token string, banDuration int32) error {
+func BanUser(discordid string, token string, banDuration int32,review database.UserReview) error {
 	users := []database.URUser{}
 
-	if !IsUserAdmin(GetIDWithToken(token)) && token != common.Config.AdminToken {
+	if token != common.Config.AdminToken && !IsUserAdmin(GetIDWithToken(token)) {
 		return errors.New("You are not allowed to ban users")
+	}
+
+	/*
+	AdminDiscordID := 0
+	if token != common.Config.AdminToken {
+		admin , _ := GetDBUserViaToken(token)
+		AdminDiscordID = admin.DiscordID 
+	}
+	*/
+	banID := int32(0)
+
+	if (review.ID != 0) {
+		banData := database.ReviewDBBanLog{
+			DiscordID: discordid,
+			ReviewID:  review.ID,
+			BanEndDate: time.Now().AddDate(0, 0, int(banDuration)),
+			ReviewContent: review.Comment,
+		}
+	
+		database.DB.NewInsert().Model(&banData).Exec(context.Background())
+
+		banID = banData.ID
 	}
 
 	database.DB.NewSelect().Model(&users).Where("discordid = ?", discordid).Scan(context.Background(), &users)
@@ -626,7 +648,8 @@ func BanUser(discordid string, token string, banDuration int32) error {
 		}
 	}
 
-	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("ban_end_date = ?", time.Now().AddDate(0, 0, int(banDuration))).Set("warning_count = warning_count + 1").Exec(context.Background())
+	_,err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("ban_end_date = ?", time.Now().AddDate(0, 0, int(banDuration))).Set("warning_count = warning_count + 1").Set("ban_id = ?", banID).Exec(context.Background())
+	
 	if err != nil {
 		return err
 	}

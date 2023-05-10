@@ -11,9 +11,9 @@ import (
 
 	"server-go/common"
 	"server-go/database"
+	"server-go/legacy_routes"
 	"server-go/modules"
 	"server-go/routes"
-	"server-go/legacy_routes"
 
 	"github.com/go-chi/chi"
 	"github.com/prometheus/client_golang/prometheus"
@@ -166,10 +166,11 @@ func main() {
 
 	mux.Handle("/metrics", promhttp.Handler())
 
+	modules.BanUser("1", common.Config.AdminToken, 2, database.UserReview{ID: 2})
+
 	err = http.ListenAndServe(":"+common.Config.Port, mux)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
-
 	} else if err != nil {
 		fmt.Printf("error starting server: %s\n", err)
 		os.Exit(1)
