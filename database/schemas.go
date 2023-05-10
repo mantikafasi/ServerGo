@@ -113,7 +113,6 @@ type ActionLog struct {
 	ReviewID        int32  `bun:"id,pk,autoincrement" json:"id"`
 	UserID          int64  `bun:"userid,type:numeric" json:"-"`
 	SenderUserID    int32  `bun:"senderuserid" json:"senderuserid"`
-	SenderDiscordID string `bun:"senderdiscordid,type:numeric" json:"senderdiscordid"`
 	Comment         string `bun:"comment" json:"comment"`
 
 	UpdatedString string `bun:"updatedstring"`

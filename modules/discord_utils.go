@@ -134,7 +134,7 @@ func Interactions(data InteractionsData) (string, error) {
 			}
 		} else if action[0] == "ban_select" {
 
-			component := BanTimeSelectComponent(action[1])
+			component := BanTimeSelectComponent(action[1] + ":" + action[2])
 			response.Data.Content = option.NewNullableString("Select ban duration")
 			response.Data.Components = &component
 			//UpdateWebhook(data.Message.ID, Response{Components: []WebhookComponent{component}})
@@ -155,13 +155,13 @@ func Interactions(data InteractionsData) (string, error) {
 			if err == nil && err2 == nil {
 				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully deleted review with id %s and banned user %s for %d days",action[2], action[1], int32(banDuration)))
 			} else if err == nil && err2 != nil {
-				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days and failed to delete review with id %s\n Reason:%s",action[1], int32(banDuration),action[2],err2.Error()))
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days and failed to delete review with id %s\n Reason: %s",action[1], int32(banDuration),action[2],err2.Error()))
 				fmt.Println(err)
 			} else if err != nil && err2 != nil {
-				response.Data.Content = option.NewNullableString(fmt.Sprintf("Failed to delete review with id %s and failed to ban user %s for %d days\nBan Fail Reason:%s\nReview Delete fail reason:%s",action[2], action[1], int32(banDuration),err.Error(),err2.Error()))
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Failed to delete review with id %s and failed to ban user %s for %d days\nBan Fail Reason: %s\nReview Delete fail reason:%s",action[2], action[1], int32(banDuration),err.Error(),err2.Error()))
 				fmt.Println(err, err2)
 			} else {
-				response.Data.Content = option.NewNullableString(fmt.Sprintf("Failed to ban user with id %s and successfully deleted review with id %s\nReason:%s",action[1],action[2],err.Error() ))
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Failed to ban user with id %s and successfully deleted review with id %s\nReason: %s",action[1],action[2],err.Error() ))
 			}
 
 			response.Type = 7 // update message

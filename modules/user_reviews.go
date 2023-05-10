@@ -398,7 +398,7 @@ func ReportReview(reviewID int32, token string) error {
 						Type:     2,
 						Label:    "Ban User",
 						Style:    4,
-						CustomID: fmt.Sprintf("ban_select:%d:%d",reportedUser.DiscordID , reviewID), //string(reportedUser.DiscordID)
+						CustomID: fmt.Sprintf("ban_select:%s:%d",reportedUser.DiscordID , reviewID), //string(reportedUser.DiscordID)
 						Emoji: WebhookEmoji{
 							Name:     "banned",
 							ID:       "590237837299941382",

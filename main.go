@@ -166,8 +166,6 @@ func main() {
 
 	mux.Handle("/metrics", promhttp.Handler())
 
-	modules.BanUser("1", common.Config.AdminToken, 2, database.UserReview{ID: 2})
-
 	err = http.ListenAndServe(":"+common.Config.Port, mux)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n")
