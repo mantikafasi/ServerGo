@@ -620,19 +620,6 @@ func BanUser(discordid string, token string, banDuration int32,review database.U
 	*/
 	banID := int32(0)
 
-	if (review.ID != 0) {
-		banData := database.ReviewDBBanLog{
-			DiscordID: discordid,
-			ReviewID:  review.ID,
-			BanEndDate: time.Now().AddDate(0, 0, int(banDuration)),
-			ReviewContent: review.Comment,
-		}
-	
-		database.DB.NewInsert().Model(&banData).Exec(context.Background())
-
-		banID = banData.ID
-	}
-
 	database.DB.NewSelect().Model(&users).Where("discordid = ?", discordid).Scan(context.Background(), &users)
 
 	for user := range users {
@@ -646,6 +633,19 @@ func BanUser(discordid string, token string, banDuration int32,review database.U
 			}
 			return nil
 		}
+	}
+
+	if (review.ID != 0) {
+		banData := database.ReviewDBBanLog{
+			DiscordID: discordid,
+			ReviewID:  review.ID,
+			BanEndDate: time.Now().AddDate(0, 0, int(banDuration)),
+			ReviewContent: review.Comment,
+		}
+	
+		database.DB.NewInsert().Model(&banData).Exec(context.Background())
+
+		banID = banData.ID
 	}
 
 	_,err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("ban_end_date = ?", time.Now().AddDate(0, 0, int(banDuration))).Set("warning_count = warning_count + 1").Set("ban_id = ?", banID).Exec(context.Background())
