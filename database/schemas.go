@@ -98,13 +98,14 @@ type ReviewReport struct {
 type ReviewDBBanLog struct {
 	bun.BaseModel `bun:"table:reviewdb_bans"`
 
-	ID             int32     `bun:"id,pk,autoincrement" json:"id"`
-	DiscordID      string    `bun:"discord_id" json:"discordID"`
-	ReviewID       int32     `bun:"review_id" json:"reviewID"`
-	ReviewContent  string    `bun:"review_content" json:"reviewContent"`
-	AdminDiscordID string    `bun:"admin_discord_id" json:"-"`
-	BanEndDate     time.Time `bun:"ban_end_date" json:"banEndDate"`
-	Timestamp      time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
+	ID              int32     `bun:"id,pk,autoincrement" json:"id"`
+	DiscordID       string    `bun:"discord_id" json:"discordID"`
+	ReviewID        int32     `bun:"review_id" json:"reviewID"`
+	ReviewContent   string    `bun:"review_content" json:"reviewContent"`
+	AdminDiscordID  string    `bun:"admin_discord_id" json:"-"`
+	BanEndDate      time.Time `bun:"ban_end_date" json:"banEndDate"`
+	Timestamp       time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
+	ReviewTimestamp time.Time `bun:"review_timestamp" json:"reviewTimestamp"`
 }
 
 type ActionLog struct {

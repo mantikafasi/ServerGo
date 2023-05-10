@@ -640,6 +640,7 @@ func BanUser(discordid string, token string, banDuration int32, review database.
 			ReviewID:      review.ID,
 			BanEndDate:    time.Now().AddDate(0, 0, int(banDuration)),
 			ReviewContent: review.Comment,
+			ReviewTimestamp: review.TimestampStr,
 		}
 
 		database.DB.NewInsert().Model(&banData).Exec(context.Background())
