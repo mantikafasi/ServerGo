@@ -71,11 +71,13 @@ type URUser struct {
 	ProfilePhoto string      `bun:"profile_photo" json:"profilePhoto"`
 	ClientMod    string      `bun:"client_mod" json:"clientMod"`
 	WarningCount int32       `bun:"warning_count" json:"warningCount"`
-	BanEndDate   time.Time   `bun:"ban_end_date" json:"banEndDate"`
+	BanEndDate   time.Time   `bun:"ban_end_date" json:"-"`
 	Badges       []UserBadge `bun:"-" json:"badges"`
 	OptedOut     bool        `bun:"opted_out" json:"-"`
 	IpHash       string      `bun:"ip_hash" json:"-"`
 	BanID        int32       `bun:"ban_id" json:"-"`
+
+	ReviewDBBanLog *ReviewDBBanLog `bun:"rel:has-one,join:ban_id=id" json:"ban_info"`
 }
 
 type AdminUser struct {
@@ -96,13 +98,13 @@ type ReviewReport struct {
 type ReviewDBBanLog struct {
 	bun.BaseModel `bun:"table:reviewdb_bans"`
 
-	ID             int32     `bun:"id,pk,autoincrement"`
-	DiscordID      string    `bun:"discord_id"`
-	ReviewID       int32     `bun:"review_id"`
-	ReviewContent  string    `bun:"review_content"`
-	AdminDiscordID string    `bun:"admin_discord_id"`
-	BanEndDate     time.Time `bun:"ban_end_date"`
-	Timestamp      time.Time `bun:"timestamp,default:current_timestamp"`
+	ID             int32     `bun:"id,pk,autoincrement" json:"id"`
+	DiscordID      string    `bun:"discord_id" json:"discordID"`
+	ReviewID       int32     `bun:"review_id" json:"reviewID"`
+	ReviewContent  string    `bun:"review_content" json:"reviewContent"`
+	AdminDiscordID string    `bun:"admin_discord_id" json:"-"`
+	BanEndDate     time.Time `bun:"ban_end_date" json:"banEndDate"`
+	Timestamp      time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 }
 
 type ActionLog struct {
@@ -110,10 +112,10 @@ type ActionLog struct {
 
 	Action string `bun:"action" json:"action"`
 
-	ReviewID        int32  `bun:"id,pk,autoincrement" json:"id"`
-	UserID          int64  `bun:"userid,type:numeric" json:"-"`
-	SenderUserID    int32  `bun:"senderuserid" json:"senderuserid"`
-	Comment         string `bun:"comment" json:"comment"`
+	ReviewID     int32  `bun:"id,pk,autoincrement" json:"id"`
+	UserID       int64  `bun:"userid,type:numeric" json:"-"`
+	SenderUserID int32  `bun:"senderuserid" json:"senderuserid"`
+	Comment      string `bun:"comment" json:"comment"`
 
 	UpdatedString string `bun:"updatedstring"`
 	ActionUserID  int32  `bun:"actionuserid"`
