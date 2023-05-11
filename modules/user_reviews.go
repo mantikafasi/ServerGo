@@ -253,6 +253,11 @@ func GetDBUserViaToken(token string) (user database.URUser, err error) {
 		Where("token = ?", CalculateHash(token)).
 		Relation("BanInfo").
 		Scan(context.Background(), &user)
+	
+	if user.BanEndDate.Before(time.Now()) {
+		user.BanInfo = nil
+	}
+	
 	return
 }
 
