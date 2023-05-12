@@ -370,6 +370,11 @@ func ReportReview(reviewID int32, token string) error {
 	if err != nil {
 		return errors.New("Invalid Review ID")
 	}
+
+	if review.Sender.DiscordID == user.DiscordID {
+		return errors.New("You cant report your own reviews")
+	}
+
 	reportedUser, _ := GetDBUserViaID(review.SenderUserID)
 
 	report := database.ReviewReport{
