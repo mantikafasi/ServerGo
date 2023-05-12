@@ -188,6 +188,7 @@ func AddReview(data UR_RequestData) (string, error) {
 	}
 
 	if common.ProfanityDetector.IsProfane(data.Comment) {
+		review.ID = -1
 		BanUser(user.DiscordID, common.Config.AdminToken, 7, *review)
 		SendLoggerWebhook(WebhookData{
 			Username: "ReviewDB",
