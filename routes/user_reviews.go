@@ -64,6 +64,7 @@ func AddUserReview(w http.ResponseWriter, r *http.Request) {
 
 	res, err := modules.AddReview(data)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		response.Success = false
 		response.Message = err.Error()
 		println(err.Error())
@@ -87,6 +88,7 @@ func ReviewDBAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !slices.Contains(ClientMods, clientmod) {
+		w.WriteHeader(http.StatusPaymentRequired) // trolley
 		common.SendStructResponse(w, ReviewDBAuthResponse{
 			Success: false,
 			Message: "Invalid clientMod",
@@ -98,6 +100,7 @@ func ReviewDBAuth(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
 		io.WriteString(w, `{"token": "", "success": false}`)
 		return
 	}
@@ -118,6 +121,7 @@ func ReportReview(w http.ResponseWriter, r *http.Request) {
 	response := Response{}
 
 	if data.Token == "" || data.ReviewID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
 		response.Message = "Invalid Request"
 		common.SendStructResponse(w, response)
 		return
@@ -125,6 +129,7 @@ func ReportReview(w http.ResponseWriter, r *http.Request) {
 
 	err := modules.ReportReview(data.ReviewID, data.Token)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		response.Message = err.Error()
 		common.SendStructResponse(w, response)
 		return
@@ -144,6 +149,7 @@ func DeleteReview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if data.Token == "" || data.ReviewID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
 		responseData.Message = "Invalid Request"
 		res, _ := json.Marshal(responseData)
 
@@ -153,6 +159,7 @@ func DeleteReview(w http.ResponseWriter, r *http.Request) {
 
 	err := modules.DeleteReview(data.ReviewID, data.Token)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		responseData.Message = err.Error()
 		res, _ := json.Marshal(responseData)
 		w.Write(res)
@@ -210,6 +217,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		response.Success = false
 		response.Message = err.Error()
 		common.SendStructResponse(w, response)
@@ -342,6 +350,7 @@ func SearchReview(w http.ResponseWriter, r *http.Request) {
 
 	reviews, err := modules.SearchReviews(data.Query, data.Token)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		response.Success = false
 		response.Message = err.Error()
 		common.SendStructResponse(w, response)
