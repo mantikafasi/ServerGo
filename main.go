@@ -154,6 +154,18 @@ func main() {
 
 	mux.HandleFunc("/api/reviewdb/settings", routes.Settings)
 
+
+	mux.Group(func(r chi.Router) {
+		r.Use(routes.AdminMiddleware)
+
+		r.Route(("/api/reviewdb/admin"), func(r chi.Router) {
+			r.Get("/filters", routes.GetFilters)
+			r.Put("/filters", routes.AddFilter)
+			r.Delete("/filters", routes.DeleteFilter)
+			r.Get("/reload", routes.ReloadConfig)
+		})
+	})
+
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
 	})

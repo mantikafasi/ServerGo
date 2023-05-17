@@ -9,19 +9,22 @@ import (
 )
 
 type ConfigStr struct {
-	ApiEndpoint         string    `json:"api_endpoint"`
-	DB                  *ConfigDB `json:"db"`
-	RedirectUri         string    `json:"redirect_uri"`
-	ClientId            string    `json:"client_id"`
-	ClientSecret        string    `json:"client_secret"`
-	GithubWebhookSecret string    `json:"github_webhook_secret"`
-	Origin              string    `json:"origin"`
-	Port                string    `json:"port"`
-	BotToken            string    `json:"bot_token"`
-	DiscordWebhook      string    `json:"discord_webhook"`
-	AdminToken          string    `json:"admin_token"`
-	StupidityBotToken   string    `json:"stupidity_bot_token"`
-	LoggerWebhook       string    `json:"logger_webhook"`
+	ApiEndpoint          string    `json:"api_endpoint"`
+	DB                   *ConfigDB `json:"db"`
+	RedirectUri          string    `json:"redirect_uri"`
+	ClientId             string    `json:"client_id"`
+	ClientSecret         string    `json:"client_secret"`
+	GithubWebhookSecret  string    `json:"github_webhook_secret"`
+	Origin               string    `json:"origin"`
+	Port                 string    `json:"port"`
+	BotToken             string    `json:"bot_token"`
+	DiscordWebhook       string    `json:"discord_webhook"`
+	AdminToken           string    `json:"admin_token"`
+	StupidityBotToken    string    `json:"stupidity_bot_token"`
+	LoggerWebhook        string    `json:"logger_webhook"`
+	Debug                bool      `json:"debug"`
+	ProfaneWordList      []string  `json:"profane_word_list"`
+	LightProfaneWordList []string  `json:"light_profane_word_list"`
 }
 
 var LightProfanityDetector *goaway.ProfanityDetector
@@ -38,7 +41,7 @@ var Config *ConfigStr
 
 var OptedOut []string
 
-func init() {
+func LoadConfig() {
 	f, err := os.Open("config.json")
 	if err != nil {
 		fmt.Println(err)
@@ -47,22 +50,21 @@ func init() {
 	err = json.NewDecoder(f).Decode(&Config)
 	f.Close()
 
-	var profaneWords []string
+	ProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(Config.ProfaneWordList, nil, nil)
+	LightProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(Config.LightProfaneWordList, nil, nil)
+}
 
-	f3, er3 := os.Open("profanewords.json")
-	if er3 != nil {
-		fmt.Println(er3)
+func SaveConfig() {
+	f, err := os.OpenFile("config.json", os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println(err)
 	}
-	var lightProfaneWords []string
+	encoder := json.NewEncoder(f)
+	encoder.SetIndent("", "    ")
+	err = encoder.Encode(&Config)
+	f.Close()
+}
 
-	f4, er4 := os.Open("lightprofanewords.json")
-	if er4 != nil {
-		fmt.Println(er4)
-	}
-
-	json.NewDecoder(f3).Decode(&profaneWords)
-	json.NewDecoder(f4).Decode(&lightProfaneWords)
-
-	ProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(profaneWords, nil, nil)
-	LightProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(lightProfaneWords, nil, nil)
+func init() {
+	LoadConfig()
 }
