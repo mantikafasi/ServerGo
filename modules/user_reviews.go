@@ -242,7 +242,7 @@ func GetIDWithToken(token string) (id int32) {
 		NewSelect().
 		Model((*database.URUser)(nil)).
 		Column("id").
-		Where("token = ?", CalculateHash(token)).
+		Where("token = ? or token = ?", CalculateHash(token), token).
 		Scan(context.Background(), &id)
 	return
 }
@@ -251,7 +251,7 @@ func GetDBUserViaToken(token string) (user database.URUser, err error) {
 	err = database.DB.
 		NewSelect().
 		Model(&user).
-		Where("token = ?", CalculateHash(token)).
+		Where("token = ? or token = ?", token, CalculateHash(token)).
 		Relation("BanInfo").
 		Scan(context.Background(), &user)
 	
@@ -346,7 +346,7 @@ func GetReview(id int32) (rep database.UserReview, err error) {
 
 func ReportReview(reviewID int32, token string) error {
 
-	user, err := GetDBUserViaID(GetIDWithToken(token))
+	user, err := GetDBUserViaToken(token)
 	if err != nil {
 		return errors.New("Invalid Token, please reauthenticate")
 	}
