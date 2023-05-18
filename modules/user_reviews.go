@@ -308,25 +308,25 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 
 	dbUser,err := GetDBUserViaDiscordID(discordUser.ID)
 
-	if dbUser.UserType == -1 {
-		return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB")
-	}
-
-	if len(dbUser.Token) == 64 {
-		dbUser.Token = token
-	}
-
-	if !slices.Contains(dbUser.ClientMods, clientmod) {
-		dbUser.ClientMods = append(dbUser.ClientMods, clientmod)
-	}
-
-	_, err = database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(dbUser).Exec(context.Background())
-	if err != nil {
-		return "", err
-	}
-	
 	if dbUser != nil {
-		return dbUser.Token, nil
+		if dbUser.UserType == -1 {
+			return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB")
+		}
+	
+		if len(dbUser.Token) == 64 {
+			dbUser.Token = token
+		}
+	
+		if !slices.Contains(dbUser.ClientMods, clientmod) {
+			dbUser.ClientMods = append(dbUser.ClientMods, clientmod)
+		}
+	
+		_, err = database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(dbUser).Exec(context.Background())
+		if err != nil {
+			return "", err
+		}
+		
+		return dbUser.Token,nil
 	}
 
 	_, err = database.DB.NewInsert().Model(user).Exec(context.Background())
