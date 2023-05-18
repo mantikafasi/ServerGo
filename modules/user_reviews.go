@@ -309,7 +309,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 
 	if !slices.Contains(dbUser.ClientMods, clientmod) {
 		dbUser.ClientMods = append(dbUser.ClientMods, clientmod)
-		_, err := database.DB.NewUpdate().Where("discordid = ? and client_mod = ?", discordUser.ID, clientmod).Model(user).Exec(context.Background())
+		_, err := database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(user).Exec(context.Background())
 		if err != nil {
 			return "", err
 		}
