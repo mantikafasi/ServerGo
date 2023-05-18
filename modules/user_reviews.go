@@ -321,7 +321,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 			dbUser.ClientMods = append(dbUser.ClientMods, clientmod)
 		}
 	
-		_, err = database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(dbUser).Exec(context.Background())
+		_, err = database.DB.NewUpdate().Where("id = ?", dbUser.ID).Model(dbUser).Exec(context.Background())
 		if err != nil {
 			return "", err
 		}
