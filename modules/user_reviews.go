@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/discord"
+	"golang.org/x/exp/slices"
 
 	"server-go/common"
 	"server-go/database"
@@ -79,7 +80,7 @@ func GetReviews(userID int64, offset int) ([]database.UserReview, error) {
 
 func GetDBUserViaDiscordID(discordID string) (*database.URUser, error) {
 	var user database.URUser
-	err := database.DB.NewSelect().Model(&user).Where("discordid = ?", discordID).Scan(context.Background())
+	err := database.DB.NewSelect().Model(&user).Where("discordid = ?", discordID).Limit(1).Scan(context.Background())
 
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" { //SOMEONE TELL ME BETTER WAY TO DO THIS
@@ -291,7 +292,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 
 	user := &database.URUser{
 		DiscordID:    discordUser.ID,
-		Token:        CalculateHash(token),
+		Token:        token,
 		Username:     discordUser.Username + "#" + discordUser.Discriminator,
 		ProfilePhoto: GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
 		UserType:     0,
@@ -299,29 +300,23 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		IpHash:       CalculateHash(ip),
 	}
 
-	banned, err := database.DB.NewSelect().Model(&database.URUser{}).Where("discordid = ? and type = -1", discordUser.ID).ScanAndCount(context.Background())
 
-	if banned != 0 {
-		return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB") //this is pretty much useless since it doesnt returns errors but whatever
+	dbUser,err := GetDBUserViaDiscordID(discordUser.ID)
+
+	if dbUser.UserType == -1 {
+		return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB")
 	}
 
-	count, err := database.DB.NewSelect().Model(user).Where("discordid = ? and token = ?", discordUser.ID, CalculateHash(token)).ScanAndCount(context.Background())
-	if count != 0 {
-		return token, nil
+	if !slices.Contains(dbUser.ClientMods, clientmod) {
+		dbUser.ClientMods = append(dbUser.ClientMods, clientmod)
+		_, err := database.DB.NewUpdate().Where("discordid = ? and client_mod = ?", discordUser.ID, clientmod).Model(user).Exec(context.Background())
+		if err != nil {
+			return "", err
+		}
 	}
-
-	res, err := database.DB.NewUpdate().Where("discordid = ? and client_mod = ?", discordUser.ID, clientmod).Model(user).Exec(context.Background())
-	if err != nil {
-		return "", err
-	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return "", err
-	}
-
-	if rowsAffected != 0 {
-		return token, nil
+	
+	if dbUser != nil {
+		return dbUser.Token, nil
 	}
 
 	_, err = database.DB.NewInsert().Model(user).Exec(context.Background())
