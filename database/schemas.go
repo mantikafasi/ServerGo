@@ -48,7 +48,7 @@ type UserReview struct {
 }
 
 type UserBadge struct {
-	bun.BaseModel `bun:"table:userbadges"`
+	bun.BaseModel `bun:"table:user_badges"`
 
 	ID              int32  `bun:"id,pk,autoincrement" json:"-"`
 	TargetDiscordID string `bun:"target_discord_id,type:numeric" json:"-"`

@@ -80,7 +80,7 @@ func GetReviews(userID int64, offset int) ([]database.UserReview, error) {
 
 func GetDBUserViaDiscordID(discordID string) (*database.URUser, error) {
 	var user database.URUser
-	err := database.DB.NewSelect().Model(&user).Where("discordid = ?", discordID).Limit(1).Scan(context.Background())
+	err := database.DB.NewSelect().Model(&user).Where("discord_id = ?", discordID).Limit(1).Scan(context.Background())
 
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" { //SOMEONE TELL ME BETTER WAY TO DO THIS
@@ -153,10 +153,6 @@ func AddReview(data UR_RequestData) (string, error) {
 
 	user, _ := GetDBUserViaID(senderUserID)
 
-	if user.BanInfo == nil {
-		user.BanInfo = &database.ReviewDBBanLog{}
-	}
-
 	if len(user.Token) == 64 && len(data.Token) != 64 { // try to get rid of old token system as much as possible
 		user.Token = data.Token
 		database.DB.NewUpdate().Model(user).Set("token = ?", data.Token).Where("id = ?", user.ID).Exec(context.Background())
@@ -174,7 +170,7 @@ func AddReview(data UR_RequestData) (string, error) {
 		return "", errors.New("You have been banned from ReviewDB")
 	}
 
-	if user.BanInfo.BanEndDate.After(time.Now()) {
+	if user.BanInfo != nil {
 		return "", errors.New("You have been banned from ReviewDB until " + user.BanInfo.BanEndDate.Format("2006-01-02 15:04:05") + "UTC")
 	}
 
@@ -264,8 +260,8 @@ func GetDBUserViaToken(token string) (user database.URUser, err error) {
 		Relation("BanInfo").
 		Scan(context.Background(), &user)
 
-	if user.BanInfo == nil {
-		user.BanInfo = &database.ReviewDBBanLog{}
+	if user.BanInfo != nil && user.BanInfo.BanEndDate.Before(time.Now()) {
+		user.BanInfo = nil
 	}
 
 	return
@@ -358,7 +354,7 @@ func ReportReview(reviewID int32, token string) error {
 		return errors.New("Invalid Token, please reauthenticate")
 	}
 
-	if user.BanInfo.BanEndDate.After(time.Now()) || user.UserType == -1 {
+	if user.BanInfo != nil || user.UserType == -1 {
 		return errors.New("You cant report reviews while banned")
 	}
 
@@ -368,7 +364,7 @@ func ReportReview(reviewID int32, token string) error {
 		return errors.New("You are reporting too much")
 	}
 
-	count, _ := database.DB.NewSelect().Model(&database.ReviewReport{}).Where("reviewid = ? AND reporterid = ?", reviewID, user.ID).Count(context.Background())
+	count, _ := database.DB.NewSelect().Model(&database.ReviewReport{}).Where("review_id = ? AND reporter_id = ?", reviewID, user.ID).Count(context.Background())
 	if count > 0 {
 		return errors.New("You have already reported this review")
 	}
@@ -501,7 +497,7 @@ func GetReports() (reports []database.ReviewReport, err error) {
 }
 
 func IsUserAdminDC(discordid int64) bool {
-	count, _ := database.DB.NewSelect().Model(&database.URUser{}).Where("discordid = ? and type = 1", discordid).Count(context.Background())
+	count, _ := database.DB.NewSelect().Model(&database.URUser{}).Where("discord_id = ? and type = 1", discordid).Count(context.Background())
 
 	if count > 0 {
 		return true
@@ -521,8 +517,8 @@ func IsUserAdmin(id int32) bool {
 func GetDBUserViaID(id int32) (user database.URUser, err error) {
 	user = database.URUser{}
 	err = database.DB.NewSelect().Model(&user).Where("ur_user.id = ?", id).Relation("BanInfo").Scan(context.Background(), &user)
-	if user.BanInfo == nil {
-		user.BanInfo = &database.ReviewDBBanLog{}
+	if user.BanInfo != nil && user.BanInfo.BanEndDate.Before(time.Now()) {
+		user.BanInfo = nil
 	}
 	return
 }
@@ -639,14 +635,14 @@ func BanUser(discordid string, token string, banDuration int32, review database.
 	*/
 	banID := int32(0)
 
-	database.DB.NewSelect().Model(&users).Where("discordid = ?", discordid).Scan(context.Background(), &users)
+	database.DB.NewSelect().Model(&users).Where("discord_id = ?", discordid).Scan(context.Background(), &users)
 
 	for user := range users {
 		if users[user].UserType == 1 {
 			return errors.New("You can't ban an admin")
 		}
 		if users[user].WarningCount >= 3 {
-			_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("type = -1").Exec(context.Background())
+			_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discord_id = ?", discordid).Set("type = -1").Exec(context.Background())
 			if err != nil {
 				return err
 			}
@@ -720,7 +716,7 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (e
 		return err, 0
 	}
 
-	database.DB.NewSelect().Model(&user).Where("discordid = ?", discordid).Limit(1).Scan(context.Background(), &user)
+	database.DB.NewSelect().Model(&user).Where("discord_id = ?", discordid).Limit(1).Scan(context.Background(), &user)
 
 	return nil, user.ID
 }
@@ -737,7 +733,7 @@ func SetSettings(settings Settings) error {
 func GetSettings(discordid string) (Settings, error) {
 	settings := Settings{}
 
-	err := database.DB.NewSelect().Model(&settings).Where("discordid = ?", discordid).Limit(1).Scan(context.Background(), &settings)
+	err := database.DB.NewSelect().Model(&settings).Where("discord_id = ?", discordid).Limit(1).Scan(context.Background(), &settings)
 
 	return settings, err
 }
@@ -767,7 +763,7 @@ func GetOptedOutUsers() (users []string, err error) {
 func GetReportCountInLastHour(userID int32) (int, error) {
 	count, err := database.DB.
 		NewSelect().Table("ur_reports").
-		Where("reporterid = ? AND timestamp > now() - interval '1 hour'", userID).
+		Where("reporter_id = ? AND timestamp > now() - interval '1 hour'", userID).
 		Count(context.Background())
 	if err != nil {
 		return 0, err

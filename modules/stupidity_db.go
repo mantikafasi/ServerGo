@@ -76,8 +76,8 @@ func VoteStupidity(discordID int64, token string, stupidity int32, senderDiscord
 
 	res, err := database.DB.
 		NewUpdate().
-		Where("discordid = ?", discordID).
-		Where("senderdiscordid = ?", senderID).
+		Where("discord_id = ?", discordID).
+		Where("sender_discord_id = ?", senderID).
 		Model(stupit).
 		Exec(context.Background())
 	if err != nil {
@@ -104,14 +104,14 @@ func GetStupidity(discordID int64) (int, error) {
 	// check if user has votes
 	exists, err := database.DB.
 		NewSelect().
-		Where("discordid = ?", discordID).
+		Where("discord_id = ?", discordID).
 		Model((*database.StupitStat)(nil)).
 		Exists(context.Background())
 	if err != nil || !exists {
 		return -1, err
 	}
 
-	rows, err := database.DB.Query("SELECT AVG(stupidity) FROM stupit_table WHERE discordid = ?", discordID)
+	rows, err := database.DB.Query("SELECT AVG(stupidity) FROM stupidity_reviews WHERE discord_id = ?", discordID)
 	defer func() {
 		err := rows.Close()
 		if err != nil {
