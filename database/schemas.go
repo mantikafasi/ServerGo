@@ -70,7 +70,7 @@ type URUser struct {
 	UserType     int32       `bun:"column:type" json:"-"`
 	ProfilePhoto string      `bun:"profile_photo" json:"profilePhoto"`
 	ClientMod    string      `bun:"client_mod" json:"clientMod"`
-	ClientMods   []string    `bun:"client_mods" json:"clientMods"`
+	ClientMods   []string    `bun:"client_mods,array" json:"clientMods"`
 	WarningCount int32       `bun:"warning_count" json:"warningCount"`
 	BanEndDate   time.Time   `bun:"ban_end_date" json:"-"`
 	Badges       []UserBadge `bun:"-" json:"badges"`
