@@ -37,9 +37,9 @@ type ReportData struct {
 }
 
 type Settings struct {
-	bun.BaseModel `bun:"table:ur_users"`
+	bun.BaseModel `bun:"table:users"`
 
-	DiscordID string `bun:"discordid"`
+	DiscordID string `bun:"discord_id"`
 	Opt       bool   `json:"opt" bun:"opted_out"`
 }
 
@@ -49,7 +49,7 @@ func GetReviews(userID int64, offset int) ([]database.UserReview, error) {
 	err := database.DB.NewSelect().
 		Model(&reviews).
 		Relation("User").
-		Where("userid = ?", userID).
+		Where("profile_id = ?", userID).
 		Where("\"user\".\"opted_out\" = 'f'").
 		OrderExpr("ID DESC").Limit(51).
 		Offset(offset).
@@ -67,7 +67,7 @@ func GetReviews(userID int64, offset int) ([]database.UserReview, error) {
 
 		if review.User != nil {
 			reviews[i].Sender.DiscordID = review.User.DiscordID
-			reviews[i].Sender.ProfilePhoto = review.User.ProfilePhoto
+			reviews[i].Sender.ProfilePhoto = review.User.AvatarURL
 			reviews[i].Sender.Username = review.User.Username
 			reviews[i].Sender.ID = review.User.ID
 			reviews[i].Sender.Badges = badges
@@ -114,7 +114,7 @@ func SearchReviews(query string, token string) ([]database.UserReview, error) {
 
 		if review.User != nil {
 			reviews[i].Sender.DiscordID = review.User.DiscordID
-			reviews[i].Sender.ProfilePhoto = review.User.ProfilePhoto
+			reviews[i].Sender.ProfilePhoto = review.User.AvatarURL
 			reviews[i].Sender.Username = review.User.Username
 			reviews[i].Sender.ID = review.User.ID
 			reviews[i].Sender.Badges = badges
@@ -153,7 +153,11 @@ func AddReview(data UR_RequestData) (string, error) {
 
 	user, _ := GetDBUserViaID(senderUserID)
 
-	if len(user.Token) == 64 && len(data.Token) != 64{ // try to get rid of old token system as much as possible
+	if user.BanInfo == nil {
+		user.BanInfo = &database.ReviewDBBanLog{}
+	}
+
+	if len(user.Token) == 64 && len(data.Token) != 64 { // try to get rid of old token system as much as possible
 		user.Token = data.Token
 		database.DB.NewUpdate().Model(user).Set("token = ?", data.Token).Where("id = ?", user.ID).Exec(context.Background())
 	}
@@ -170,8 +174,8 @@ func AddReview(data UR_RequestData) (string, error) {
 		return "", errors.New("You have been banned from ReviewDB")
 	}
 
-	if user.BanEndDate.After(time.Now()) {
-		return "", errors.New("You have been banned from ReviewDB until " + user.BanEndDate.Format("2006-01-02 15:04:05") + "UTC")
+	if user.BanInfo.BanEndDate.After(time.Now()) {
+		return "", errors.New("You have been banned from ReviewDB until " + user.BanInfo.BanEndDate.Format("2006-01-02 15:04:05") + "UTC")
 	}
 
 	count, _ := GetReviewCountInLastHour(senderUserID)
@@ -185,11 +189,10 @@ func AddReview(data UR_RequestData) (string, error) {
 
 	review := &database.UserReview{
 
-		UserID:       int64(data.DiscordID),
-		SenderUserID: senderUserID,
+		ProfileID:    int64(data.DiscordID),
+		ReviewerID:   senderUserID,
 		Comment:      data.Comment,
-		Star:         -1,
-		ReviewType:   int32(data.ReviewType),
+		Type:         int32(data.ReviewType),
 		TimestampStr: time.Now(),
 	}
 
@@ -221,7 +224,7 @@ func AddReview(data UR_RequestData) (string, error) {
 		return "", errors.New("Because of trying to post a profane review, you have been banned from ReviewDB for 1 week")
 	}
 
-	res, err := database.DB.NewUpdate().Where("userid = ? AND senderuserid = ?", data.DiscordID, senderUserID).OmitZero().Model(review).Exec(context.Background())
+	res, err := database.DB.NewUpdate().Where("profile_id = ? AND reviewer_id = ?", data.DiscordID, senderUserID).OmitZero().Model(review).Exec(context.Background())
 	if err != nil {
 
 		return "An Error occurred while updating your review", err
@@ -260,19 +263,19 @@ func GetDBUserViaToken(token string) (user database.URUser, err error) {
 		Where("token = ? or token = ?", token, CalculateHash(token)).
 		Relation("BanInfo").
 		Scan(context.Background(), &user)
-	
-	if user.BanEndDate.Before(time.Now()) {
-		user.BanInfo = nil
+
+	if user.BanInfo == nil {
+		user.BanInfo = &database.ReviewDBBanLog{}
 	}
-	
+
 	return
 }
 
 func GetReviewCountInLastHour(userID int32) (int, error) {
 	//return 0, nil
 	count, err := database.DB.
-		NewSelect().Table("userreviews").
-		Where("userid = ? AND timestamp > now() - interval '1 hour'", userID).
+		NewSelect().Table("reviews").
+		Where("reviewer_id = ? AND timestamp > now() - interval '1 hour'", userID).
 		Count(context.Background())
 	if err != nil {
 		return 0, err
@@ -296,37 +299,36 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	}
 
 	user := &database.URUser{
-		DiscordID:    discordUser.ID,
-		Token:        token,
-		Username:     discordUser.Username + "#" + discordUser.Discriminator,
-		ProfilePhoto: GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
-		UserType:     0,
-		ClientMod:    clientmod,
-		IpHash:       CalculateHash(ip),
+		DiscordID:  discordUser.ID,
+		Token:      token,
+		Username:   discordUser.Username + "#" + discordUser.Discriminator,
+		AvatarURL:  GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
+		UserType:   0,
+		ClientMods: []string{clientmod},
+		IpHash:     CalculateHash(ip),
 	}
 
-
-	dbUser,err := GetDBUserViaDiscordID(discordUser.ID)
+	dbUser, err := GetDBUserViaDiscordID(discordUser.ID)
 
 	if dbUser != nil {
 		if dbUser.UserType == -1 {
 			return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB")
 		}
-	
+
 		if len(dbUser.Token) == 64 {
 			dbUser.Token = token
 		}
-	
+
 		if !slices.Contains(dbUser.ClientMods, clientmod) {
 			dbUser.ClientMods = append(dbUser.ClientMods, clientmod)
 		}
-	
+
 		_, err = database.DB.NewUpdate().Where("id = ?", dbUser.ID).Model(dbUser).Exec(context.Background())
 		if err != nil {
 			return "", err
 		}
-		
-		return dbUser.Token,nil
+
+		return dbUser.Token, nil
 	}
 
 	_, err = database.DB.NewInsert().Model(user).Exec(context.Background())
@@ -356,7 +358,7 @@ func ReportReview(reviewID int32, token string) error {
 		return errors.New("Invalid Token, please reauthenticate")
 	}
 
-	if user.BanEndDate.After(time.Now()) || user.UserType == -1 {
+	if user.BanInfo.BanEndDate.After(time.Now()) || user.UserType == -1 {
 		return errors.New("You cant report reviews while banned")
 	}
 
@@ -380,16 +382,15 @@ func ReportReview(reviewID int32, token string) error {
 		return errors.New("You cant report your own reviews")
 	}
 
-	reportedUser, _ := GetDBUserViaID(review.SenderUserID)
+	reportedUser, _ := GetDBUserViaID(review.ReviewerID)
 
 	report := database.ReviewReport{
-		UserID:     review.SenderUserID,
 		ReviewID:   reviewID,
 		ReporterID: user.ID,
 	}
 
 	reviewedUsername := "?"
-	if reviewedUser, err := ArikawaState.User(discord.UserID(review.UserID)); err == nil {
+	if reviewedUser, err := ArikawaState.User(discord.UserID(review.ProfileID)); err == nil {
 		reviewedUsername = reviewedUser.Tag()
 	}
 
@@ -451,7 +452,7 @@ func ReportReview(reviewID int32, token string) error {
 					},
 					{
 						Name:  "**Reviewed User**",
-						Value: formatUser(reviewedUsername, 0, strconv.FormatInt(review.UserID, 10)),
+						Value: formatUser(reviewedUsername, 0, strconv.FormatInt(review.ProfileID, 10)),
 					},
 					{
 						Name:  "**Reporter**",
@@ -519,7 +520,10 @@ func IsUserAdmin(id int32) bool {
 
 func GetDBUserViaID(id int32) (user database.URUser, err error) {
 	user = database.URUser{}
-	err = database.DB.NewSelect().Model(&user).Where("id = ?", id).Scan(context.Background(), &user)
+	err = database.DB.NewSelect().Model(&user).Where("ur_user.id = ?", id).Relation("BanInfo").Scan(context.Background(), &user)
+	if user.BanInfo == nil {
+		user.BanInfo = &database.ReviewDBBanLog{}
+	}
 	return
 }
 
@@ -546,7 +550,7 @@ func GetBadgesOfUser(discordid string) []database.UserBadge {
 	badges, _ := GetAllBadges()
 	for _, badge := range badges {
 
-		if badge.DiscordID == discordid {
+		if badge.TargetDiscordID == discordid {
 
 			userBadges = append(userBadges, badge)
 		}
@@ -567,24 +571,24 @@ func GetAllBadges() (badges []database.UserBadge, err error) {
 
 	users := []database.URUser{}
 
-	database.DB.NewSelect().Distinct().Model(&users).Column("discordid", "type").Where("type = ? or type = ?", 1, -1).Scan(context.Background(), &users)
+	database.DB.NewSelect().Distinct().Model(&users).Column("discord_id", "type").Where("type = ? or type = ?", 1, -1).Scan(context.Background(), &users)
 
 	for _, user := range users {
 		if user.UserType == 1 {
 			badges = append(badges, database.UserBadge{
-				DiscordID:        user.DiscordID,
-				BadgeName:        "Admin",
-				BadgeIcon:        "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
-				RedirectURL:      "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-				BadgeDescription: "This user is an admin of ReviewDB.",
+				TargetDiscordID: user.DiscordID,
+				Name:            "Admin",
+				Icon:            "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
+				RedirectURL:     "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+				Description:     "This user is an admin of ReviewDB.",
 			})
 		} else {
 			badges = append(badges, database.UserBadge{
-				DiscordID:        user.DiscordID,
-				BadgeName:        "Banned",
-				BadgeIcon:        "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",
-				RedirectURL:      "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-				BadgeDescription: "This user is banned from ReviewDB.",
+				TargetDiscordID: user.DiscordID,
+				Name:            "Banned",
+				Icon:            "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",
+				RedirectURL:     "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+				Description:     "This user is banned from ReviewDB.",
 			})
 		}
 
@@ -610,7 +614,7 @@ func GetReviewCount() (count int, err error) {
 func GetLastReviewID(userID string) int32 {
 	review := database.UserReview{}
 
-	err := database.DB.NewSelect().Model(&database.UserReview{}).Where("userid = ?", userID).Order("id DESC").Limit(1).Scan(context.Background(), &review)
+	err := database.DB.NewSelect().Model(&database.UserReview{}).Where("profile_id = ?", userID).Order("id DESC").Limit(1).Scan(context.Background(), &review)
 
 	if err != nil {
 		return 0
@@ -652,10 +656,10 @@ func BanUser(discordid string, token string, banDuration int32, review database.
 
 	if review.ID != 0 {
 		banData := database.ReviewDBBanLog{
-			DiscordID:     discordid,
-			ReviewID:      review.ID,
-			BanEndDate:    time.Now().AddDate(0, 0, int(banDuration)),
-			ReviewContent: review.Comment,
+			DiscordID:       discordid,
+			ReviewID:        review.ID,
+			BanEndDate:      time.Now().AddDate(0, 0, int(banDuration)),
+			ReviewContent:   review.Comment,
 			ReviewTimestamp: review.TimestampStr,
 		}
 
@@ -664,7 +668,7 @@ func BanUser(discordid string, token string, banDuration int32, review database.
 		banID = banData.ID
 	}
 
-	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discordid = ?", discordid).Set("ban_end_date = ?", time.Now().AddDate(0, 0, int(banDuration))).Set("warning_count = warning_count + 1").Set("ban_id = ?", banID).Exec(context.Background())
+	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discord_id = ?", discordid).Set("ban_end_date = ?", time.Now().AddDate(0, 0, int(banDuration))).Set("warning_count = warning_count + 1").Set("ban_id = ?", banID).Exec(context.Background())
 
 	if err != nil {
 		return err
@@ -687,10 +691,10 @@ func GetAdmins() (users []string, err error) {
 func LogAction(action string, review database.UserReview, userid int32) {
 	log := database.ActionLog{}
 
-	log.UserID = review.UserID
+	log.UserID = review.ProfileID
 	log.Action = action
 	log.ReviewID = review.ID
-	log.SenderUserID = review.SenderUserID
+	log.SenderUserID = review.ReviewerID
 	log.Comment = review.Comment
 	log.ActionUserID = userid
 
@@ -707,8 +711,8 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (e
 	user.Username = username
 	user.UserType = 0
 	user.WarningCount = 0
-	user.ClientMod = "discordbot"
-	user.ProfilePhoto = profilePhoto
+	user.ClientMods = []string{"discordbot"}
+	user.AvatarURL = profilePhoto
 	user.Token = discordid
 
 	_, err := database.DB.NewInsert().Model(&user).Exec(context.Background())

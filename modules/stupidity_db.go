@@ -72,7 +72,7 @@ func VoteStupidity(discordID int64, token string, stupidity int32, senderDiscord
 		senderID = GetDiscordIDWithToken(token)
 	}
 
-	stupit := &database.StupitStat{DiscordID: discordID, Stupidity: stupidity, SenderID: senderID}
+	stupit := &database.StupitStat{ReviewedDiscordID: discordID, StupidityValue: stupidity, ReviewerDiscordID: senderID}
 
 	res, err := database.DB.
 		NewUpdate().
