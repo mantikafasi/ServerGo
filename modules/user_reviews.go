@@ -153,6 +153,11 @@ func AddReview(data UR_RequestData) (string, error) {
 
 	user, _ := GetDBUserViaID(senderUserID)
 
+	if len(user.Token) == 64 && len(data.Token) != 64{ // try to get rid of old token system as much as possible
+		user.Token = data.Token
+		database.DB.NewUpdate().Model(user).Set("token = ?", data.Token).Where("id = ?", user.ID).Exec(context.Background())
+	}
+
 	if user.OptedOut {
 		return "", errors.New("You have opted out of ReviewDB")
 	}
@@ -307,13 +312,17 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB")
 	}
 
+	if len(dbUser.Token) == 64 {
+		dbUser.Token = token
+	}
+
 	if !slices.Contains(dbUser.ClientMods, clientmod) {
 		dbUser.ClientMods = append(dbUser.ClientMods, clientmod)
+	}
 
-		_, err := database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(dbUser).Exec(context.Background())
-		if err != nil {
-			return "", err
-		}
+	_, err = database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(dbUser).Exec(context.Background())
+	if err != nil {
+		return "", err
 	}
 	
 	if dbUser != nil {
