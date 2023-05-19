@@ -29,7 +29,7 @@ type ReviewDBAuthResponse struct {
 
 type ReviewResponse struct {
 	Response
-	HasNextPage bool                 `json:"hasNextPage"`
+	HasNextPage bool                  `json:"hasNextPage"`
 	Reviews     []database.UserReview `json:"reviews"`
 }
 
@@ -206,7 +206,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 				DiscordID:    "287555395151593473",
 				Badges:       []database.UserBadge{},
 			}, Comment: "This user has opted out of ReviewDB. It means you cannot review this user.",
-			ReviewType: 3,
+			Type: 3,
 		}})
 		response.Reviews = reviews
 		response.Success = true
@@ -235,8 +235,8 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && !(flags&AdFlag == AdFlag) {
 		reviews = append([]database.UserReview{{
-			Comment:    "If you like the plugins I make, please consider supporting me at: \nhttps://github.com/sponsors/mantikafasi\n You can disable this in settings",
-			ReviewType: 2,
+			Comment: "If you like the plugins I make, please consider supporting me at: \nhttps://github.com/sponsors/mantikafasi\n You can disable this in settings",
+			Type:    2,
 			Sender: database.Sender{
 				DiscordID:    "287555395151593473",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
@@ -247,9 +247,9 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) {
 		reviews = append([]database.UserReview{{
-			ID:         0,
-			Comment:    "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
-			ReviewType: 3,
+			ID:      0,
+			Comment: "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
+			Type:    3,
 			Sender: database.Sender{
 				DiscordID:    "287555395151593473",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",
@@ -318,7 +318,7 @@ func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 	}
 	badges := make([]UserBadge, len(legacyBadges))
 	for i, b := range legacyBadges {
-		badges[i] = UserBadge{database.UserBadge(b), b.DiscordID}
+		badges[i] = UserBadge{database.UserBadge(b), b.TargetDiscordID}
 	}
 	json.NewEncoder(w).Encode(badges)
 }
@@ -408,3 +408,14 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 	optedOutUsers, err := modules.GetOptedOutUsers()
 	common.OptedOut = optedOutUsers
 }
+
+/*
+func AppealReview(w http.ResponseWriter,r *http.Request) {
+	var user,err := common.Authorize(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+}
+*/

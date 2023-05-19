@@ -94,7 +94,6 @@ func cors(handler http.Handler) http.Handler {
 }
 
 func main() {
-
 	common.InitCache()
 	database.InitDB()
 
@@ -153,6 +152,8 @@ func main() {
 	mux.HandleFunc("/api/reviewdb/reviews", routes.SearchReview)
 
 	mux.HandleFunc("/api/reviewdb/settings", routes.Settings)
+
+	//mux.Put("/api/reviewdb/appeals", routes.AppealReview)
 
 
 	mux.Group(func(r chi.Router) {
