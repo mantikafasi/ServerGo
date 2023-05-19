@@ -618,7 +618,7 @@ func GetLastReviewID(userID string) int32 {
 }
 
 func BanUser(discordid string, token string, banDuration int32, review database.UserReview) error {
-	users := []database.URUser{}
+	user := database.URUser{}
 
 	if token != common.Config.AdminToken && !IsUserAdmin(GetIDWithToken(token)) {
 		return errors.New("You are not allowed to ban users")
@@ -632,20 +632,19 @@ func BanUser(discordid string, token string, banDuration int32, review database.
 		}
 	*/
 
-	database.DB.NewSelect().Model(&users).Where("discord_id = ?", discordid).Scan(context.Background(), &users)
+	database.DB.NewSelect().Model(&user).Where("discord_id = ?", discordid).Scan(context.Background(), &user)
 
-	for user := range users {
-		if users[user].UserType == 1 {
-			return errors.New("You can't ban an admin")
-		}
-		if users[user].WarningCount >= 3 {
-			_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discord_id = ?", discordid).Set("type = -1").Exec(context.Background())
-			if err != nil {
-				return err
-			}
-			return nil
-		}
+	if user.UserType == 1 {
+		return errors.New("You can't ban an admin")
 	}
+	if user.WarningCount >= 3 {
+		_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discord_id = ?", discordid).Set("type = -1").Exec(context.Background())
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 
 	var banData database.ReviewDBBanLog
 
@@ -665,9 +664,12 @@ func BanUser(discordid string, token string, banDuration int32, review database.
 		}
 	}
 
-	database.DB.NewInsert().Model(&banData).Exec(context.Background())
+	_ ,err := database.DB.NewInsert().Model(&banData).Exec(context.Background())
+	if err != nil {
+		return err
+	}
 
-	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discord_id = ?", discordid).Set("ban_id = ?", banData.ID).Set("warning_count = warning_count + 1").Exec(context.Background())
+	_, err = database.DB.NewUpdate().Model(&database.URUser{}).Where("discord_id = ?", discordid).Set("ban_id = ?", banData.ID).Set("warning_count = warning_count + 1").Exec(context.Background())
 
 	if err != nil {
 		return err
