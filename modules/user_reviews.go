@@ -132,13 +132,13 @@ func AddReview(data UR_RequestData) (string, error) {
 
 		user, err := GetDBUserViaDiscordID(data.Sender.DiscordID)
 		if err != nil {
-			return "", err
+			return common.UNAUTHORIZED, err
 		}
 
 		if user == nil {
 			err, senderUserID = CreateUserViaBot(data.Sender.DiscordID, data.Sender.Username, data.Sender.ProfilePhoto)
 			if err != nil {
-				return "", err
+				return common.UNAUTHORIZED, err
 			}
 		} else {
 			senderUserID = user.ID
@@ -149,7 +149,7 @@ func AddReview(data UR_RequestData) (string, error) {
 	}
 
 	if senderUserID == 0 {
-		return "", errors.New("invalid token")
+		return "", errors.New(common.UNAUTHORIZED)
 	}
 
 	user, _ := GetDBUserViaID(senderUserID)
@@ -160,11 +160,11 @@ func AddReview(data UR_RequestData) (string, error) {
 	}
 
 	if user.OptedOut {
-		return "", errors.New("You have opted out of ReviewDB")
+		return "", errors.New(common.OPTED_OUT)
 	}
 
 	if !(data.ReviewType == 0 || data.ReviewType == 1) && user.UserType != 1 {
-		return "", errors.New("Invalid review type")
+		return "", errors.New(common.INVALID_REVIEW_TYPE)
 	}
 
 	if user.UserType == -1 || user.WarningCount > 2 {
@@ -223,24 +223,23 @@ func AddReview(data UR_RequestData) (string, error) {
 
 	res, err := database.DB.NewUpdate().Where("profile_id = ? AND reviewer_id = ?", data.DiscordID, senderUserID).OmitZero().Model(review).Exec(context.Background())
 	if err != nil {
-
-		return "An Error occurred while updating your review", err
+		return common.UPDATE_FAILED, err
 	}
 	//LogAction("UPDATE",review,senderUserID) TODO : DO THIS
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return "An Error occurred while updating your review", err
+		return common.UPDATE_FAILED, err
 	}
 	if rowsAffected != 0 {
-		return "Updated your review", nil
+		return common.UPDATED, nil
 	}
 
 	_, err = database.DB.NewInsert().Model(review).Exec(context.Background())
 	if err != nil {
-		return "An Error occurred", err
+		return common.ERROR, err
 	}
-	return "Added your review", nil
+	return common.ADDED, nil
 }
 
 func GetIDWithToken(token string) (id int32) {

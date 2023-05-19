@@ -26,3 +26,17 @@ func Ternary[T any](b bool, ifTrue, ifFalse T) T {
 	}
 	return ifFalse
 }
+
+const (
+	ADDED = "Added your review"
+	ERROR = "An error occurred"
+	UPDATED = "Updated your review"
+	EDITED = "Successfully updated review"
+	DELETED = "Successfully deleted review"
+	UNAUTHORIZED = "Unauthorized"
+	OPTED_OUT = "You have opted out of ReviewDB"
+	INVALID_REVIEW = "Invalid review"
+	INVALID_REVIEW_TYPE = "Invalid review type"
+	UPDATE_FAILED = "An Error occurred while updating your review"
+)
+

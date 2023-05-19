@@ -63,6 +63,7 @@ func AddUserReview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := modules.AddReview(data)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response.Success = false
