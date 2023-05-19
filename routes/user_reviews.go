@@ -72,7 +72,7 @@ func AddUserReview(w http.ResponseWriter, r *http.Request) {
 	} else {
 		response.Success = true
 		response.Message = res
-		if res == "Updated your review" { // I will fix this once I delete old api
+		if res == common.UPDATED {
 			response.Updated = true
 		}
 	}
@@ -289,7 +289,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := modules.GetDBUserViaToken(data.Token)
-	response := UserInfo{user, modules.GetLastReviewID(user.DiscordID), int(user.UserType)}
+	response := UserInfo{user, modules.GetLastReviewID(user.DiscordID), int(user.Type)}
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return

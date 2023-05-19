@@ -34,6 +34,7 @@ const (
 	EDITED = "Successfully updated review"
 	DELETED = "Successfully deleted review"
 	UNAUTHORIZED = "Unauthorized"
+	INVALID_TOKEN = "Invalid Token, please reauthenticate from settings"
 	OPTED_OUT = "You have opted out of ReviewDB"
 	INVALID_REVIEW = "Invalid review"
 	INVALID_REVIEW_TYPE = "Invalid review type"

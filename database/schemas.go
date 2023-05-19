@@ -66,7 +66,7 @@ type URUser struct {
 	DiscordID    string      `bun:"discord_id,type:numeric" json:"discordID"`
 	Token        string      `bun:"token" json:"-"`
 	Username     string      `bun:"username" json:"username"`
-	UserType     int32       `bun:"column:type" json:"-"`
+	Type         int32       `bun:"column:type" json:"-"`
 	AvatarURL    string      `bun:"avatar_url" json:"profilePhoto"`
 	ClientMods   []string    `bun:"client_mods,array" json:"clientMods"`
 	WarningCount int32       `bun:"warning_count" json:"warningCount"`
@@ -101,7 +101,7 @@ type ReviewDBBanLog struct {
 	DiscordID       string    `bun:"discord_id,type:numeric" json:"discordID"`
 	ReviewID        int32     `bun:"review_id" json:"reviewID"`
 	ReviewContent   string    `bun:"review_content" json:"reviewContent"`
-	AdminDiscordID  *string    `bun:"admin_discord_id,type:numeric" json:"-"`
+	AdminDiscordID  *string   `bun:"admin_discord_id,type:numeric" json:"-"`
 	BanEndDate      time.Time `bun:"ban_end_date" json:"banEndDate"`
 	Timestamp       time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 	ReviewTimestamp time.Time `bun:"review_timestamp" json:"reviewTimestamp"`
@@ -138,4 +138,18 @@ func createSchema() error {
 		}
 	}
 	return nil
+}
+
+func (user *URUser) IsAdmin() bool {
+	return user.Type == 1
+}
+
+func (user *URUser) IsBanned() (bool) {
+	if user.Type == -1 {
+		return false;
+	}
+	if user.BanInfo == nil {
+		return false;
+	}
+	return true;
 }
