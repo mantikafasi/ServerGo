@@ -284,24 +284,26 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	if authUrl == "" {
 		authUrl = "/URauth"
 	}
-	token, err := ExchangeCodePlus(code, common.Config.Origin+authUrl)
+	discordToken, err := ExchangeCode(code, common.Config.Origin+authUrl)
 	if err != nil {
 		return "", err
 	}
 
-	discordUser, err := GetUser(token)
+	discordUser, err := GetUser(discordToken.AccessToken)
 	if err != nil {
 		return "", err
 	}
+	token := discordToken.AccessToken
 
 	user := &database.URUser{
-		DiscordID:  discordUser.ID,
-		Token:      token,
-		Username:   discordUser.Username + "#" + discordUser.Discriminator,
-		AvatarURL:  GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
-		UserType:   0,
-		ClientMods: []string{clientmod},
-		IpHash:     CalculateHash(ip),
+		DiscordID:    discordUser.ID,
+		Token:        token,
+		Username:     discordUser.Username + "#" + discordUser.Discriminator,
+		AvatarURL:    GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
+		UserType:     0,
+		ClientMods:   []string{clientmod},
+		IpHash:       CalculateHash(ip),
+		RefreshToken: discordToken.RefreshToken,
 	}
 
 	dbUser, err := GetDBUserViaDiscordID(discordUser.ID)
@@ -309,10 +311,6 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	if dbUser != nil {
 		if dbUser.UserType == -1 {
 			return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB")
-		}
-
-		if len(dbUser.Token) == 64 {
-			dbUser.Token = token
 		}
 
 		if !slices.Contains(dbUser.ClientMods, clientmod) {
@@ -633,7 +631,6 @@ func BanUser(discordid string, token string, banDuration int32, review database.
 			AdminDiscordID = admin.DiscordID
 		}
 	*/
-	banID := int32(0)
 
 	database.DB.NewSelect().Model(&users).Where("discord_id = ?", discordid).Scan(context.Background(), &users)
 
@@ -650,8 +647,10 @@ func BanUser(discordid string, token string, banDuration int32, review database.
 		}
 	}
 
+	var banData database.ReviewDBBanLog
+
 	if review.ID != 0 {
-		banData := database.ReviewDBBanLog{
+		banData = database.ReviewDBBanLog{
 			DiscordID:       discordid,
 			ReviewID:        review.ID,
 			BanEndDate:      time.Now().AddDate(0, 0, int(banDuration)),
@@ -659,12 +658,16 @@ func BanUser(discordid string, token string, banDuration int32, review database.
 			ReviewTimestamp: review.TimestampStr,
 		}
 
-		database.DB.NewInsert().Model(&banData).Exec(context.Background())
-
-		banID = banData.ID
+	} else {
+		banData = database.ReviewDBBanLog{
+			DiscordID:  discordid,
+			BanEndDate: time.Now().AddDate(0, 0, int(banDuration)),
+		}
 	}
 
-	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discord_id = ?", discordid).Set("ban_end_date = ?", time.Now().AddDate(0, 0, int(banDuration))).Set("warning_count = warning_count + 1").Set("ban_id = ?", banID).Exec(context.Background())
+	database.DB.NewInsert().Model(&banData).Exec(context.Background())
+
+	_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discord_id = ?", discordid).Set("ban_id = ?", banData.ID).Set("warning_count = warning_count + 1").Exec(context.Background())
 
 	if err != nil {
 		return err
@@ -723,7 +726,7 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (e
 
 func SetSettings(settings Settings) error {
 
-	_, err := database.DB.NewUpdate().Model(&settings).Where("discordid = ?", settings.DiscordID).Exec(context.Background())
+	_, err := database.DB.NewUpdate().Model(&settings).Where("discord_id = ?", settings.DiscordID).Exec(context.Background())
 	if err != nil {
 		return err
 	}
@@ -762,7 +765,7 @@ func GetOptedOutUsers() (users []string, err error) {
 
 func GetReportCountInLastHour(userID int32) (int, error) {
 	count, err := database.DB.
-		NewSelect().Table("ur_reports").
+		NewSelect().Table("reports").
 		Where("reporter_id = ? AND timestamp > now() - interval '1 hour'", userID).
 		Count(context.Background())
 	if err != nil {

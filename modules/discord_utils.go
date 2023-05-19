@@ -2,6 +2,8 @@ package modules
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -66,12 +68,11 @@ type InteractionsData struct {
 	} `json:"member"`
 }
 
-
-func BanTimeSelectComponent(userid string) discord.ContainerComponents{
+func BanTimeSelectComponent(userid string) discord.ContainerComponents {
 	return BanTimeSelectComponentWithID(userid, "ban_user")
 }
 
-func BanTimeSelectComponentWithID(userid string,componentID string) discord.ContainerComponents {
+func BanTimeSelectComponentWithID(userid string, componentID string) discord.ContainerComponents {
 	return discord.ContainerComponents{
 		&discord.ActionRowComponent{
 			&discord.StringSelectComponent{
@@ -148,20 +149,20 @@ func Interactions(data InteractionsData) (string, error) {
 			if err == nil {
 				review, _ = GetReview(int32(reviewid))
 			}
-			
-			err = BanUser(action[1], common.Config.AdminToken, int32(banDuration),review)
+
+			err = BanUser(action[1], common.Config.AdminToken, int32(banDuration), review)
 			err2 := DeleteReview(int32(reviewid), common.Config.AdminToken)
-			
+
 			if err == nil && err2 == nil {
-				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully deleted review with id %s and banned user %s for %d days",action[2], action[1], int32(banDuration)))
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully deleted review with id %s and banned user %s for %d days", action[2], action[1], int32(banDuration)))
 			} else if err == nil && err2 != nil {
-				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days and failed to delete review with id %s\n Reason: %s",action[1], int32(banDuration),action[2],err2.Error()))
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days and failed to delete review with id %s\n Reason: %s", action[1], int32(banDuration), action[2], err2.Error()))
 				fmt.Println(err)
 			} else if err != nil && err2 != nil {
-				response.Data.Content = option.NewNullableString(fmt.Sprintf("Failed to delete review with id %s and failed to ban user %s for %d days\nBan Fail Reason: %s\nReview Delete fail reason:%s",action[2], action[1], int32(banDuration),err.Error(),err2.Error()))
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Failed to delete review with id %s and failed to ban user %s for %d days\nBan Fail Reason: %s\nReview Delete fail reason:%s", action[2], action[1], int32(banDuration), err.Error(), err2.Error()))
 				fmt.Println(err, err2)
 			} else {
-				response.Data.Content = option.NewNullableString(fmt.Sprintf("Failed to ban user with id %s and successfully deleted review with id %s\nReason: %s",action[1],action[2],err.Error() ))
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Failed to ban user with id %s and successfully deleted review with id %s\nReason: %s", action[1], action[2], err.Error()))
 			}
 
 			response.Type = 7 // update message
@@ -169,10 +170,10 @@ func Interactions(data InteractionsData) (string, error) {
 			response.Data.Components = &discord.ContainerComponents{} // remove components
 
 		} else if action[0] == "select_delete_and_ban" {
-			component := BanTimeSelectComponentWithID(action[2] + ":" + action[1],"delete_and_ban")
+			component := BanTimeSelectComponentWithID(action[2]+":"+action[1], "delete_and_ban")
 			response.Data.Components = &component
 			response.Data.Content = option.NewNullableString("Select ban duration & delete review")
-		
+
 		} else if action[0] == "ban_user" {
 
 			banDuration, _ := strconv.ParseInt(data.Data.Values[0], 10, 32)
@@ -182,8 +183,8 @@ func Interactions(data InteractionsData) (string, error) {
 			if err == nil {
 				review, _ = GetReview(int32(reviewid))
 			}
-			
-			err = BanUser(action[1], common.Config.AdminToken, int32(banDuration),review)
+
+			err = BanUser(action[1], common.Config.AdminToken, int32(banDuration), review)
 			if err == nil {
 				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days", action[1], int32(banDuration)))
 			} else {
@@ -192,7 +193,7 @@ func Interactions(data InteractionsData) (string, error) {
 			response.Type = 7 // update message
 
 			response.Data.Components = &discord.ContainerComponents{} // remove components
-			
+
 		}
 	}
 
@@ -213,7 +214,7 @@ func UpdateWebhook(messageId string, payload interface{}) {
 	http.DefaultClient.Do(req)
 }
 
-func ExchangeCodePlus(code, redirectURL string) (string, error) {
+func ExchangeCode(code, redirectURL string) (*oauth2.Token, error) {
 	conf := &oauth2.Config{
 		Endpoint:     oauthEndpoint,
 		Scopes:       []string{"identify"},
@@ -223,10 +224,11 @@ func ExchangeCodePlus(code, redirectURL string) (string, error) {
 	}
 
 	token, err := conf.Exchange(context.Background(), code)
+
 	if err != nil {
-		return "", err
+		return nil, err
 	} else {
-		return token.AccessToken, nil
+		return token, nil
 	}
 
 }
@@ -256,10 +258,6 @@ func GetUserViaID(userid int64) (user *DiscordUser, err error) {
 		return user, nil
 	}
 	return nil, err
-}
-
-func ExchangeCode(token string) (string, error) {
-	return ExchangeCodePlus(token, common.Config.RedirectUri)
 }
 
 type ReportWebhookEmbedField struct {
@@ -336,4 +334,12 @@ func (s *Snowflake) UnmarshalJSON(v []byte) error {
 
 	*s = Snowflake(parsed)
 	return nil
+}
+
+func GenerateToken() string {
+    b := make([]byte, 30)
+    if _, err := rand.Read(b); err != nil {
+        return ""
+    }
+    return "rdb." + hex.EncodeToString(b)
 }
