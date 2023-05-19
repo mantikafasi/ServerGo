@@ -75,7 +75,7 @@ type URUser struct {
 	IpHash       string      `bun:"ip_hash" json:"-"`
 	RefreshToken string      `bun:"refresh_token" json:"-"`
 
-	BanID        int32       `bun:"ban_id" json:"-"`
+	BanID int32 `bun:"ban_id" json:"-"`
 
 	BanInfo *ReviewDBBanLog `bun:"rel:has-one,join:ban_id=id" json:"banInfo"`
 }
@@ -98,10 +98,10 @@ type ReviewDBBanLog struct {
 	bun.BaseModel `bun:"table:user_bans"`
 
 	ID              int32     `bun:"id,pk,autoincrement" json:"id"`
-	DiscordID       string    `bun:"discord_id" json:"discordID"`
+	DiscordID       string    `bun:"discord_id,type:numeric" json:"discordID"`
 	ReviewID        int32     `bun:"review_id" json:"reviewID"`
 	ReviewContent   string    `bun:"review_content" json:"reviewContent"`
-	AdminDiscordID  string    `bun:"admin_discord_id" json:"-"`
+	AdminDiscordID  string    `bun:"admin_discord_id,type:numeric" json:"-"`
 	BanEndDate      time.Time `bun:"ban_end_date" json:"banEndDate"`
 	Timestamp       time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 	ReviewTimestamp time.Time `bun:"review_timestamp" json:"reviewTimestamp"`
@@ -120,7 +120,6 @@ type ActionLog struct {
 	UpdatedString string `bun:"comment_new"`
 	ActionUserID  int32  `bun:"action_user_id"`
 }
-
 
 func createSchema() error {
 	models := []any{
