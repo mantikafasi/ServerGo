@@ -101,7 +101,7 @@ type ReviewDBBanLog struct {
 	DiscordID       string    `bun:"discord_id,type:numeric" json:"discordID"`
 	ReviewID        int32     `bun:"review_id" json:"reviewID"`
 	ReviewContent   string    `bun:"review_content" json:"reviewContent"`
-	AdminDiscordID  string    `bun:"admin_discord_id,type:numeric" json:"-"`
+	AdminDiscordID  *string    `bun:"admin_discord_id,type:numeric" json:"-"`
 	BanEndDate      time.Time `bun:"ban_end_date" json:"banEndDate"`
 	Timestamp       time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 	ReviewTimestamp time.Time `bun:"review_timestamp" json:"reviewTimestamp"`
