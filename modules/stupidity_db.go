@@ -23,17 +23,18 @@ func CalculateHash(token string) string {
 }
 
 func AddStupidityDBUser(code string) (string, error) {
-	token, err := ExchangeCode(code, common.Config.Origin+"/auth")
+	discordToken, err := ExchangeCode(code, common.Config.Origin+"/auth")
 	if err != nil {
 		return "", err
 	}
 
-	discordUser, err := GetUser(token.AccessToken)
+	discordUser, err := GetUser(discordToken.AccessToken)
 	if err != nil {
 		return "", err
 	}
+	token := GenerateToken()
 
-	var user = &database.UserInfo{DiscordID: discordUser.ID, Token: CalculateHash(token.AccessToken)}
+	var user = &database.UserInfo{DiscordID: discordUser.ID, Token: token}
 
 	res, err := database.DB.NewUpdate().Where("discord_id = ?", discordUser.ID).Model(user).Exec(context.Background())
 	if err != nil {
@@ -52,7 +53,7 @@ func AddStupidityDBUser(code string) (string, error) {
 		}
 	}
 
-	return token.AccessToken, nil
+	return token, nil
 }
 
 func GetDiscordIDWithToken(token string) string {

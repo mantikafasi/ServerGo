@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -293,7 +294,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	if err != nil {
 		return "", err
 	}
-	token := discordToken.AccessToken
+	token := GenerateToken()
 
 	user := &database.URUser{
 		DiscordID:    discordUser.ID,
@@ -311,6 +312,10 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	if dbUser != nil {
 		if dbUser.UserType == -1 {
 			return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB")
+		}
+
+		if !strings.HasPrefix(dbUser.Token, "rdb.") {
+			dbUser.Token = token
 		}
 
 		if !slices.Contains(dbUser.ClientMods, clientmod) {
@@ -645,7 +650,6 @@ func BanUser(discordid string, token string, banDuration int32, review database.
 		return nil
 	}
 
-
 	var banData database.ReviewDBBanLog
 
 	if review.ID != 0 {
@@ -664,7 +668,7 @@ func BanUser(discordid string, token string, banDuration int32, review database.
 		}
 	}
 
-	_ ,err := database.DB.NewInsert().Model(&banData).Exec(context.Background())
+	_, err := database.DB.NewInsert().Model(&banData).Exec(context.Background())
 	if err != nil {
 		return err
 	}

@@ -3,7 +3,7 @@ package modules
 import (
 	"context"
 	"crypto/rand"
-	"encoding/hex"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -337,9 +337,13 @@ func (s *Snowflake) UnmarshalJSON(v []byte) error {
 }
 
 func GenerateToken() string {
-    b := make([]byte, 30)
+    b := make([]byte, 128)
+	
     if _, err := rand.Read(b); err != nil {
         return ""
     }
-    return "rdb." + hex.EncodeToString(b)
+	encoder := base64.StdEncoding.WithPadding(base64.NoPadding)
+	token := encoder.EncodeToString(b)
+
+    return "rdb." + token
 }
