@@ -35,7 +35,7 @@ func AddStupidityDBUser(code string) (string, error) {
 
 	var user = &database.UserInfo{DiscordID: discordUser.ID, Token: CalculateHash(token.AccessToken)}
 
-	res, err := database.DB.NewUpdate().Where("discordid = ?", discordUser.ID).Model(user).Exec(context.Background())
+	res, err := database.DB.NewUpdate().Where("discord_id = ?", discordUser.ID).Model(user).Exec(context.Background())
 	if err != nil {
 		return "", err
 	}
@@ -76,7 +76,7 @@ func VoteStupidity(discordID int64, token string, stupidity int32, senderDiscord
 
 	res, err := database.DB.
 		NewUpdate().
-		Where("discord_id = ?", discordID).
+		Where("reviewed_discord_id = ?", discordID).
 		Where("sender_discord_id = ?", senderID).
 		Model(stupit).
 		Exec(context.Background())
@@ -104,14 +104,14 @@ func GetStupidity(discordID int64) (int, error) {
 	// check if user has votes
 	exists, err := database.DB.
 		NewSelect().
-		Where("discord_id = ?", discordID).
+		Where("reviewed_discord_id = ?", discordID).
 		Model((*database.StupitStat)(nil)).
 		Exists(context.Background())
 	if err != nil || !exists {
 		return -1, err
 	}
 
-	rows, err := database.DB.Query("SELECT AVG(stupidity) FROM stupidity_reviews WHERE discord_id = ?", discordID)
+	rows, err := database.DB.Query("SELECT AVG(stupidity_value) FROM stupidity_reviews WHERE reviewed_discord_id = ?", discordID)
 	defer func() {
 		err := rows.Close()
 		if err != nil {
