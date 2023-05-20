@@ -345,6 +345,7 @@ func GetReview(id int32) (rep database.UserReview, err error) {
 	badges := GetBadgesOfUser(rep.User.DiscordID)
 
 	if rep.User != nil {
+		rep.Sender = database.Sender{}
 		rep.Sender.DiscordID = rep.User.DiscordID
 		rep.Sender.ProfilePhoto = rep.User.AvatarURL
 		rep.Sender.Username = rep.User.Username
@@ -547,7 +548,6 @@ func GetBadgesOfUser(discordid string) []database.UserBadge {
 	for _, badge := range badges {
 
 		if badge.TargetDiscordID == discordid {
-
 			userBadges = append(userBadges, badge)
 		}
 	}
