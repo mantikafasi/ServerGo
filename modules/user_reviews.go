@@ -342,6 +342,10 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 func GetReview(id int32) (rep database.UserReview, err error) {
 	rep = database.UserReview{}
 	err = database.DB.NewSelect().Model(&rep).Relation("User").Where("user_review.id = ?", id).Scan(context.Background(), &rep)
+	if err != nil {
+		return rep,err
+	}
+
 	badges := GetBadgesOfUser(rep.User.DiscordID)
 
 	if rep.User != nil {
