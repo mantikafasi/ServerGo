@@ -407,6 +407,9 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	optedOutUsers, err := modules.GetOptedOutUsers()
+	if err != nil {
+		fmt.Println(err)
+	}
 	common.OptedOut = optedOutUsers
 }
 

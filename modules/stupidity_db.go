@@ -78,7 +78,7 @@ func VoteStupidity(discordID int64, token string, stupidity int32, senderDiscord
 	res, err := database.DB.
 		NewUpdate().
 		Where("reviewed_discord_id = ?", discordID).
-		Where("sender_discord_id = ?", senderID).
+		Where("reviewer_discord_id = ?", senderID).
 		Model(stupit).
 		Exec(context.Background())
 	if err != nil {

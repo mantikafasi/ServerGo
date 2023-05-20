@@ -40,7 +40,7 @@ type ReportData struct {
 type Settings struct {
 	bun.BaseModel `bun:"table:users"`
 
-	DiscordID string `bun:"discord_id"`
+	DiscordID string `bun:"discord_id,numeric"`
 	Opt       bool   `json:"opt" bun:"opted_out"`
 }
 
@@ -760,7 +760,7 @@ func GetOptedOutUsers() (users []string, err error) {
 
 	userlist := []database.URUser{}
 
-	err = database.DB.NewSelect().Distinct().Model(&database.URUser{}).Where("opted_out = true").Scan(context.Background(), &userlist)
+	err = database.DB.NewSelect().Model(&database.URUser{}).Where("opted_out = true").Scan(context.Background(), &userlist)
 
 	for _, user := range userlist {
 		users = append(users, user.DiscordID)
