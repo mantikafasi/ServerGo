@@ -40,7 +40,7 @@ type ReportData struct {
 type Settings struct {
 	bun.BaseModel `bun:"table:users"`
 
-	DiscordID string `bun:"discord_id,numeric"`
+	DiscordID string `bun:"discord_id,type:numeric"`
 	Opt       bool   `json:"opt" bun:"opted_out"`
 }
 
