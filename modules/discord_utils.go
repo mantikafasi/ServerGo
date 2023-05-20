@@ -337,7 +337,7 @@ func (s *Snowflake) UnmarshalJSON(v []byte) error {
 }
 
 func GenerateToken() string {
-    b := make([]byte, 128)
+    b := make([]byte, 64)
 	
     if _, err := rand.Read(b); err != nil {
         return ""
