@@ -127,7 +127,9 @@ func SearchReviews(query string, token string) ([]database.UserReview, error) {
 }
 
 func AddReview(data UR_RequestData) (string, error) {
-	var senderUserID int32
+	var err error
+	var reviewer database.URUser
+
 	if data.Token == common.Config.StupidityBotToken {
 
 		user, err := GetDBUserViaDiscordID(data.Sender.DiscordID)
@@ -136,42 +138,40 @@ func AddReview(data UR_RequestData) (string, error) {
 		}
 
 		if user == nil {
-			err, senderUserID = CreateUserViaBot(data.Sender.DiscordID, data.Sender.Username, data.Sender.ProfilePhoto)
+			reviewer, err = CreateUserViaBot(data.Sender.DiscordID, data.Sender.Username, data.Sender.ProfilePhoto)
 			if err != nil {
 				return common.UNAUTHORIZED, err
 			}
 		} else {
-			senderUserID = user.ID
+			reviewer = *user
 		}
 
 	} else {
-		senderUserID = GetIDWithToken(data.Token)
+		reviewer,err = GetDBUserViaToken(data.Token)
 	}
 
-	if senderUserID == 0 {
-		return "", errors.New(common.UNAUTHORIZED)
+	if err != nil {
+		return "", errors.New(common.INVALID_TOKEN)
 	}
 
-	user, _ := GetDBUserViaID(senderUserID)
-
-	if len(user.Token) == 64 && len(data.Token) != 64 { // try to get rid of old token system as much as possible
-		user.Token = data.Token
-		database.DB.NewUpdate().Model(user).Set("token = ?", data.Token).Where("id = ?", user.ID).Exec(context.Background())
+	if len(reviewer.Token) == 64 && len(data.Token) != 64 { // try to get rid of old token system as much as possible
+		reviewer.Token = data.Token
+		database.DB.NewUpdate().Model(reviewer).Set("token = ?", data.Token).Where("id = ?", reviewer.ID).Exec(context.Background())
 	}
 
-	if user.OptedOut {
+	if reviewer.OptedOut {
 		return "", errors.New(common.OPTED_OUT)
 	}
 
-	if !(data.ReviewType == 0 || data.ReviewType == 1) && user.Type != 1 {
+	if !(data.ReviewType == 0 || data.ReviewType == 1) && reviewer.Type != 1 {
 		return "", errors.New(common.INVALID_REVIEW_TYPE)
 	}
 
-	if user.IsBanned() {
-		return "", errors.New("You have been banned from ReviewDB until " + user.BanInfo.BanEndDate.Format("2006-01-02 15:04:05") + "UTC")
+	if reviewer.IsBanned() {
+		return "", errors.New("You have been banned from ReviewDB until " + reviewer.BanInfo.BanEndDate.Format("2006-01-02 15:04:05") + "UTC")
 	}
 
-	count, _ := GetReviewCountInLastHour(senderUserID)
+	count, _ := GetReviewCountInLastHour(reviewer.ID)
 	if count > 20 {
 		return "", errors.New("You are reviewing too much")
 	}
@@ -183,7 +183,7 @@ func AddReview(data UR_RequestData) (string, error) {
 	review := &database.UserReview{
 
 		ProfileID:    int64(data.DiscordID),
-		ReviewerID:   senderUserID,
+		ReviewerID:   reviewer.ID,
 		Comment:      data.Comment,
 		Type:         int32(data.ReviewType),
 		TimestampStr: time.Now(),
@@ -191,10 +191,10 @@ func AddReview(data UR_RequestData) (string, error) {
 
 	if common.ProfanityDetector.IsProfane(data.Comment) {
 		review.ID = -1
-		BanUser(user.DiscordID, common.Config.AdminToken, 7, *review)
+		BanUser(reviewer.DiscordID, common.Config.AdminToken, 7, *review)
 		SendLoggerWebhook(WebhookData{
 			Username: "ReviewDB",
-			Content:  "User <@" + user.DiscordID + "> has been banned for 1 week for trying to post a profane review",
+			Content:  "User <@" + reviewer.DiscordID + "> has been banned for 1 week for trying to post a profane review",
 			Embeds: []Embed{
 				{
 					Fields: []ReportWebhookEmbedField{
@@ -204,7 +204,7 @@ func AddReview(data UR_RequestData) (string, error) {
 						},
 						{
 							Name:  "ReviewDB ID",
-							Value: strconv.Itoa(int(senderUserID)),
+							Value: strconv.Itoa(int(reviewer.ID)),
 						},
 						{
 							Name:  "Reviewed Profile",
@@ -217,7 +217,7 @@ func AddReview(data UR_RequestData) (string, error) {
 		return "", errors.New("Because of trying to post a profane review, you have been banned from ReviewDB for 1 week")
 	}
 
-	res, err := database.DB.NewUpdate().Where("profile_id = ? AND reviewer_id = ?", data.DiscordID, senderUserID).OmitZero().Model(review).Exec(context.Background())
+	res, err := database.DB.NewUpdate().Where("profile_id = ? AND reviewer_id = ?", data.DiscordID, reviewer.ID).OmitZero().Model(review).Exec(context.Background())
 	if err != nil {
 		return common.UPDATE_FAILED, err
 	}
@@ -711,7 +711,7 @@ func LogAction(action string, review database.UserReview, userid int32) {
 	}
 }
 
-func CreateUserViaBot(discordid string, username string, profilePhoto string) (error, int32) {
+func CreateUserViaBot(discordid string, username string, profilePhoto string) (database.URUser,error) {
 	user := database.URUser{}
 
 	user.DiscordID = discordid
@@ -724,12 +724,10 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (e
 
 	_, err := database.DB.NewInsert().Model(&user).Exec(context.Background())
 	if err != nil {
-		return err, 0
+		return database.URUser{} ,nil  //todo maybe convert this to pointer so we can return nil
 	}
 
-	database.DB.NewSelect().Model(&user).Where("discord_id = ?", discordid).Limit(1).Scan(context.Background(), &user)
-
-	return nil, user.ID
+	return user, nil
 }
 
 func SetSettings(settings Settings) error {
