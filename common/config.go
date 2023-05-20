@@ -18,7 +18,8 @@ type ConfigStr struct {
 	Origin               string    `json:"origin"`
 	Port                 string    `json:"port"`
 	BotToken             string    `json:"bot_token"`
-	DiscordWebhook       string    `json:"discord_webhook"`
+	ReportWebhook        string    `json:"report_webhook"`
+	AppealWebhook        string    `json:"appeal_webhook"`
 	AdminToken           string    `json:"admin_token"`
 	StupidityBotToken    string    `json:"stupidity_bot_token"`
 	LoggerWebhook        string    `json:"logger_webhook"`

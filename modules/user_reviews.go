@@ -147,7 +147,7 @@ func AddReview(data UR_RequestData) (string, error) {
 		}
 
 	} else {
-		reviewer,err = GetDBUserViaToken(data.Token)
+		reviewer, err = GetDBUserViaToken(data.Token)
 	}
 
 	if err != nil {
@@ -197,7 +197,7 @@ func AddReview(data UR_RequestData) (string, error) {
 			Content:  "User <@" + reviewer.DiscordID + "> has been banned for 1 week for trying to post a profane review",
 			Embeds: []Embed{
 				{
-					Fields: []ReportWebhookEmbedField{
+					Fields: []EmbedField{
 						{
 							Name:  "Review Content",
 							Value: data.Comment,
@@ -343,7 +343,7 @@ func GetReview(id int32) (rep database.UserReview, err error) {
 	rep = database.UserReview{}
 	err = database.DB.NewSelect().Model(&rep).Relation("User").Where("user_review.id = ?", id).Scan(context.Background(), &rep)
 	if err != nil {
-		return rep,err
+		return rep, err
 	}
 
 	badges := GetBadgesOfUser(rep.User.DiscordID)
@@ -447,7 +447,7 @@ func ReportReview(reviewID int32, token string) error {
 		},
 		Embeds: []Embed{
 			{
-				Fields: []ReportWebhookEmbedField{
+				Fields: []EmbedField{
 					{
 						Name:  "**Review ID**",
 						Value: fmt.Sprint(review.ID),
@@ -626,8 +626,8 @@ func GetLastReviewID(userID string) int32 {
 func BanUser(userToBan string, adminToken string, banDuration int32, review database.UserReview) error {
 	user := database.URUser{}
 
-	admin ,_:= GetDBUserViaToken(adminToken)
-	if adminToken != common.Config.AdminToken && !admin.IsAdmin(){
+	admin, _ := GetDBUserViaToken(adminToken)
+	if adminToken != common.Config.AdminToken && !admin.IsAdmin() {
 		return errors.New("You are not allowed to ban users")
 	}
 
@@ -711,7 +711,7 @@ func LogAction(action string, review database.UserReview, userid int32) {
 	}
 }
 
-func CreateUserViaBot(discordid string, username string, profilePhoto string) (database.URUser,error) {
+func CreateUserViaBot(discordid string, username string, profilePhoto string) (database.URUser, error) {
 	user := database.URUser{}
 
 	user.DiscordID = discordid
@@ -724,7 +724,7 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (d
 
 	_, err := database.DB.NewInsert().Model(&user).Exec(context.Background())
 	if err != nil {
-		return database.URUser{} ,nil  //todo maybe convert this to pointer so we can return nil
+		return database.URUser{}, nil //todo maybe convert this to pointer so we can return nil
 	}
 
 	return user, nil
@@ -778,4 +778,31 @@ func GetReportCountInLastHour(userID int32) (int, error) {
 		return 0, err
 	}
 	return count, nil
+}
+func AppealBan(appeal database.ReviewDBAppeal, user *database.URUser) (err error) {
+	_, err = database.DB.NewInsert().Model(&appeal).Exec(context.Background())
+	if err == nil {
+		SendAppealWebhook(
+			WebhookData{
+				Username: "ReviewDB Appeals",
+				Embeds: []Embed{
+					{
+						Title: "Appeal Form",
+						Fields: []EmbedField{
+							{
+								Name:  "User",
+								Value: formatUser(user.Username, user.ID, user.DiscordID),
+							},
+							{
+								Name:  "Reason to appeal",
+								Value: appeal.AppealText,
+							},
+						},
+					},
+				},
+			},
+		)
+	}
+
+	return
 }

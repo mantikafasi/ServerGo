@@ -121,6 +121,15 @@ type ActionLog struct {
 	ActionUserID  int32  `bun:"action_user_id"`
 }
 
+type ReviewDBAppeal struct {
+	bun.BaseModel `bun:"table:appeals"`
+
+	ID         int32  `bun:"id,pk,autoincrement" json:"id"`
+	UserID     int32  `bun:"user_id,type:numeric" json:"-"`
+	BanID      int32  `bun:"ban_id" json:"-"`
+	AppealText string `bun:"appeal_text" json:"appealText"`
+}
+
 func createSchema() error {
 	models := []any{
 		(*StupitStat)(nil),
@@ -129,7 +138,9 @@ func createSchema() error {
 		(*URUser)(nil),
 		(*ReviewReport)(nil),
 		(*ActionLog)(nil),
+		(*UserBadge)(nil),
 		(*ReviewDBBanLog)(nil),
+		(*ReviewDBAppeal)(nil),
 	}
 
 	for _, model := range models {
@@ -144,12 +155,12 @@ func (user *URUser) IsAdmin() bool {
 	return user.Type == 1
 }
 
-func (user *URUser) IsBanned() (bool) {
+func (user *URUser) IsBanned() bool {
 	if user.Type == -1 {
-		return false;
+		return false
 	}
 	if user.BanInfo == nil {
-		return false;
+		return false
 	}
-	return true;
+	return true
 }

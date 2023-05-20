@@ -153,7 +153,7 @@ func main() {
 
 	mux.HandleFunc("/api/reviewdb/settings", routes.Settings)
 
-	//mux.Put("/api/reviewdb/appeals", routes.AppealReview)
+	mux.Put("/api/reviewdb/appeals", routes.AppealReview)
 
 
 	mux.Group(func(r chi.Router) {

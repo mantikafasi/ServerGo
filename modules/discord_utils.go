@@ -207,13 +207,6 @@ func Interactions(data InteractionsData) (string, error) {
 	return "", errors.New("invalid interaction")
 }
 
-func UpdateWebhook(messageId string, payload interface{}) {
-	jsonPayload, _ := json.Marshal(payload)
-	req, _ := http.NewRequest(http.MethodPatch, common.Config.DiscordWebhook+"/messages/"+messageId, strings.NewReader(string(jsonPayload)))
-	req.Header.Set("Content-Type", "application/json")
-	http.DefaultClient.Do(req)
-}
-
 func ExchangeCode(code, redirectURL string) (*oauth2.Token, error) {
 	conf := &oauth2.Config{
 		Endpoint:     oauthEndpoint,
@@ -260,14 +253,15 @@ func GetUserViaID(userid int64) (user *DiscordUser, err error) {
 	return nil, err
 }
 
-type ReportWebhookEmbedField struct {
+type EmbedField struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
 type Embed struct {
-	Fields []ReportWebhookEmbedField `json:"fields"`
-	Footer EmbedFooter               `json:"footer"`
+	Title  string       `json:"title"`
+	Fields []EmbedField `json:"fields"`
+	Footer EmbedFooter  `json:"footer"`
 }
 
 type WebhookEmoji struct {
@@ -300,23 +294,23 @@ type WebhookData struct {
 }
 
 func SendReportWebhook(data WebhookData) error {
-	body, err := json.Marshal(data)
-	var resp *http.Response
-
-	resp, err = http.Post(common.Config.DiscordWebhook, "application/json", strings.NewReader(string(body)))
-	bodyBytes, err := io.ReadAll(resp.Body)
-	print(string(bodyBytes))
-	print(string(body))
-	return err
+	return SendWebhook(common.Config.ReportWebhook, data)
 }
 
 func SendLoggerWebhook(data WebhookData) error {
+	return SendWebhook(common.Config.LoggerWebhook, data)
+}
+
+func SendAppealWebhook(data WebhookData) error {
+	return SendWebhook(common.Config.AppealWebhook, data)
+}
+
+func SendWebhook(url string, data WebhookData) error {
 	body, err := json.Marshal(data)
 	var resp *http.Response
 
-	resp, err = http.Post(common.Config.LoggerWebhook, "application/json", strings.NewReader(string(body)))
-	bodyBytes, err := io.ReadAll(resp.Body)
-	print(string(bodyBytes))
+	resp, err = http.Post(url, "application/json", strings.NewReader(string(body)))
+	_, err = io.ReadAll(resp.Body)
 	return err
 }
 
@@ -337,13 +331,13 @@ func (s *Snowflake) UnmarshalJSON(v []byte) error {
 }
 
 func GenerateToken() string {
-    b := make([]byte, 64)
-	
-    if _, err := rand.Read(b); err != nil {
-        return ""
-    }
+	b := make([]byte, 64)
+
+	if _, err := rand.Read(b); err != nil {
+		return ""
+	}
 	encoder := base64.StdEncoding.WithPadding(base64.NoPadding)
 	token := encoder.EncodeToString(b)
 
-    return "rdb." + token
+	return "rdb." + token
 }

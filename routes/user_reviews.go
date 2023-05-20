@@ -410,6 +410,33 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 	common.OptedOut = optedOutUsers
 }
 
+func AppealReview(w http.ResponseWriter, r *http.Request) {
+	appealRequest := database.ReviewDBAppeal{}
+
+	user, err := Authorize(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	if (!user.IsBanned()) {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	json.NewDecoder(r.Body).Decode(&appealRequest)
+
+	appealRequest.UserID = user.ID
+
+	err = modules.AppealBan(appealRequest,user)
+	if err != nil {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 /*
 func AppealReview(w http.ResponseWriter,r *http.Request) {
 	var user,err := common.Authorize(r)
