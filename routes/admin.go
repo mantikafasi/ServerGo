@@ -23,13 +23,15 @@ const (
 	LightProfaneFilter = "lightProfane"
 )
 
+type FilterStruct struct {
+	Word string `json:"word"`
+	Type string `json:"type"`
+}
+
 func AddFilter(w http.ResponseWriter, r *http.Request) {
 
-	data := struct {
-		Word string `json:"word"`
-		Type string `json:"type"`
-	}{}
-
+	var data FilterStruct
+	
 	json.NewDecoder(r.Body).Decode(&data)
 
 	switch data.Type {
@@ -38,14 +40,14 @@ func AddFilter(w http.ResponseWriter, r *http.Request) {
 	case LightProfaneFilter:
 		common.Config.LightProfaneWordList = append(common.Config.LightProfaneWordList, data.Word)
 	}
+	
 	common.SaveConfig()
+	common.LoadConfig()
+	w.WriteHeader(http.StatusOK)
 }
 
 func DeleteFilter(w http.ResponseWriter, r *http.Request) {
-	data := struct {
-		Word string `json:"word"`
-		Type string `json:"type"`
-	}{}
+	var data FilterStruct
 
 	json.NewDecoder(r.Body).Decode(&data)
 	switch data.Type {
@@ -65,6 +67,7 @@ func DeleteFilter(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	common.SaveConfig()
+	common.LoadConfig()
 }
 
 func ReloadConfig(w http.ResponseWriter, r *http.Request) {

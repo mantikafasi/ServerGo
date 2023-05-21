@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	goaway "github.com/TwiN/go-away"
@@ -56,14 +57,14 @@ func LoadConfig() {
 }
 
 func SaveConfig() {
-	f, err := os.OpenFile("config.json", os.O_WRONLY, 0777)
+
+	data, err := json.MarshalIndent(*Config, "", "  ")
+
+	err = ioutil.WriteFile("config.json", data, 0644)
 	if err != nil {
 		fmt.Println(err)
 	}
-	encoder := json.NewEncoder(f)
-	encoder.SetIndent("", "    ")
-	err = encoder.Encode(&Config)
-	f.Close()
+
 }
 
 func init() {
