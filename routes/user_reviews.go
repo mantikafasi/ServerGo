@@ -124,7 +124,7 @@ func ReviewDBAuthWeb(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	http.Redirect(w, r, common.WEBSITE + "/api/redirect?token=" + url.QueryEscape(token) + , http.StatusTemporaryRedirect)
+	http.Redirect(w, r, common.WEBSITE + "/api/redirect?token=" + url.QueryEscape(token) , http.StatusTemporaryRedirect)
 }
 
 func ReportReview(w http.ResponseWriter, r *http.Request) {
