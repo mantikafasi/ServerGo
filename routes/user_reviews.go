@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"server-go/common"
 	"server-go/database"
 	"server-go/modules"
@@ -113,6 +114,17 @@ func ReviewDBAuth(w http.ResponseWriter, r *http.Request) {
 
 	response, _ := json.Marshal(res)
 	io.WriteString(w, string(response))
+}
+
+func ReviewDBAuthWeb(w http.ResponseWriter, r *http.Request) {
+	token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), "website", "/api/reviewdb/authweb", r.Header.Get("CF-Connecting-IP"))
+
+	if err != nil {
+		http.Redirect(w, r, common.WEBSITE + "/error ", http.StatusTemporaryRedirect)
+		return
+	}
+	
+	http.Redirect(w, r, common.WEBSITE + "/api/redirect?token=" + url.QueryEscape(token) + , http.StatusTemporaryRedirect)
 }
 
 func ReportReview(w http.ResponseWriter, r *http.Request) {

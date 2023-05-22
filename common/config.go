@@ -9,6 +9,10 @@ import (
 	goaway "github.com/TwiN/go-away"
 )
 
+const (
+	WEBSITE = "https://reviewdb.mantikafasi.dev"
+)
+
 type ConfigStr struct {
 	ApiEndpoint          string    `json:"api_endpoint"`
 	DB                   *ConfigDB `json:"db"`

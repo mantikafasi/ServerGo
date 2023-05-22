@@ -153,6 +153,8 @@ func main() {
 
 	mux.HandleFunc("/api/reviewdb/settings", routes.Settings)
 
+	mux.HandleFunc("/api/reviewdb/authweb", routes.ReviewDBAuthWeb)
+
 	mux.Put("/api/reviewdb/appeals", routes.AppealReview)
 
 
