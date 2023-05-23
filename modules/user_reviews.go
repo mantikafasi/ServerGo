@@ -301,6 +301,9 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		IpHash:       CalculateHash(ip),
 		RefreshToken: discordToken.RefreshToken,
 	}
+	if discordUser.Discriminator == "0" {
+		user.Username = discordUser.Username
+	}
 
 	dbUser, err := GetDBUserViaDiscordID(discordUser.ID)
 
