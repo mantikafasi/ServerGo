@@ -261,7 +261,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		}}, reviews...)
 	}
 
-	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) {
+	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) && offset == 0 {
 		reviews = append([]database.UserReview{{
 			ID:      0,
 			Comment: "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
