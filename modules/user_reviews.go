@@ -44,19 +44,20 @@ type Settings struct {
 	Opt       bool   `json:"opt" bun:"opted_out"`
 }
 
-func GetReviews(userID int64, offset int) ([]database.UserReview, error) {
+func GetReviews(userID int64, offset int) ([]database.UserReview, int, error) {
 	var reviews []database.UserReview
 
-	err := database.DB.NewSelect().
+	count, err := database.DB.NewSelect().
 		Model(&reviews).
 		Relation("User").
 		Where("profile_id = ?", userID).
 		Where("\"user\".\"opted_out\" = 'f'").
 		OrderExpr("ID DESC").Limit(51).
 		Offset(offset).
-		Scan(context.Background(), &reviews)
+		ScanAndCount(context.Background(), &reviews)
+
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	for i, review := range reviews {
@@ -76,7 +77,7 @@ func GetReviews(userID int64, offset int) ([]database.UserReview, error) {
 		reviews[i].Timestamp = review.TimestampStr.Unix()
 	}
 
-	return reviews, nil
+	return reviews, count, nil
 }
 
 func GetDBUserViaDiscordID(discordID string) (*database.URUser, error) {

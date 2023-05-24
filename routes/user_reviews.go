@@ -31,6 +31,7 @@ type ReviewDBAuthResponse struct {
 type ReviewResponse struct {
 	Response
 	HasNextPage bool                  `json:"hasNextPage"`
+	ReviewCount int                   `json:"reviewCount"`
 	Reviews     []database.UserReview `json:"reviews"`
 }
 
@@ -120,11 +121,11 @@ func ReviewDBAuthWeb(w http.ResponseWriter, r *http.Request) {
 	token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), "website", "/api/reviewdb/authweb", r.Header.Get("CF-Connecting-IP"))
 
 	if err != nil {
-		http.Redirect(w, r, common.WEBSITE + "/error ", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, common.WEBSITE+"/error ", http.StatusTemporaryRedirect)
 		return
 	}
-	
-	http.Redirect(w, r, common.WEBSITE + "/api/redirect?token=" + url.QueryEscape(token) , http.StatusTemporaryRedirect)
+
+	http.Redirect(w, r, common.WEBSITE+"/api/redirect?token="+url.QueryEscape(token), http.StatusTemporaryRedirect)
 }
 
 func ReportReview(w http.ResponseWriter, r *http.Request) {
@@ -208,6 +209,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	response := ReviewResponse{}
+	count := 0
 
 	if slices.Contains(common.OptedOut, fmt.Sprint(userID)) {
 		reviews = append([]database.UserReview{{
@@ -226,7 +228,8 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		common.SendStructResponse(w, response)
 		return
 	} else {
-		reviews, err = modules.GetReviews(userID, offset)
+		reviews, count, err = modules.GetReviews(userID, offset)
+		response.ReviewCount = count
 	}
 
 	if err != nil {
@@ -434,7 +437,7 @@ func AppealReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if (!user.IsBanned()) {
+	if !user.IsBanned() {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -443,7 +446,7 @@ func AppealReview(w http.ResponseWriter, r *http.Request) {
 
 	appealRequest.UserID = user.ID
 
-	err = modules.AppealBan(appealRequest,user)
+	err = modules.AppealBan(appealRequest, user)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
 		return
