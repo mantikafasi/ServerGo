@@ -58,7 +58,7 @@ func GetReviewsWithOptions(userID int64, offset int, options map[string]interfac
 		Relation("User").
 		Where("profile_id = ?", userID).
 		Where("\"user\".\"opted_out\" = 'f'").
-		OrderExpr("reviewer_id = ? desc, id desc",options["includeReviewsBy"]).Limit(2).
+		OrderExpr("reviewer_id = ? desc, id desc",options["includeReviewsBy"]).Limit(51).
 		Offset(offset).
 		ScanAndCount(context.Background(), &reviews)
 
