@@ -45,6 +45,12 @@ type Settings struct {
 }
 
 func GetReviews(userID int64, offset int) ([]database.UserReview, int, error) {
+	return GetReviewsWithOptions(userID, offset, map[string]interface{}{
+		"includeReviewsBy": nil,
+	})
+}
+
+func GetReviewsWithOptions(userID int64, offset int, options map[string]interface{}) ([]database.UserReview, int, error) {
 	var reviews []database.UserReview
 
 	count, err := database.DB.NewSelect().
@@ -52,7 +58,7 @@ func GetReviews(userID int64, offset int) ([]database.UserReview, int, error) {
 		Relation("User").
 		Where("profile_id = ?", userID).
 		Where("\"user\".\"opted_out\" = 'f'").
-		OrderExpr("ID DESC").Limit(51).
+		OrderExpr("reviewer_id = ? desc, id desc",options["includeReviewsBy"]).Limit(2).
 		Offset(offset).
 		ScanAndCount(context.Background(), &reviews)
 

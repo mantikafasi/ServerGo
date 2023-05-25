@@ -199,6 +199,8 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		userIDString = r.URL.Query().Get("discordid")
 	}
 
+	includeReviewsBy := r.URL.Query().Get("always_include_reviews_by")
+
 	userID, _ := strconv.ParseInt(userIDString, 10, 64)
 	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
@@ -228,7 +230,15 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		common.SendStructResponse(w, response)
 		return
 	} else {
-		reviews, count, err = modules.GetReviews(userID, offset)
+		if includeReviewsBy != "" {
+			options := map[string]interface{}{
+				"includeReviewsBy": includeReviewsBy,
+			}
+
+			reviews, count, err = modules.GetReviewsWithOptions(userID, offset, options)
+		} else {
+			reviews, count, err = modules.GetReviews(userID, offset)
+		}
 		response.ReviewCount = count
 	}
 
