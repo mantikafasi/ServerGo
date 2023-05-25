@@ -230,15 +230,11 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		common.SendStructResponse(w, response)
 		return
 	} else {
-		if includeReviewsBy != "" {
-			options := map[string]interface{}{
-				"includeReviewsBy": includeReviewsBy,
-			}
-
-			reviews, count, err = modules.GetReviewsWithOptions(userID, offset, options)
-		} else {
-			reviews, count, err = modules.GetReviews(userID, offset)
+		options := modules.GetReviewsOptions{
+			IncludeReviewsById: includeReviewsBy,
 		}
+		reviews, count, err = modules.GetReviewsWithOptions(userID, offset, options)
+
 		response.ReviewCount = count
 	}
 
