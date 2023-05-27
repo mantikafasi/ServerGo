@@ -15,6 +15,7 @@ import (
 
 	"server-go/common"
 	"server-go/database"
+	"server-go/database/schemas"
 
 	"github.com/patrickmn/go-cache"
 	"github.com/uptrace/bun"
@@ -48,14 +49,14 @@ type GetReviewsOptions struct {
 	IncludeReviewsById string
 }
 
-func GetReviews(userID int64, offset int) ([]database.UserReview, int, error) {
+func GetReviews(userID int64, offset int) ([]schemas.UserReview, int, error) {
 	return GetReviewsWithOptions(userID, offset, GetReviewsOptions{
 		IncludeReviewsById: "",
 	})
 }
 
-func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) ([]database.UserReview, int, error) {
-	var reviews []database.UserReview
+func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) ([]schemas.UserReview, int, error) {
+	var reviews []schemas.UserReview
 
 	count, err := database.DB.NewSelect().
 		Model(&reviews).
@@ -72,9 +73,9 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 
 	for i, review := range reviews {
 		dbBadges := GetBadgesOfUser(review.User.DiscordID)
-		badges := make([]database.UserBadge, len(dbBadges))
+		badges := make([]schemas.UserBadge, len(dbBadges))
 		for i, b := range dbBadges {
-			badges[i] = database.UserBadge(b)
+			badges[i] = schemas.UserBadge(b)
 		}
 
 		if review.User != nil {
@@ -90,8 +91,8 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 	return reviews, count, nil
 }
 
-func GetDBUserViaDiscordID(discordID string) (*database.URUser, error) {
-	var user database.URUser
+func GetDBUserViaDiscordID(discordID string) (*schemas.URUser, error) {
+	var user schemas.URUser
 	err := database.DB.NewSelect().Model(&user).Where("discord_id = ?", discordID).Limit(1).Scan(context.Background())
 
 	if err != nil {
@@ -104,8 +105,8 @@ func GetDBUserViaDiscordID(discordID string) (*database.URUser, error) {
 	return &user, nil
 }
 
-func SearchReviews(query string, token string) ([]database.UserReview, error) {
-	var reviews []database.UserReview
+func SearchReviews(query string, token string) ([]schemas.UserReview, error) {
+	var reviews []schemas.UserReview
 
 	user, err := GetDBUserViaToken(token)
 
@@ -139,7 +140,7 @@ func SearchReviews(query string, token string) ([]database.UserReview, error) {
 
 func AddReview(data UR_RequestData) (string, error) {
 	var err error
-	var reviewer database.URUser
+	var reviewer schemas.URUser
 
 	if data.Token == common.Config.StupidityBotToken {
 
@@ -191,7 +192,7 @@ func AddReview(data UR_RequestData) (string, error) {
 		return "", errors.New("Your review contains profanity")
 	}
 
-	review := &database.UserReview{
+	review := &schemas.UserReview{
 
 		ProfileID:    int64(data.DiscordID),
 		ReviewerID:   reviewer.ID,
@@ -252,14 +253,14 @@ func AddReview(data UR_RequestData) (string, error) {
 func GetIDWithToken(token string) (id int32) {
 	database.DB.
 		NewSelect().
-		Model((*database.URUser)(nil)).
+		Model((*schemas.URUser)(nil)).
 		Column("id").
 		Where("token = ? or token = ?", CalculateHash(token), token).
 		Scan(context.Background(), &id)
 	return
 }
 
-func GetDBUserViaToken(token string) (user database.URUser, err error) {
+func GetDBUserViaToken(token string) (user schemas.URUser, err error) {
 	err = database.DB.
 		NewSelect().
 		Model(&user).
@@ -302,7 +303,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	}
 	token := GenerateToken()
 
-	user := &database.URUser{
+	user := &schemas.URUser{
 		DiscordID:    discordUser.ID,
 		Token:        token,
 		Username:     discordUser.Username + "#" + discordUser.Discriminator,
@@ -353,8 +354,8 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	return token, nil
 }
 
-func GetReview(id int32) (rep database.UserReview, err error) {
-	rep = database.UserReview{}
+func GetReview(id int32) (rep schemas.UserReview, err error) {
+	rep = schemas.UserReview{}
 	err = database.DB.NewSelect().Model(&rep).Relation("User").Where("user_review.id = ?", id).Scan(context.Background(), &rep)
 	if err != nil {
 		return rep, err
@@ -363,7 +364,7 @@ func GetReview(id int32) (rep database.UserReview, err error) {
 	badges := GetBadgesOfUser(rep.User.DiscordID)
 
 	if rep.User != nil {
-		rep.Sender = database.Sender{}
+		rep.Sender = schemas.Sender{}
 		rep.Sender.DiscordID = rep.User.DiscordID
 		rep.Sender.ProfilePhoto = rep.User.AvatarURL
 		rep.Sender.Username = rep.User.Username
@@ -392,7 +393,7 @@ func ReportReview(reviewID int32, token string) error {
 		return errors.New("You are reporting too much")
 	}
 
-	count, _ := database.DB.NewSelect().Model(&database.ReviewReport{}).Where("review_id = ? AND reporter_id = ?", reviewID, user.ID).Count(context.Background())
+	count, _ := database.DB.NewSelect().Model(&schemas.ReviewReport{}).Where("review_id = ? AND reporter_id = ?", reviewID, user.ID).Count(context.Background())
 	if count > 0 {
 		return errors.New("You have already reported this review")
 	}
@@ -408,7 +409,7 @@ func ReportReview(reviewID int32, token string) error {
 
 	reportedUser, _ := GetDBUserViaID(review.ReviewerID)
 
-	report := database.ReviewReport{
+	report := schemas.ReviewReport{
 		ReviewID:   reviewID,
 		ReporterID: user.ID,
 	}
@@ -518,14 +519,14 @@ func formatUser(username string, id int32, discordId string) string {
 	return fmt.Sprintf("Username: %v\nDiscord ID: %v (<@%v>)\nReviewDB ID: %v", username, discordId, discordId, id)
 }
 
-func GetReports() (reports []database.ReviewReport, err error) {
-	reports = []database.ReviewReport{}
+func GetReports() (reports []schemas.ReviewReport, err error) {
+	reports = []schemas.ReviewReport{}
 	err = database.DB.NewSelect().Model(&reports).Scan(context.Background(), &reports)
 	return
 }
 
 func IsUserAdminDC(discordid int64) bool {
-	count, _ := database.DB.NewSelect().Model(&database.URUser{}).Where("discord_id = ? and type = 1", discordid).Count(context.Background())
+	count, _ := database.DB.NewSelect().Model(&schemas.URUser{}).Where("discord_id = ? and type = 1", discordid).Count(context.Background())
 
 	if count > 0 {
 		return true
@@ -533,8 +534,8 @@ func IsUserAdminDC(discordid int64) bool {
 	return false
 }
 
-func GetDBUserViaID(id int32) (user database.URUser, err error) {
-	user = database.URUser{}
+func GetDBUserViaID(id int32) (user schemas.URUser, err error) {
+	user = schemas.URUser{}
 	err = database.DB.NewSelect().Model(&user).Where("ur_user.id = ?", id).Relation("BanInfo").Scan(context.Background(), &user)
 	if user.BanInfo != nil && user.BanInfo.BanEndDate.Before(time.Now()) {
 		user.BanInfo = nil
@@ -559,8 +560,8 @@ func DeleteReview(reviewID int32, token string) (err error) {
 	return errors.New("You are not allowed to delete this review")
 }
 
-func GetBadgesOfUser(discordid string) []database.UserBadge {
-	userBadges := []database.UserBadge{}
+func GetBadgesOfUser(discordid string) []schemas.UserBadge {
+	userBadges := []schemas.UserBadge{}
 
 	badges, _ := GetAllBadges()
 	for _, badge := range badges {
@@ -572,24 +573,24 @@ func GetBadgesOfUser(discordid string) []database.UserBadge {
 	return userBadges
 }
 
-func GetAllBadges() (badges []database.UserBadge, err error) {
+func GetAllBadges() (badges []schemas.UserBadge, err error) {
 
 	cachedBadges, found := common.Cache.Get("badges")
 	if found {
-		badges = cachedBadges.([]database.UserBadge)
+		badges = cachedBadges.([]schemas.UserBadge)
 		return
 	}
 
-	badges = []database.UserBadge{}
+	badges = []schemas.UserBadge{}
 	err = database.DB.NewSelect().Model(&badges).Scan(context.Background(), &badges)
 
-	users := []database.URUser{}
+	users := []schemas.URUser{}
 
 	database.DB.NewSelect().Distinct().Model(&users).Column("discord_id", "type").Where("type = ? or type = ?", 1, -1).Scan(context.Background(), &users)
 
 	for _, user := range users {
 		if user.Type == 1 {
-			badges = append(badges, database.UserBadge{
+			badges = append(badges, schemas.UserBadge{
 				TargetDiscordID: user.DiscordID,
 				Name:            "Admin",
 				Icon:            "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
@@ -597,7 +598,7 @@ func GetAllBadges() (badges []database.UserBadge, err error) {
 				Description:     "This user is an admin of ReviewDB.",
 			})
 		} else {
-			badges = append(badges, database.UserBadge{
+			badges = append(badges, schemas.UserBadge{
 				TargetDiscordID: user.DiscordID,
 				Name:            "Banned",
 				Icon:            "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",
@@ -618,17 +619,17 @@ func GetVencordBadges() error {
 }
 
 func GetURUserCount() (count int, err error) {
-	return database.DB.NewSelect().Model(&database.URUser{}).Count(context.Background())
+	return database.DB.NewSelect().Model(&schemas.URUser{}).Count(context.Background())
 }
 
 func GetReviewCount() (count int, err error) {
-	return database.DB.NewSelect().Model(&database.UserReview{}).Count(context.Background())
+	return database.DB.NewSelect().Model(&schemas.UserReview{}).Count(context.Background())
 }
 
 func GetLastReviewID(userID string) int32 {
-	review := database.UserReview{}
+	review := schemas.UserReview{}
 
-	err := database.DB.NewSelect().Model(&database.UserReview{}).Where("profile_id = ?", userID).Order("id DESC").Limit(1).Scan(context.Background(), &review)
+	err := database.DB.NewSelect().Model(&schemas.UserReview{}).Where("profile_id = ?", userID).Order("id DESC").Limit(1).Scan(context.Background(), &review)
 
 	if err != nil {
 		return 0
@@ -637,8 +638,8 @@ func GetLastReviewID(userID string) int32 {
 	return review.ID
 }
 
-func BanUser(userToBan string, adminToken string, banDuration int32, review database.UserReview) error {
-	user := database.URUser{}
+func BanUser(userToBan string, adminToken string, banDuration int32, review schemas.UserReview) error {
+	user := schemas.URUser{}
 
 	admin, _ := GetDBUserViaToken(adminToken)
 	if adminToken != common.Config.AdminToken && !admin.IsAdmin() {
@@ -659,17 +660,17 @@ func BanUser(userToBan string, adminToken string, banDuration int32, review data
 		return errors.New("You can't ban an admin")
 	}
 	if user.WarningCount >= 3 {
-		_, err := database.DB.NewUpdate().Model(&database.URUser{}).Where("discord_id = ?", userToBan).Set("type = -1").Exec(context.Background())
+		_, err := database.DB.NewUpdate().Model(&schemas.URUser{}).Where("discord_id = ?", userToBan).Set("type = -1").Exec(context.Background())
 		if err != nil {
 			return err
 		}
 		return nil
 	}
 
-	var banData database.ReviewDBBanLog
+	var banData schemas.ReviewDBBanLog
 
 	if review.ID != 0 {
-		banData = database.ReviewDBBanLog{
+		banData = schemas.ReviewDBBanLog{
 			DiscordID:       userToBan,
 			ReviewID:        review.ID,
 			BanEndDate:      time.Now().AddDate(0, 0, int(banDuration)),
@@ -678,7 +679,7 @@ func BanUser(userToBan string, adminToken string, banDuration int32, review data
 		}
 
 	} else {
-		banData = database.ReviewDBBanLog{
+		banData = schemas.ReviewDBBanLog{
 			DiscordID:  userToBan,
 			BanEndDate: time.Now().AddDate(0, 0, int(banDuration)),
 		}
@@ -689,7 +690,7 @@ func BanUser(userToBan string, adminToken string, banDuration int32, review data
 		return err
 	}
 
-	_, err = database.DB.NewUpdate().Model(&database.URUser{}).Where("discord_id = ?", userToBan).Set("ban_id = ?", banData.ID).Set("warning_count = warning_count + 1").Exec(context.Background())
+	_, err = database.DB.NewUpdate().Model(&schemas.URUser{}).Where("discord_id = ?", userToBan).Set("ban_id = ?", banData.ID).Set("warning_count = warning_count + 1").Exec(context.Background())
 
 	if err != nil {
 		return err
@@ -699,9 +700,9 @@ func BanUser(userToBan string, adminToken string, banDuration int32, review data
 
 func GetAdmins() (users []string, err error) {
 	users = []string{}
-	userlist := []database.AdminUser{}
+	userlist := []schemas.AdminUser{}
 
-	err = database.DB.NewSelect().Distinct().Model(&database.AdminUser{}).Where("type = 1").Scan(context.Background(), &userlist)
+	err = database.DB.NewSelect().Distinct().Model(&schemas.AdminUser{}).Where("type = 1").Scan(context.Background(), &userlist)
 
 	for _, user := range userlist {
 		users = append(users, user.DiscordID)
@@ -709,8 +710,8 @@ func GetAdmins() (users []string, err error) {
 	return
 }
 
-func LogAction(action string, review database.UserReview, userid int32) {
-	log := database.ActionLog{}
+func LogAction(action string, review schemas.UserReview, userid int32) {
+	log := schemas.ActionLog{}
 
 	log.UserID = review.ProfileID
 	log.Action = action
@@ -725,8 +726,8 @@ func LogAction(action string, review database.UserReview, userid int32) {
 	}
 }
 
-func CreateUserViaBot(discordid string, username string, profilePhoto string) (database.URUser, error) {
-	user := database.URUser{}
+func CreateUserViaBot(discordid string, username string, profilePhoto string) (schemas.URUser, error) {
+	user := schemas.URUser{}
 
 	user.DiscordID = discordid
 	user.Username = username
@@ -738,7 +739,7 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (d
 
 	_, err := database.DB.NewInsert().Model(&user).Exec(context.Background())
 	if err != nil {
-		return database.URUser{}, nil //todo maybe convert this to pointer so we can return nil
+		return schemas.URUser{}, nil //todo maybe convert this to pointer so we can return nil
 	}
 
 	return user, nil
@@ -772,9 +773,9 @@ func GetOptedOutUsers() (users []string, err error) {
 
 	f2.Close()
 
-	userlist := []database.URUser{}
+	userlist := []schemas.URUser{}
 
-	err = database.DB.NewSelect().Model(&database.URUser{}).Where("opted_out = true").Scan(context.Background(), &userlist)
+	err = database.DB.NewSelect().Model(&schemas.URUser{}).Where("opted_out = true").Scan(context.Background(), &userlist)
 
 	for _, user := range userlist {
 		users = append(users, user.DiscordID)
@@ -793,7 +794,7 @@ func GetReportCountInLastHour(userID int32) (int, error) {
 	}
 	return count, nil
 }
-func AppealBan(appeal database.ReviewDBAppeal, user *database.URUser) (err error) {
+func AppealBan(appeal schemas.ReviewDBAppeal, user *schemas.URUser) (err error) {
 	_, err = database.DB.NewInsert().Model(&appeal).Exec(context.Background())
 	if err == nil {
 		SendAppealWebhook(

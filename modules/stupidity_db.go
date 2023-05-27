@@ -8,6 +8,7 @@ import (
 
 	"server-go/common"
 	"server-go/database"
+	"server-go/database/schemas"
 )
 
 type SDB_RequestData struct {
@@ -34,7 +35,7 @@ func AddStupidityDBUser(code string) (string, error) {
 	}
 	token := GenerateToken()
 
-	var user = &database.UserInfo{DiscordID: discordUser.ID, Token: token}
+	var user = &schemas.UserInfo{DiscordID: discordUser.ID, Token: token}
 
 	res, err := database.DB.NewUpdate().Where("discord_id = ?", discordUser.ID).Model(user).Exec(context.Background())
 	if err != nil {
@@ -57,7 +58,7 @@ func AddStupidityDBUser(code string) (string, error) {
 }
 
 func GetDiscordIDWithToken(token string) string {
-	var user *database.UserInfo
+	var user *schemas.UserInfo
 	err := database.DB.NewSelect().Where("token = ?", CalculateHash(token)).Model(user).Scan(context.Background())
 	if err != nil {
 		return "0"
@@ -73,7 +74,7 @@ func VoteStupidity(discordID int64, token string, stupidity int32, senderDiscord
 		senderID = GetDiscordIDWithToken(token)
 	}
 
-	stupit := &database.StupitStat{ReviewedDiscordID: discordID, StupidityValue: stupidity, ReviewerDiscordID: senderID}
+	stupit := &schemas.StupitStat{ReviewedDiscordID: discordID, StupidityValue: stupidity, ReviewerDiscordID: senderID}
 
 	res, err := database.DB.
 		NewUpdate().
@@ -106,7 +107,7 @@ func GetStupidity(discordID int64) (int, error) {
 	exists, err := database.DB.
 		NewSelect().
 		Where("reviewed_discord_id = ?", discordID).
-		Model((*database.StupitStat)(nil)).
+		Model((*schemas.StupitStat)(nil)).
 		Exists(context.Background())
 	if err != nil || !exists {
 		return -1, err

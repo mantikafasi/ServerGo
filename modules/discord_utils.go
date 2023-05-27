@@ -15,7 +15,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/state"
 
 	"server-go/common"
-	"server-go/database"
+	"server-go/database/schemas"
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -144,7 +144,7 @@ func Interactions(data InteractionsData) (string, error) {
 
 			banDuration, _ := strconv.ParseInt(data.Data.Values[0], 10, 32)
 			reviewid, err := strconv.ParseInt(action[2], 10, 32)
-			review := database.UserReview{}
+			review := schemas.UserReview{}
 
 			if err == nil {
 				review, _ = GetReview(int32(reviewid))
@@ -178,7 +178,7 @@ func Interactions(data InteractionsData) (string, error) {
 
 			banDuration, _ := strconv.ParseInt(data.Data.Values[0], 10, 32)
 			reviewid, err := strconv.ParseInt(action[2], 10, 32)
-			review := database.UserReview{}
+			review := schemas.UserReview{}
 
 			if err == nil {
 				review, _ = GetReview(int32(reviewid))

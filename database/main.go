@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"server-go/common"
 	"runtime"
+	"server-go/common"
+
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
@@ -24,7 +25,7 @@ func InitDB() {
 		pgdriver.WithDatabase(config.DB.Name),
 		pgdriver.WithTLSConfig(nil),
 	)), pgdialect.New())
-	
+
 	if config.Debug {
 		DB.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
 	}
@@ -35,7 +36,7 @@ func InitDB() {
 	DB.SetMaxIdleConns(maxOpenConns)
 
 	// create database structure if doesn't exist
-	if err := createSchema(); err != nil {
+	if err := CreateSchemas(); err != nil {
 		log.Println("Failed to create schema")
 		log.Panic(err)
 	}

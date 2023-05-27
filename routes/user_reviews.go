@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"server-go/common"
-	"server-go/database"
+	"server-go/database/schemas"
 	"server-go/modules"
 	"strconv"
 	"strings"
@@ -30,9 +30,9 @@ type ReviewDBAuthResponse struct {
 
 type ReviewResponse struct {
 	Response
-	HasNextPage bool                  `json:"hasNextPage"`
-	ReviewCount int                   `json:"reviewCount"`
-	Reviews     []database.UserReview `json:"reviews"`
+	HasNextPage bool                 `json:"hasNextPage"`
+	ReviewCount int                  `json:"reviewCount"`
+	Reviews     []schemas.UserReview `json:"reviews"`
 }
 
 func AddUserReview(w http.ResponseWriter, r *http.Request) {
@@ -207,21 +207,21 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	flags := int32(flags64)
 
-	var reviews []database.UserReview
+	var reviews []schemas.UserReview
 	var err error
 
 	response := ReviewResponse{}
 	count := 0
 
 	if slices.Contains(common.OptedOut, fmt.Sprint(userID)) {
-		reviews = append([]database.UserReview{{
+		reviews = append([]schemas.UserReview{{
 			ID: 0,
-			Sender: database.Sender{
+			Sender: schemas.Sender{
 				ID:           0,
 				Username:     "ReviewDB",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
 				DiscordID:    "287555395151593473",
-				Badges:       []database.UserBadge{},
+				Badges:       []schemas.UserBadge{},
 			}, Comment: "This user has opted out of ReviewDB. It means you cannot review this user.",
 			Type: 3,
 		}})
@@ -256,10 +256,10 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && !(flags&AdFlag == AdFlag) {
-		reviews = append([]database.UserReview{{
+		reviews = append([]schemas.UserReview{{
 			Comment: "If you like the plugins I make, please consider supporting me at: \nhttps://github.com/sponsors/mantikafasi\n You can disable this in settings",
 			Type:    2,
-			Sender: database.Sender{
+			Sender: schemas.Sender{
 				DiscordID:    "287555395151593473",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
 				Username:     "ReviewDB",
@@ -268,21 +268,21 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) && offset == 0 {
-		reviews = append([]database.UserReview{{
+		reviews = append([]schemas.UserReview{{
 			ID:      0,
 			Comment: "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
 			Type:    3,
-			Sender: database.Sender{
+			Sender: schemas.Sender{
 				DiscordID:    "287555395151593473",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",
 				Username:     "Warning",
-				Badges:       []database.UserBadge{},
+				Badges:       []schemas.UserBadge{},
 			},
 		}}, reviews...)
 	}
 
 	if reviews == nil { //we dont want to send null
-		reviews = []database.UserReview{}
+		reviews = []schemas.UserReview{}
 	}
 
 	response.Reviews = reviews
@@ -295,7 +295,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	var data modules.UR_RequestData
 
 	type UserInfo struct {
-		database.URUser
+		schemas.URUser
 		LastReviewID int32 `json:"lastReviewID"`
 		UserType     int   `json:"type"`
 	}
@@ -317,9 +317,9 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dbBadges := modules.GetBadgesOfUser(user.DiscordID)
-	badges := make([]database.UserBadge, len(dbBadges))
+	badges := make([]schemas.UserBadge, len(dbBadges))
 	for i, b := range dbBadges {
-		badges[i] = database.UserBadge(b)
+		badges[i] = schemas.UserBadge(b)
 	}
 
 	response.Badges = badges
@@ -329,7 +329,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 
 func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 	type UserBadge struct {
-		database.UserBadge
+		schemas.UserBadge
 		DiscordID string `json:"discordID"`
 	}
 
@@ -340,7 +340,7 @@ func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 	}
 	badges := make([]UserBadge, len(legacyBadges))
 	for i, b := range legacyBadges {
-		badges[i] = UserBadge{database.UserBadge(b), b.TargetDiscordID}
+		badges[i] = UserBadge{schemas.UserBadge(b), b.TargetDiscordID}
 	}
 	json.NewEncoder(w).Encode(badges)
 }
@@ -435,7 +435,7 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 }
 
 func AppealReview(w http.ResponseWriter, r *http.Request) {
-	appealRequest := database.ReviewDBAppeal{}
+	appealRequest := schemas.ReviewDBAppeal{}
 
 	user, err := Authorize(r)
 	if err != nil {

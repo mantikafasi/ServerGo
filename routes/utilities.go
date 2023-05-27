@@ -3,11 +3,11 @@ package routes
 import (
 	"errors"
 	"net/http"
-	"server-go/database"
+	"server-go/database/schemas"
 	"server-go/modules"
 )
 
-func Authorize(r *http.Request) (*database.URUser, error) {
+func Authorize(r *http.Request) (*schemas.URUser, error) {
 
 	var token = r.Header.Get("Authorization")
 
