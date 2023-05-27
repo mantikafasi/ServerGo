@@ -8,8 +8,8 @@ import (
 )
 
 var oauthEndpoint = oauth2.Endpoint{
-	AuthURL:   common.Config.TwitterAPIEndpoint + "/oauth2/authorize",
-	TokenURL:  common.Config.TwitterAPIEndpoint + "/oauth2/token",
+	AuthURL:   common.Config.Twitter.ApiEndpoint + "/oauth2/authorize",
+	TokenURL:  common.Config.Twitter.ApiEndpoint + "/oauth2/token",
 	AuthStyle: oauth2.AuthStyleInParams,
 }
 
@@ -18,8 +18,8 @@ func ExchangeCode(code string) (*oauth2.Token, error) {
 		Endpoint:     oauthEndpoint,
 		Scopes:       []string{"identify"},
 		RedirectURL:  "https://manti.vendicated.dev/api/reviewdb-twitter/auth",
-		ClientID:     common.Config.TwitterClientID,
-		ClientSecret: common.Config.TwitterClientSecret,
+		ClientID:     common.Config.Twitter.ClientID,
+		ClientSecret: common.Config.Twitter.ClientSecret,
 	}
 
 	token, err := conf.Exchange(context.Background(), code)

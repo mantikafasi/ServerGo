@@ -13,15 +13,15 @@ const (
 	WEBSITE = "https://reviewdb.mantikafasi.dev"
 )
 
+type Client struct {
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	ApiEndpoint  string `json:"api_endpoint"`
+}
+
 type ConfigStr struct {
 	ApiEndpoint          string    `json:"api_endpoint"`
-	TwitterAPIEndpoint   string    `json:"twitter_api_endpoint"`
 	DB                   *ConfigDB `json:"db"`
-	RedirectUri          string    `json:"redirect_uri"`
-	ClientId             string    `json:"client_id"`
-	ClientSecret         string    `json:"client_secret"`
-	TwitterClientID      string    `json:"twitter_client_id"`
-	TwitterClientSecret  string    `json:"twitter_client_secret"`
 	GithubWebhookSecret  string    `json:"github_webhook_secret"`
 	Origin               string    `json:"origin"`
 	Port                 string    `json:"port"`
@@ -31,6 +31,8 @@ type ConfigStr struct {
 	AdminToken           string    `json:"admin_token"`
 	StupidityBotToken    string    `json:"stupidity_bot_token"`
 	LoggerWebhook        string    `json:"logger_webhook"`
+	Discord              *Client   `json:"discord"`
+	Twitter              *Client   `json:"twitter"`
 	Debug                bool      `json:"debug"`
 	ProfaneWordList      []string  `json:"profane_word_list"`
 	LightProfaneWordList []string  `json:"light_profane_word_list"`

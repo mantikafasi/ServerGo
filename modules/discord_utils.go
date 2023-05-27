@@ -212,8 +212,8 @@ func ExchangeCode(code, redirectURL string) (*oauth2.Token, error) {
 		Endpoint:     oauthEndpoint,
 		Scopes:       []string{"identify"},
 		RedirectURL:  redirectURL,
-		ClientID:     common.Config.ClientId,
-		ClientSecret: common.Config.ClientSecret,
+		ClientID:     common.Config.Discord.ClientID,
+		ClientSecret: common.Config.Discord.ClientSecret,
 	}
 
 	token, err := conf.Exchange(context.Background(), code)

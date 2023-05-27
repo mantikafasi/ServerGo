@@ -157,7 +157,6 @@ func main() {
 
 	mux.Put("/api/reviewdb/appeals", routes.AppealReview)
 
-
 	mux.Group(func(r chi.Router) {
 		r.Use(routes.AdminMiddleware)
 
