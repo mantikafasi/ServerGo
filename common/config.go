@@ -15,10 +15,13 @@ const (
 
 type ConfigStr struct {
 	ApiEndpoint          string    `json:"api_endpoint"`
+	TwitterAPIEndpoint   string    `json:"twitter_api_endpoint"`
 	DB                   *ConfigDB `json:"db"`
 	RedirectUri          string    `json:"redirect_uri"`
 	ClientId             string    `json:"client_id"`
 	ClientSecret         string    `json:"client_secret"`
+	TwitterClientID      string    `json:"twitter_client_id"`
+	TwitterClientSecret  string    `json:"twitter_client_secret"`
 	GithubWebhookSecret  string    `json:"github_webhook_secret"`
 	Origin               string    `json:"origin"`
 	Port                 string    `json:"port"`

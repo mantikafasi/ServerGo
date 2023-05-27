@@ -7,7 +7,7 @@ import (
 )
 
 type TwitterUser struct {
-	bun.BaseModel `bun:"table:twitter_users"`
+	bun.BaseModel `bun:"table:reviewdb_twitter.users"`
 
 	ID           int32       `bun:"id,pk,autoincrement" json:"Id"`
 	TwitterID    string      `bun:"twitter_id,type:numeric" json:"twitterId"`
@@ -28,7 +28,7 @@ type TwitterUser struct {
 }
 
 type ReviewDBTwitterBanLog struct {
-	bun.BaseModel `bun:"table:user_bans_twitter"`
+	bun.BaseModel `bun:"table:reviewdb_twitter.user_bans"`
 
 	ID              int32     `bun:"id,pk,autoincrement" json:"id"`
 	TwitterID       string    `bun:"twitter_id,type:numeric" json:"twitterId"`
@@ -41,22 +41,30 @@ type ReviewDBTwitterBanLog struct {
 }
 
 type TwitterUserReview struct {
-	bun.BaseModel `bun:"table:reviews_twitter"`
+	bun.BaseModel `bun:"table:reviewdb_twitter.reviews"`
 
-	ID           int32     `bun:"id,pk,autoincrement" json:"id"`
-	ProfileID    int64     `bun:"profile_id,type:numeric" json:"-"`
-	Sender       Sender    `bun:"-" json:"sender"`
-	Comment      string    `bun:"comment" json:"comment"`
-	Type         int32     `bun:"type" json:"type"` // 0 = normal review , 1 = system review
-	TimestampStr time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
-	Timestamp    int64     `bun:"-" json:"timestamp"`
+	ID           int32         `bun:"id,pk,autoincrement" json:"id"`
+	ProfileID    int64         `bun:"profile_id,type:numeric" json:"-"`
+	Sender       TwitterSender `bun:"-" json:"sender"`
+	Comment      string        `bun:"comment" json:"comment"`
+	Type         int32         `bun:"type" json:"type"` // 0 = normal review , 1 = system review
+	TimestampStr time.Time     `bun:"timestamp,default:current_timestamp" json:"-"`
+	Timestamp    int64         `bun:"-" json:"timestamp"`
 
 	User       *TwitterUser `bun:"rel:belongs-to,join:reviewer_id=id" json:"-"`
-	ReviewerID int32   `bun:"reviewer_id" json:"-"`
+	ReviewerID int32        `bun:"reviewer_id" json:"-"`
+}
+
+type TwitterSender struct {
+	ID        int32       `json:"id"`
+	TwitterID string      `json:"twitterId"`
+	Username  string      `json:"username"`
+	AvatarURL string      `json:"avatarURL"`
+	Badges    []TwitterUserBadge `json:"badges"`
 }
 
 type TwitterUserBadge struct {
-	bun.BaseModel `bun:"table:user_badges_twitter"`
+	bun.BaseModel `bun:"table:reviewdb_twitter.user_badges"`
 
 	ID              int32  `bun:"id,pk,autoincrement" json:"-"`
 	TargetTwitterID string `bun:"target_twitter_id,type:numeric" json:"-"`
