@@ -12,3 +12,11 @@ type StupitStat struct {
 	StupidityValue    int32  `bun:"stupidity_value"`
 	ReviewerDiscordID string `bun:"reviewer_discord_id,type:numeric"`
 }
+
+type UserInfo struct {
+	bun.BaseModel `bun:"table:stupidity_users"`
+
+	ID        int32  `bun:"id,pk,autoincrement"`
+	DiscordID string `bun:"discord_id,type:numeric"`
+	Token     string `bun:"token"`
+}

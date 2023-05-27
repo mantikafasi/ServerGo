@@ -77,14 +77,6 @@ type ReviewDBAppeal struct {
 	AppealText string `bun:"appeal_text" json:"appealText"`
 }
 
-type UserInfo struct {
-	bun.BaseModel `bun:"table:stupidity_users"`
-
-	ID        int32  `bun:"id,pk,autoincrement"`
-	DiscordID string `bun:"discord_id,type:numeric"`
-	Token     string `bun:"token"`
-}
-
 type Sender struct {
 	ID           int32       `json:"id"`
 	DiscordID    string      `json:"discordID"`

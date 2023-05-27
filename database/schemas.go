@@ -19,7 +19,6 @@ func CreateReviewDBSchemas() error {
 		(*schemas.ReviewDBBanLog)(nil),
 		(*schemas.ActionLog)(nil),
 		(*schemas.ReviewDBAppeal)(nil),
-		(*schemas.UserInfo)(nil),
 		(*schemas.UserReview)(nil),
 		(*schemas.UserBadge)(nil),
 	}
@@ -36,6 +35,7 @@ func CreateReviewDBSchemas() error {
 func CreateStupidityDBSchemas() error {
 	models := []any{
 		(*schemas.StupitStat)(nil),
+		(*schemas.UserInfo)(nil),
 	}
 
 	for _, model := range models {
@@ -48,6 +48,7 @@ func CreateStupidityDBSchemas() error {
 
 func CreateTwitterReviewDBSchemas() error {
 	models := []any{}
+	// soon
 
 	for _, model := range models {
 		if _, err := DB.NewCreateTable().IfNotExists().Model(model).Exec(context.Background()); err != nil {
