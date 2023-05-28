@@ -232,7 +232,7 @@ func AddReview(user *schemas.TwitterUser, data schemas.TwitterRequestData) (resp
 		return common.UPDATED, nil
 	}
 
-	_, err = database.DB.NewInsert().Model(review).Exec(context.Background())
+	_, err = database.DB.NewInsert().Model(&review).Exec(context.Background())
 	if err != nil {
 		return common.ERROR, err
 	}

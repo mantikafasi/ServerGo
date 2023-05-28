@@ -86,6 +86,10 @@ func GetTwitterReviews(w http.ResponseWriter, r *http.Request) {
 		res.Reviews = reviews[:len(reviews)-1]
 	}
 
+	if len(reviews) == 0 {
+		res.Reviews = []schemas.TwitterUserReview{}
+		// we dont wanna send null
+	}
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
