@@ -20,7 +20,6 @@ type Client struct {
 }
 
 type ConfigStr struct {
-	ApiEndpoint          string    `json:"api_endpoint"`
 	DB                   *ConfigDB `json:"db"`
 	GithubWebhookSecret  string    `json:"github_webhook_secret"`
 	Origin               string    `json:"origin"`

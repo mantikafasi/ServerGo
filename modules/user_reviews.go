@@ -233,7 +233,6 @@ func AddReview(data UR_RequestData) (string, error) {
 	if err != nil {
 		return common.UPDATE_FAILED, err
 	}
-	//LogAction("UPDATE",review,senderUserID) TODO : DO THIS
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {

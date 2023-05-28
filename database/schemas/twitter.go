@@ -21,6 +21,7 @@ type TwitterUser struct {
 	OptedOut     bool        `bun:"opted_out" json:"-"`
 	IpHash       string      `bun:"ip_hash" json:"-"`
 	RefreshToken string      `bun:"refresh_token" json:"-"`
+	ExpiresAt    time.Time   `bun:"expires_at" json:"-"`
 
 	BanID int32 `bun:"ban_id" json:"-"`
 
@@ -44,7 +45,7 @@ type TwitterUserReview struct {
 	bun.BaseModel `bun:"table:reviewdb_twitter.reviews"`
 
 	ID           int32         `bun:"id,pk,autoincrement" json:"id"`
-	ProfileID    int64         `bun:"profile_id,type:numeric" json:"-"`
+	ProfileID    string        `bun:"profile_id,type:numeric" json:"-"`
 	Sender       TwitterSender `bun:"-" json:"sender"`
 	Comment      string        `bun:"comment" json:"comment"`
 	Type         int32         `bun:"type" json:"type"` // 0 = normal review , 1 = system review
@@ -52,14 +53,14 @@ type TwitterUserReview struct {
 	Timestamp    int64         `bun:"-" json:"timestamp"`
 
 	User       *TwitterUser `bun:"rel:belongs-to,join:reviewer_id=id" json:"-"`
-	ReviewerID int32        `bun:"reviewer_id" json:"-"`
+	ReviewerID string       `bun:"reviewer_id,type:numeric" json:"-"`
 }
 
 type TwitterSender struct {
-	ID        int32       `json:"id"`
-	TwitterID string      `json:"twitterId"`
-	Username  string      `json:"username"`
-	AvatarURL string      `json:"avatarURL"`
+	ID        int32              `json:"id"`
+	TwitterID string             `json:"twitterId"`
+	Username  string             `json:"username"`
+	AvatarURL string             `json:"avatarURL"`
 	Badges    []TwitterUserBadge `json:"badges"`
 }
 
@@ -73,4 +74,9 @@ type TwitterUserBadge struct {
 	RedirectURL     string `bun:"redirect_url" json:"redirectURL"`
 	Type            int32  `bun:"type" json:"type"`
 	Description     string `bun:"description" json:"description"`
+}
+
+type TwitterRequestData struct {
+	Comment   string `json:"comment"`
+	ProfileID string `json:"profileId"`
 }

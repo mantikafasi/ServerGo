@@ -2,10 +2,21 @@ package modules
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 	"server-go/common"
 
 	"golang.org/x/oauth2"
 )
+
+type TwitterUser struct {
+	Data struct {
+		ID         string `json:"id"`
+		Name       string `json:"name"`
+		Username   string `json:"username"`
+		AvatarURL  string `json:"profile_image_url"`
+	}
+}
 
 var oauthEndpoint = oauth2.Endpoint{
 	AuthURL:   common.Config.Twitter.ApiEndpoint + "/oauth2/authorize",
@@ -21,9 +32,9 @@ func ExchangeCode(code string) (*oauth2.Token, error) {
 		ClientID:     common.Config.Twitter.ClientID,
 		ClientSecret: common.Config.Twitter.ClientSecret,
 	}
-
+	
 	token, err := conf.Exchange(context.Background(), code)
-
+	
 	if err != nil {
 		return nil, err
 	} else {
@@ -31,7 +42,16 @@ func ExchangeCode(code string) (*oauth2.Token, error) {
 	}
 }
 
-// TODO: sanitize config
-func FetchUser(token string) {
-	// TODO IMPLEMENT
+func FetchUser(token string) (user *TwitterUser, err error){
+	req, _ := http.NewRequest(http.MethodGet, common.Config.Twitter.ApiEndpoint+"/users/me", nil)
+	req.URL.Query().Add("user.fields", "id,name,username,profile_image_url")
+	req.Header.Add("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err == nil {
+		err = json.NewDecoder(resp.Body).Decode(&user)
+		resp.Body.Close()
+		return user, nil
+	}
+	return nil, err
 }

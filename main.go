@@ -168,6 +168,8 @@ func main() {
 		})
 	})
 
+	mux.HandleFunc("/api/reviewdb-twitter/auth", routes.ReviewDBTwitterAuth)
+
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
 	})

@@ -2,14 +2,17 @@ package modules
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"server-go/common"
 	"server-go/database"
 	"server-go/database/schemas"
+	"server-go/modules"
 
 	"github.com/patrickmn/go-cache"
 )
 
-func GetReviews(userID int64, offset int) ([]schemas.TwitterUserReview, int, error) {
+func GetTwitterReviews(userID string, offset int) ([]schemas.TwitterUserReview, int, error) {
 	var reviews []schemas.TwitterUserReview
 
 	count, err := database.DB.NewSelect().
@@ -97,10 +100,10 @@ func GetAllBadges() (badges []schemas.TwitterUserBadge, err error) {
 	return
 }
 
-func GetReviewCountInLastHour(userID int32) (int, error) {
+func GetReviewCountInLastHour(userID string) (int, error) {
 	//return 0, nil
 	count, err := database.DB.
-		NewSelect().Table("reviews").
+		NewSelect().Table("reviewdb_twitter.reviews").
 		Where("reviewer_id = ? AND timestamp > now() - interval '1 hour'", userID).
 		Count(context.Background())
 	if err != nil {
@@ -109,46 +112,68 @@ func GetReviewCountInLastHour(userID int32) (int, error) {
 	return count, nil
 }
 
-/*
-func AddReviewDBTwitterUser(code string, ip string) (string, error) {
-	discordToken, err := ExchangeCode(code, common.Config.Origin+authUrl)
+func GetDBUserViaTwitterID(twitterID string) (*schemas.TwitterUser, error) {
+	var user schemas.TwitterUser
+	err := database.DB.NewSelect().Model(&user).Where("twitter_id = ?", twitterID).Limit(1).Scan(context.Background())
+
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" { //SOMEONE TELL ME BETTER WAY TO DO THIS
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func GetDBUserViaToken(token string) (*schemas.TwitterUser, error) {
+	var user schemas.TwitterUser
+	err := database.DB.NewSelect().Model(&user).Where("token = ?", token).Limit(1).Scan(context.Background())
+
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" { //SOMEONE TELL ME BETTER WAY TO DO THIS
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func AddTwitterUser(code string, ip string) (string, error) {
+	twitterToken, err := ExchangeCode(code)
 	if err != nil {
 		return "", err
 	}
 
-	discordUser, err := GetUser(discordToken.AccessToken)
+	twitterUser, err := FetchUser(twitterToken.AccessToken)
 	if err != nil {
 		return "", err
 	}
 	token := modules.GenerateToken()
 
 	user := &schemas.TwitterUser{
-		TwitterID:    discordUser.ID,
+		TwitterID:    twitterUser.Data.ID,
 		Token:        token,
-		Username:     discordUser.Username + "#" + discordUser.Discriminator,
-		//AvatarURL:    GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
+		Username:     twitterUser.Data.Username,
+		DisplayName:  twitterUser.Data.Name,
+		AvatarURL:    twitterUser.Data.AvatarURL,
 		Type:         0,
 		IpHash:       modules.CalculateHash(ip),
-		RefreshToken: discordToken.RefreshToken,
-	}
-	if discordUser.Discriminator == "0" {
-		user.Username = discordUser.Username
+		RefreshToken: twitterToken.RefreshToken,
+		ExpiresAt:    twitterToken.Expiry,
 	}
 
-	dbUser, err := GetDBUserViaDiscordID(discordUser.ID)
+	dbUser, err := GetDBUserViaTwitterID(twitterUser.Data.ID)
 
 	if dbUser != nil {
 		if dbUser.Type == -1 {
 			return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB")
 		}
 
-		if !strings.HasPrefix(dbUser.Token, "rdb.") {
-			dbUser.Token = token
-		}
-
-		if !slices.Contains(dbUser.ClientMods, clientmod) {
-			dbUser.ClientMods = append(dbUser.ClientMods, clientmod)
-		}
+		dbUser.Username = twitterUser.Data.Username
+		dbUser.DisplayName = twitterUser.Data.Name
+		dbUser.AvatarURL = twitterUser.Data.AvatarURL
 
 		_, err = database.DB.NewUpdate().Where("id = ?", dbUser.ID).Model(dbUser).Exec(context.Background())
 		if err != nil {
@@ -160,15 +185,56 @@ func AddReviewDBTwitterUser(code string, ip string) (string, error) {
 
 	_, err = database.DB.NewInsert().Model(user).Exec(context.Background())
 	if err != nil {
-		return "An Error occurred", err
+		return common.ERROR, err
 	}
 
-	SendLoggerWebhook(WebhookData{
-		Username:  discordUser.Username + "#" + discordUser.Discriminator,
-		AvatarURL: GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
-		Content:   fmt.Sprintf("User <@%s> has been registered to ReviewDB from %s", discordUser.ID, clientmod),
+	modules.SendLoggerWebhook(modules.WebhookData{
+		Username:  twitterUser.Data.Username,
+		AvatarURL: twitterUser.Data.AvatarURL,
+		Content:   fmt.Sprintf("User %s (%s) has been registered to ReviewDB Twitter", twitterUser.Data.Username, twitterUser.Data.ID),
 	})
-
 	return token, nil
 }
-*/
+
+func AddReview(user *schemas.TwitterUser, data schemas.TwitterRequestData) (response string, err error) {
+
+	if common.LightProfanityDetector.IsProfane(data.Comment) || common.ProfanityDetector.IsProfane(data.Comment) {
+		return "", errors.New("Your review contains profanity")
+	}
+
+	count, err := GetReviewCountInLastHour(user.TwitterID)
+
+	if err != nil {
+		println(err.Error())
+		return "", errors.New(common.ERROR)
+	}
+
+	if count > 20 {
+		return "", errors.New("You are reviewing too much")
+	}
+
+	review := schemas.TwitterUserReview{
+		Comment:    data.Comment,
+		ProfileID:  data.ProfileID,
+		ReviewerID: user.TwitterID,
+	}
+
+	res, err := database.DB.NewUpdate().Where("profile_id = ? AND reviewer_id = ?", data.ProfileID, user.TwitterID).OmitZero().Model(review).Exec(context.Background())
+	if err != nil {
+		return common.UPDATE_FAILED, err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return common.UPDATE_FAILED, err
+	}
+	if rowsAffected != 0 {
+		return common.UPDATED, nil
+	}
+
+	_, err = database.DB.NewInsert().Model(review).Exec(context.Background())
+	if err != nil {
+		return common.ERROR, err
+	}
+	return common.ADDED, nil
+}

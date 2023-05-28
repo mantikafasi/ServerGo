@@ -37,8 +37,8 @@ type DiscordUser struct {
 }
 
 var oauthEndpoint = oauth2.Endpoint{
-	AuthURL:   common.Config.ApiEndpoint + "/oauth2/authorize",
-	TokenURL:  common.Config.ApiEndpoint + "/oauth2/token",
+	AuthURL:   common.Config.Discord.ApiEndpoint + "/oauth2/authorize",
+	TokenURL:  common.Config.Discord.ApiEndpoint + "/oauth2/token",
 	AuthStyle: oauth2.AuthStyleInParams,
 }
 
@@ -228,7 +228,7 @@ func ExchangeCode(code, redirectURL string) (*oauth2.Token, error) {
 
 func GetUser(token string) (user *DiscordUser, err error) {
 	// TODO discordid is always 0 fix
-	req, _ := http.NewRequest(http.MethodGet, common.Config.ApiEndpoint+"/users/@me", nil)
+	req, _ := http.NewRequest(http.MethodGet, common.Config.Discord.ApiEndpoint+"/users/@me", nil)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
@@ -241,7 +241,7 @@ func GetUser(token string) (user *DiscordUser, err error) {
 }
 
 func GetUserViaID(userid int64) (user *DiscordUser, err error) {
-	req, _ := http.NewRequest(http.MethodGet, common.Config.ApiEndpoint+"/users/"+fmt.Sprint(userid), nil)
+	req, _ := http.NewRequest(http.MethodGet, common.Config.Discord.ApiEndpoint+"/users/"+fmt.Sprint(userid), nil)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bot "+common.Config.BotToken)
 	resp, err := http.DefaultClient.Do(req)
