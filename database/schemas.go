@@ -47,7 +47,12 @@ func CreateStupidityDBSchemas() error {
 }
 
 func CreateTwitterReviewDBSchemas() error {
-	models := []any{}
+	models := []any{
+		(*schemas.TwitterUser)(nil),
+		(*schemas.TwitterUserReview)(nil),
+		(*schemas.TwitterUserBadge)(nil),
+		(*schemas.ReviewDBTwitterBanLog)(nil),
+	}
 	// soon
 
 	for _, model := range models {
