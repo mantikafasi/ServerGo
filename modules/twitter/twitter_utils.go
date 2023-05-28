@@ -11,10 +11,10 @@ import (
 
 type TwitterUser struct {
 	Data struct {
-		ID         string `json:"id"`
-		Name       string `json:"name"`
-		Username   string `json:"username"`
-		AvatarURL  string `json:"profile_image_url"`
+		ID        string `json:"id"`
+		Name      string `json:"name"`
+		Username  string `json:"username"`
+		AvatarURL string `json:"profile_image_url"`
 	}
 }
 
@@ -27,14 +27,16 @@ var oauthEndpoint = oauth2.Endpoint{
 func ExchangeCode(code string) (*oauth2.Token, error) {
 	conf := &oauth2.Config{
 		Endpoint:     oauthEndpoint,
-		Scopes:       []string{"identify"},
 		RedirectURL:  "https://manti.vendicated.dev/api/reviewdb-twitter/auth",
 		ClientID:     common.Config.Twitter.ClientID,
 		ClientSecret: common.Config.Twitter.ClientSecret,
 	}
-	
-	token, err := conf.Exchange(context.Background(), code)
-	
+	options := []oauth2.AuthCodeOption{}
+
+	options = append(options, oauth2.SetAuthURLParam("grant_type", "authorization_code"))
+	options = append(options, oauth2.SetAuthURLParam("code_verifier", "challenge"))
+	token, err := conf.Exchange(context.Background(), code, options)
+
 	if err != nil {
 		return nil, err
 	} else {
@@ -42,7 +44,7 @@ func ExchangeCode(code string) (*oauth2.Token, error) {
 	}
 }
 
-func FetchUser(token string) (user *TwitterUser, err error){
+func FetchUser(token string) (user *TwitterUser, err error) {
 	req, _ := http.NewRequest(http.MethodGet, common.Config.Twitter.ApiEndpoint+"/users/me", nil)
 	req.URL.Query().Add("user.fields", "id,name,username,profile_image_url")
 	req.Header.Add("Authorization", "Bearer "+token)
