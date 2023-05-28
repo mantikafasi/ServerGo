@@ -8,6 +8,8 @@ import (
 	"server-go/database/schemas"
 	modules "server-go/modules/twitter"
 	"strings"
+
+	"github.com/go-chi/chi"
 )
 
 func ReviewDBTwitterAuth(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +45,8 @@ func AddTwitterReview(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	
+	data.ProfileID = chi.URLParam(r, "profileid")
 
 	if len(data.Comment) > 1000 {
 		response.Message = "Comment Too Long"
@@ -70,7 +74,7 @@ type ReviewsResponseTwitter struct {
 }
 
 func GetTwitterReviews(w http.ResponseWriter, r *http.Request) {
-	userid := r.URL.Query().Get("userid")
+	userid := chi.URLParam(r, "profileid")
 	reviews, count, err := modules.GetTwitterReviews(userid, 0)
 
 	res := ReviewsResponseTwitter{
