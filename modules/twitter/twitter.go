@@ -28,11 +28,7 @@ func GetTwitterReviews(userID string, offset int) ([]schemas.TwitterUserReview, 
 	}
 
 	for i, review := range reviews {
-		dbBadges := GetBadgesOfUser(review.User.TwitterID)
-		badges := make([]schemas.TwitterUserBadge, len(dbBadges))
-		for i, b := range dbBadges {
-			badges[i] = schemas.TwitterUserBadge(b)
-		}
+		badges := GetBadgesOfUser(review.User.TwitterID)
 
 		if review.User != nil {
 			reviews[i].Sender.TwitterID = review.User.TwitterID
@@ -73,7 +69,7 @@ func GetAllBadges() (badges []schemas.TwitterUserBadge, err error) {
 
 	users := []schemas.TwitterUser{}
 
-	database.DB.NewSelect().Distinct().Model(&users).Column("discord_id", "type").Where("type = ? or type = ?", 1, -1).Scan(context.Background(), &users)
+	database.DB.NewSelect().Distinct().Model(&users).Column("twitter_id", "type").Where("type = ? or type = ?", 1, -1).Scan(context.Background(), &users)
 
 	for _, user := range users {
 		if user.Type == 1 {
