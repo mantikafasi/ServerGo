@@ -57,7 +57,7 @@ var ReviewCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
 
 func (c *Mux) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 
-	metric := strings.NewReplacer("{", "", "}", "", "/", "", "*", "").Replace(pattern)
+	metric := strings.NewReplacer("{", "", "}", "", "/", "", "*", "", "-", "").Replace(pattern)
 
 	if metric == "" {
 		metric = "root"
@@ -171,7 +171,6 @@ func main() {
 	mux.HandleFunc("/api/reviewdb-twitter/auth", routes.ReviewDBTwitterAuth)
 	mux.Put("/api/reviewdb-twitter/users/{profileid}/reviews", routes.AddTwitterReview)
 	mux.Get("/api/reviewdb-twitter/users/{profileid}/reviews", routes.GetTwitterReviews)
-
 
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
