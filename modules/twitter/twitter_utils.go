@@ -31,11 +31,8 @@ func ExchangeCode(code string) (*oauth2.Token, error) {
 		ClientID:     common.Config.Twitter.ClientID,
 		ClientSecret: common.Config.Twitter.ClientSecret,
 	}
-	options := []oauth2.AuthCodeOption{}
 
-	options = append(options, oauth2.SetAuthURLParam("grant_type", "authorization_code"))
-	options = append(options, oauth2.SetAuthURLParam("code_verifier", "challenge"))
-	token, err := conf.Exchange(context.Background(), code, options)
+	token, err := conf.Exchange(context.Background(), code, oauth2.SetAuthURLParam("grant_type", "authorization_code"), oauth2.SetAuthURLParam("code_verifier", "challenge"))
 
 	if err != nil {
 		return nil, err
