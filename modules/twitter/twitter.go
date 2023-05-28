@@ -43,13 +43,13 @@ func GetTwitterReviews(userID string, offset int) ([]schemas.TwitterUserReview, 
 	return reviews, count, nil
 }
 
-func GetBadgesOfUser(discordid string) []schemas.TwitterUserBadge {
+func GetBadgesOfUser(twitterID string) []schemas.TwitterUserBadge {
 	userBadges := []schemas.TwitterUserBadge{}
 
 	badges, _ := GetAllBadges()
 	for _, badge := range badges {
 
-		if badge.TargetTwitterID == discordid {
+		if badge.TargetTwitterID == twitterID {
 			userBadges = append(userBadges, badge)
 		}
 	}

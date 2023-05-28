@@ -52,7 +52,7 @@ type TwitterUserReview struct {
 	TimestampStr time.Time     `bun:"timestamp,default:current_timestamp" json:"-"`
 	Timestamp    int64         `bun:"-" json:"timestamp"`
 
-	User       *TwitterUser `bun:"rel:belongs-to,join:reviewer_id=id" json:"-"`
+	User       *TwitterUser `bun:"rel:belongs-to,join:reviewer_id=twitter_id" json:"-"`
 	ReviewerID string       `bun:"reviewer_id,type:numeric" json:"-"`
 }
 

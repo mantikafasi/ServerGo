@@ -45,7 +45,7 @@ func AddTwitterReview(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	
+
 	data.ProfileID = chi.URLParam(r, "profileid")
 
 	if len(data.Comment) > 1000 {
@@ -67,7 +67,7 @@ func AddTwitterReview(w http.ResponseWriter, r *http.Request) {
 }
 
 type ReviewsResponseTwitter struct {
-	Response
+	Message     string                      `json:"message"` // for errors
 	HasNextPage bool                        `json:"hasNextPage"`
 	ReviewCount int                         `json:"reviewCount"`
 	Reviews     []schemas.TwitterUserReview `json:"reviews"`
@@ -84,12 +84,13 @@ func GetTwitterReviews(w http.ResponseWriter, r *http.Request) {
 
 	if len(reviews) > 50 {
 		res.Reviews = reviews[:len(reviews)-1]
-	}
-
-	if len(reviews) == 0 {
+	} else if len(reviews) == 0 {
 		res.Reviews = []schemas.TwitterUserReview{}
 		// we dont wanna send null
+	} else {
+		res.Reviews = reviews
 	}
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
