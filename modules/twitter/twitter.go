@@ -34,6 +34,7 @@ func GetTwitterReviews(userID string, offset int) ([]schemas.TwitterUserReview, 
 			reviews[i].Sender.TwitterID = review.User.TwitterID
 			reviews[i].Sender.AvatarURL = review.User.AvatarURL
 			reviews[i].Sender.Username = review.User.Username
+			reviews[i].Sender.DisplayName = review.User.DisplayName
 			reviews[i].Sender.ID = review.User.ID
 			reviews[i].Sender.Badges = badges
 		}

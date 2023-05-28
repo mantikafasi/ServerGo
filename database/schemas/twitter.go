@@ -57,11 +57,12 @@ type TwitterUserReview struct {
 }
 
 type TwitterSender struct {
-	ID        int32              `json:"id"`
-	TwitterID string             `json:"twitterId"`
-	Username  string             `json:"username"`
-	AvatarURL string             `json:"avatarURL"`
-	Badges    []TwitterUserBadge `json:"badges"`
+	ID          int32              `json:"id"`
+	TwitterID   string             `json:"twitterId"`
+	Username    string             `json:"username"`
+	DisplayName string             `json:"displayName"`
+	AvatarURL   string             `json:"avatarURL"`
+	Badges      []TwitterUserBadge `json:"badges"`
 }
 
 type TwitterUserBadge struct {
