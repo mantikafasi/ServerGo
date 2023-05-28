@@ -80,7 +80,10 @@ func GetTwitterReviews(w http.ResponseWriter, r *http.Request) {
 	res := ReviewsResponseTwitter{
 		HasNextPage: len(reviews) > 50,
 		ReviewCount: count,
-		Reviews:     reviews[:len(reviews)-1],
+	}
+
+	if len(reviews) > 50 {
+		res.Reviews = reviews[:len(reviews)-1]
 	}
 
 	if err != nil {
