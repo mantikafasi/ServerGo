@@ -42,10 +42,10 @@ func ExchangeCode(code string) (*oauth2.Token, error) {
 }
 
 func FetchUser(token string) (user *TwitterUser, err error) {
-	req, _ := http.NewRequest(http.MethodGet, common.Config.Twitter.ApiEndpoint+"/users/me", nil)
+	req, _ := http.NewRequest(http.MethodGet, common.Config.Twitter.ApiEndpoint+"/users/me?user.fields=id%2Cname%2Cusername%2Cprofile_image_url", nil)
 	req.Header.Add("Authorization", "Bearer "+token)
-	req.Header.Add("Content-Type", "x-www-form-urlencoded")
-	req.URL.Query().Add("user.fields", "id,name,username,profile_image_url")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
 	resp, err := http.DefaultClient.Do(req)
 	if err == nil {
 		err = json.NewDecoder(resp.Body).Decode(&user)
