@@ -58,15 +58,20 @@ func GetReviews(userID int64, offset int) ([]schemas.UserReview, int, error) {
 func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) ([]schemas.UserReview, int, error) {
 	var reviews []schemas.UserReview
 
-	count, err := database.DB.NewSelect().
+	req := database.DB.NewSelect().
 		Model(&reviews).
 		Relation("User").
 		Where("profile_id = ?", userID).
 		Where("\"user\".\"opted_out\" = 'f'").
-		OrderExpr(common.Ternary(options.IncludeReviewsById != "", "reviewer_id = ? desc, id desc", "id desc"), options.IncludeReviewsById).Limit(51).
 		Offset(offset).
-		ScanAndCount(context.Background(), &reviews)
-
+		Limit(51)
+	
+	if options.IncludeReviewsById != "" {
+		req = req.OrderExpr("reviewer_id = ? desc, id desc")
+	} else {
+		req = req.OrderExpr("id desc")
+	}
+	count, err := req.ScanAndCount(context.Background(), &reviews)
 	if err != nil {
 		return nil, 0, err
 	}
