@@ -137,15 +137,15 @@ func GetDBUserViaToken(token string) (*schemas.TwitterUser, error) {
 	return &user, nil
 }
 
-func AddTwitterUser(code string, ip string) (string, error) {
+func AddTwitterUser(code string, ip string) (*schemas.TwitterUser, error) {
 	twitterToken, err := ExchangeCode(code)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	twitterUser, err := FetchUser(twitterToken.AccessToken)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	token := modules.GenerateToken()
 
@@ -165,7 +165,7 @@ func AddTwitterUser(code string, ip string) (string, error) {
 
 	if dbUser != nil {
 		if dbUser.Type == -1 {
-			return "You have been banned from ReviewDB", errors.New("You have been banned from ReviewDB")
+			return nil, errors.New("You have been banned from ReviewDB")
 		}
 
 		dbUser.Username = twitterUser.Data.Username
@@ -174,15 +174,16 @@ func AddTwitterUser(code string, ip string) (string, error) {
 
 		_, err = database.DB.NewUpdate().Where("id = ?", dbUser.ID).Model(dbUser).Exec(context.Background())
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		return dbUser.Token, nil
+		return dbUser, nil
 	}
 
 	_, err = database.DB.NewInsert().Model(user).Exec(context.Background())
 	if err != nil {
-		return common.ERROR, err
+		println(err.Error())
+		return nil, errors.New(common.ERROR)
 	}
 
 	modules.SendLoggerWebhook(modules.WebhookData{
@@ -190,7 +191,7 @@ func AddTwitterUser(code string, ip string) (string, error) {
 		AvatarURL: twitterUser.Data.AvatarURL,
 		Content:   fmt.Sprintf("User %s (%s) has been registered to ReviewDB Twitter", twitterUser.Data.Username, twitterUser.Data.ID),
 	})
-	return token, nil
+	return dbUser, nil
 }
 
 func AddReview(user *schemas.TwitterUser, data schemas.TwitterRequestData) (response string, err error) {

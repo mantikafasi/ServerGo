@@ -14,16 +14,20 @@ import (
 
 func ReviewDBTwitterAuth(w http.ResponseWriter, r *http.Request) {
 
-	token, err := modules.AddTwitterUser(r.URL.Query().Get("code"), r.Header.Get("CF-Connecting-IP"))
+	user, err := modules.AddTwitterUser(r.URL.Query().Get("code"), r.Header.Get("CF-Connecting-IP"))
+
+	res := struct {
+		schemas.TwitterUser
+		Token string `json:"token"`
+	}{
+		TwitterUser: *user,
+		Token:       user.Token,
+	}
 
 	if err != nil {
 		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
-	}
-
-	res := ReviewDBAuthResponse{
-		Token: token,
 	}
 
 	response, _ := json.Marshal(res)
