@@ -102,3 +102,12 @@ func GetTwitterReviews(w http.ResponseWriter, r *http.Request) {
 
 	common.SendStructResponse(w, res)
 }
+
+func HandleTwitterRoutes(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "PUT":
+		AddTwitterReview(w, r)
+	case "GET":
+		GetTwitterReviews(w, r)
+	}
+}
