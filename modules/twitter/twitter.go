@@ -128,9 +128,6 @@ func GetDBUserViaToken(token string) (*schemas.TwitterUser, error) {
 	err := database.DB.NewSelect().Model(&user).Where("token = ?", token).Limit(1).Scan(context.Background())
 
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" { //SOMEONE TELL ME BETTER WAY TO DO THIS
-			return nil, nil
-		}
 		return nil, err
 	}
 

@@ -9,7 +9,7 @@ import (
 type TwitterUser struct {
 	bun.BaseModel `bun:"table:reviewdb_twitter.users"`
 
-	ID           int32       `bun:"id,pk,autoincrement" json:"Id"`
+	ID           int32       `bun:"id,pk,autoincrement" json:"id"`
 	TwitterID    string      `bun:"twitter_id,type:numeric" json:"twitterId"`
 	Token        string      `bun:"token" json:"-"`
 	Username     string      `bun:"username" json:"username"`
