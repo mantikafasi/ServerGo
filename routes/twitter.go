@@ -33,7 +33,7 @@ func ReviewDBTwitterAuth(w http.ResponseWriter, r *http.Request) {
 	text, _ := json.Marshal(res)
 
 	response := fmt.Sprintf(`
-	<divdata-reviewdb-auth = '%s' />`, text)
+	<div data-reviewdb-auth = '%s' />`, text)
 
 	io.WriteString(w, string(response))
 }
