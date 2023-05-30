@@ -126,8 +126,8 @@ func DeleteReviewTwitter(w http.ResponseWriter, r *http.Request) {
 
 	err = modules_twitter.DeleteReview(user, int32(reviewID))
 	if err != nil {
-		w.Write([]byte("An error occured while deleting review"))
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("An error occured while deleting review"))
 		return
 	}
 

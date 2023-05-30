@@ -255,7 +255,7 @@ func DeleteReview(user *schemas.TwitterUser, reviewID int32) (err error) {
 	if (review.ReviewerID == user.TwitterID) || user.IsAdmin() {
 		//LogAction("DELETE", review, user.ID)
 
-		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", reviewID).Exec(context.Background())
+		_, err = database.DB.NewDelete().Model(review).Where("id = ?", reviewID).Exec(context.Background())
 		if err != nil {
 			println(err.Error())
 			return errors.New(common.ERROR)
