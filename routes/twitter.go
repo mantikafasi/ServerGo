@@ -146,7 +146,7 @@ func ReportTwitterReview(w http.ResponseWriter, r *http.Request) {
 	var data modules.ReportData
 	json.NewDecoder(r.Body).Decode(&data)
 
-	if data.Token == "" || data.ReviewID == 0 {
+	if data.ReviewID == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Invalid Request"))
 		return
