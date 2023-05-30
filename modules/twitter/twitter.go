@@ -256,6 +256,10 @@ func DeleteReview(user *schemas.TwitterUser, reviewID int32) (err error) {
 		//LogAction("DELETE", review, user.ID)
 
 		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", reviewID).Exec(context.Background())
+		if err != nil {
+			println(err.Error())
+			return errors.New(common.ERROR)
+		}
 		return nil
 	}
 	return errors.New("You are not allowed to delete this review")
@@ -284,10 +288,10 @@ func ReportReview(user *schemas.TwitterUser,reviewID int32) error {
 	}
 
 	if review.ReviewerID == user.TwitterID {
-		return errors.New("You cant report your own reviews")
+		return errors.New("You cant report your own review")
 	}
 
-	reportedUser, _ := GetDBUserViaID(review.ReviewerID)
+	reportedUser, _ := GetDBUserViaTwitterID(review.ReviewerID)
 
 	report := schemas.TwitterReviewReport{
 		ReviewID:   reviewID,
