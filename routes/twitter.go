@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"server-go/common"
@@ -29,8 +30,14 @@ func ReviewDBTwitterAuth(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	text, _ := json.Marshal(res)
 
-	response, _ := json.Marshal(res)
+	response := fmt.Sprintf(`
+	<script id = "reviewdb-auth-data">
+		window.ReviewDBAuthData = "%s"
+	</script>	
+	`, text)
+
 	io.WriteString(w, string(response))
 }
 
