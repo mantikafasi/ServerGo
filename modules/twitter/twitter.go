@@ -12,6 +12,17 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
+func GetReview(id int32) (*schemas.TwitterUserReview, error) {
+	var review schemas.TwitterUserReview
+	err := database.DB.NewSelect().Model(&review).Where("id = ?", id).Scan(context.Background())
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &review, nil
+}
+
 func GetTwitterReviews(userID string, offset int) ([]schemas.TwitterUserReview, int, error) {
 	var reviews []schemas.TwitterUserReview
 
@@ -232,4 +243,169 @@ func AddReview(user *schemas.TwitterUser, data schemas.TwitterRequestData) (resp
 		return common.ERROR, err
 	}
 	return common.ADDED, nil
+}
+
+func DeleteReview(user *schemas.TwitterUser, reviewID int32) (err error) {
+	review, err := GetReview(reviewID)
+	if err != nil {
+		fmt.Println(err.Error())
+		return errors.New("Invalid Review ID")
+	}
+
+	if (review.ReviewerID == user.TwitterID) || user.IsAdmin() {
+		//LogAction("DELETE", review, user.ID)
+
+		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", reviewID).Exec(context.Background())
+		return nil
+	}
+	return errors.New("You are not allowed to delete this review")
+}
+
+func ReportReview(user *schemas.TwitterUser,reviewID int32) error {
+
+	if user.IsBanned() {
+		return errors.New("You cant report reviews while banned")
+	}
+
+	reportCount, _ := GetReportCountInLastHour(user.TwitterID)
+
+	if reportCount > 20 {
+		return errors.New("You are reporting too much")
+	}
+
+	count, _ := database.DB.NewSelect().Model(&schemas.TwitterReviewReport{}).Where("review_id = ? AND reporter_id = ?", reviewID, user.TwitterID).Count(context.Background())
+	if count > 0 {
+		return errors.New("You have already reported this review")
+	}
+
+	review, err := GetReview(reviewID)
+	if err != nil {
+		return errors.New("Invalid Review ID")
+	}
+
+	if review.ReviewerID == user.TwitterID {
+		return errors.New("You cant report your own reviews")
+	}
+
+	reportedUser, _ := GetDBUserViaID(review.ReviewerID)
+
+	report := schemas.TwitterReviewReport{
+		ReviewID:   reviewID,
+		ReporterID: user.TwitterID,
+	}
+
+	/*
+	reviewedUsername := "?"
+	if reviewedUser, err := ArikawaState.User(discord.UserID(review.ProfileID)); err == nil {
+		reviewedUsername = reviewedUser.Tag()
+	}
+
+			Components: []modules.WebhookComponent{
+			{
+				Type: 1,
+				Components: []modules.WebhookComponent{
+					{
+						Type:     2,
+						Label:    "Delete Review",
+						Style:    4,
+						CustomID: fmt.Sprintf("delete_review:%d", reviewID),
+						Emoji: modules.WebhookEmoji{
+							Name: "🗑️",
+						},
+					},
+					{
+						Type:     2,
+						Label:    "Ban User",
+						Style:    4,
+						CustomID: fmt.Sprintf("ban_select:%s:%d", reportedUser.DiscordID, reviewID), //string(reportedUser.DiscordID)
+						Emoji: modules.WebhookEmoji{
+							Name:     "banned",
+							ID:       "590237837299941382",
+							Animated: true,
+						},
+					},
+					{
+						Type:     2,
+						Label:    "Delete Review and Ban User",
+						Style:    4,
+						CustomID: fmt.Sprintf("select_delete_and_ban:%d:%s", reviewID, string(reportedUser.DiscordID)),
+						Emoji: modules.WebhookEmoji{
+							Name:     "banned",
+							ID:       "590237837299941382",
+							Animated: true,
+						},
+					},
+				},
+			},
+		},
+	*/
+
+	webhookData := modules.WebhookData{
+		Username: "ReviewDB Twitter",
+		Content:  "Reported Review",
+
+		Embeds: []modules.Embed{
+			{
+				Fields: []modules.EmbedField{
+					{
+						Name:  "**Review ID**",
+						Value: fmt.Sprint(review.ID),
+					},
+					{
+						Name:  "**Content**",
+						Value: fmt.Sprint(review.Comment),
+					},
+					{
+						Name:  "**Author**",
+						Value: formatUser(reportedUser.Username, reportedUser.TwitterID),
+					},
+					{
+						Name:  "**Reviewed User**",
+						Value: review.ProfileID,
+					},
+					{
+						Name:  "**Reporter**",
+						Value: formatUser(user.Username, user.TwitterID),
+					},
+				},
+			},
+		},
+	}
+
+	/*
+	if reportedUser.TwitterID != user.TwitterID {
+		webhookData.Components[0].Components = append(webhookData.Components[0].Components, WebhookComponent{
+			Type:     2,
+			Label:    "Ban Reporter",
+			Style:    4,
+			CustomID: fmt.Sprintf("ban_select:" + user.DiscordID + ":" + "0"),
+			Emoji: WebhookEmoji{
+				Name:     "banned",
+				ID:       "590237837299941382",
+				Animated: true,
+			},
+		})
+	}
+	*/
+
+	err = modules.SendReportWebhook(webhookData)
+
+	if err != nil {
+		println(err.Error())
+	}
+
+	database.DB.NewInsert().Model(&report).Exec(context.Background())
+	return nil
+}
+
+
+func GetReportCountInLastHour(twitterUserID string) (int, error) {
+	count, err := database.DB.
+		NewSelect().Table("reviewdb_twitter.reports").
+		Where("reporter_id = ? AND timestamp > now() - interval '1 hour'", twitterUserID).
+		Count(context.Background())
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }

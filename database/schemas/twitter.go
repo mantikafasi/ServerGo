@@ -77,7 +77,24 @@ type TwitterUserBadge struct {
 	Description     string `bun:"description" json:"description"`
 }
 
+type TwitterReviewReport struct {
+	bun.BaseModel `bun:"table:reports"`
+
+	ID         int32     `bun:"id,pk,autoincrement"`
+	ReviewID   int32     `bun:"review_id"`
+	ReporterID string    `bun:"reporter_id,type:numeric"`
+	Timestamp  time.Time `bun:"timestamp,default:current_timestamp"`
+}
+
 type TwitterRequestData struct {
 	Comment   string `json:"comment"`
 	ProfileID string `json:"profileId"`
+}
+
+func (t *TwitterUser) IsAdmin() bool {
+	return t.Type == 1
+}
+
+func (t *TwitterUser) IsBanned() bool {
+	return t.Type == -1 || t.BanInfo != nil
 }

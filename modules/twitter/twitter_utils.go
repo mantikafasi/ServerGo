@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"server-go/common"
+	"server-go/database"
+	"server-go/database/schemas"
+	"time"
+	"fmt"
 
 	"golang.org/x/oauth2"
 )
@@ -53,4 +57,17 @@ func FetchUser(token string) (user *TwitterUser, err error) {
 		return user, nil
 	}
 	return nil, err
+}
+
+func GetDBUserViaID(id string) (user schemas.TwitterUser, err error) {
+	user = schemas.TwitterUser{}
+	err = database.DB.NewSelect().Model(&user).Where("id = ?", id).Relation("BanInfo").Scan(context.Background(), &user)
+	if user.BanInfo != nil && user.BanInfo.BanEndDate.Before(time.Now()) {
+		user.BanInfo = nil
+	}
+	return
+}
+
+func formatUser(username string, twitterId string) string {
+	return fmt.Sprintf("https://twitter.com/%s (%s)", username, twitterId)
 }

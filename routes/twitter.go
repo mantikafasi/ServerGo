@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"server-go/common"
 	"server-go/database/schemas"
-	modules "server-go/modules/twitter"
+	"server-go/modules"
+	modules_twitter "server-go/modules/twitter"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi"
@@ -15,7 +17,7 @@ import (
 
 func ReviewDBTwitterAuth(w http.ResponseWriter, r *http.Request) {
 
-	user, err := modules.AddTwitterUser(r.URL.Query().Get("code"), r.Header.Get("CF-Connecting-IP"))
+	user, err := modules_twitter.AddTwitterUser(r.URL.Query().Get("code"), r.Header.Get("CF-Connecting-IP"))
 
 	res := struct {
 		schemas.TwitterUser
@@ -62,7 +64,7 @@ func AddTwitterReview(w http.ResponseWriter, r *http.Request) {
 		response.Message = "Write Something Guh"
 	}
 
-	res, err := modules.AddReview(user, data)
+	res, err := modules_twitter.AddReview(user, data)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -83,7 +85,7 @@ type ReviewsResponseTwitter struct {
 
 func GetTwitterReviews(w http.ResponseWriter, r *http.Request) {
 	userid := chi.URLParam(r, "profileid")
-	reviews, count, err := modules.GetTwitterReviews(userid, 0)
+	reviews, count, err := modules_twitter.GetTwitterReviews(userid, 0)
 
 	res := ReviewsResponseTwitter{
 		HasNextPage: len(reviews) > 50,
@@ -107,11 +109,67 @@ func GetTwitterReviews(w http.ResponseWriter, r *http.Request) {
 	common.SendStructResponse(w, res)
 }
 
+func DeleteReviewTwitter(w http.ResponseWriter, r *http.Request) {
+	user, err := AuthorizeTwitter(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized, please reauthroize"))
+		return
+	}
+	reviewID, err := strconv.Atoi(chi.URLParam(r, "profileid"))
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid review id"))
+		return
+	}
+
+	err = modules_twitter.DeleteReview(user, int32(reviewID))
+	if err != nil {
+		w.Write([]byte("An error occured while deleting review"))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("Successfully deleted review"))
+	w.WriteHeader(http.StatusOK)
+}
+
+func ReportTwitterReview(w http.ResponseWriter, r *http.Request) {
+	user, err := AuthorizeTwitter(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized, please reauthroize"))
+		return
+	}
+
+	var data modules.ReportData
+	json.NewDecoder(r.Body).Decode(&data)
+
+	if data.Token == "" || data.ReviewID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid Request"))
+		return
+	}
+
+	err = modules_twitter.ReportReview(user, data.ReviewID)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("An error occured while reporting review"))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully reported review"))
+}
+
 func HandleTwitterRoutes(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "PUT":
 		AddTwitterReview(w, r)
 	case "GET":
 		GetTwitterReviews(w, r)
+	case "DELETE":
+		DeleteReviewTwitter(w, r)
 	}
 }
