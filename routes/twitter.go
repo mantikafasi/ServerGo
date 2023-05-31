@@ -18,6 +18,12 @@ import (
 func ReviewDBTwitterAuth(w http.ResponseWriter, r *http.Request) {
 
 	user, err := modules_twitter.AddTwitterUser(r.URL.Query().Get("code"), r.Header.Get("CF-Connecting-IP"))
+	
+	if err != nil {
+		println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	res := struct {
 		schemas.TwitterUser
@@ -27,11 +33,6 @@ func ReviewDBTwitterAuth(w http.ResponseWriter, r *http.Request) {
 		Token:       user.Token,
 	}
 
-	if err != nil {
-		println(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 	text, _ := json.Marshal(res)
 
 	response := fmt.Sprintf(`
