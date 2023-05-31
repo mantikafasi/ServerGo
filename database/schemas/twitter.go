@@ -15,7 +15,7 @@ type TwitterUser struct {
 	Username     string      `bun:"username" json:"username"`
 	DisplayName  string      `bun:"display_name" json:"displayName"`
 	Type         int32       `bun:"column:type" json:"-"`
-	AvatarURL    string      `bun:"avatar_url" json:"avatar_url"`
+	AvatarURL    string      `bun:"avatar_url" json:"avatarURL"`
 	WarningCount int32       `bun:"warning_count" json:"warningCount"`
 	Badges       []UserBadge `bun:"-" json:"badges"`
 	OptedOut     bool        `bun:"opted_out" json:"-"`
