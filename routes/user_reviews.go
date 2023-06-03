@@ -451,6 +451,7 @@ func AppealReview(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&appealRequest)
 
 	appealRequest.UserID = user.ID
+	appealRequest.BanID = user.BanID
 
 	err = modules.AppealBan(appealRequest, user)
 	if err != nil {
