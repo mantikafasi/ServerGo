@@ -454,6 +454,7 @@ func AppealReview(w http.ResponseWriter, r *http.Request) {
 
 	err = modules.AppealBan(appealRequest, user)
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
