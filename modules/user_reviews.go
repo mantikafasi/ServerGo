@@ -798,8 +798,10 @@ func GetReportCountInLastHour(userID int32) (int, error) {
 	}
 	return count, nil
 }
+
 func AppealBan(appeal schemas.ReviewDBAppeal, user *schemas.URUser) (err error) {
 	_, err = database.DB.NewInsert().Model(&appeal).Exec(context.Background())
+	
 	if err == nil {
 		SendAppealWebhook(
 			WebhookData{
@@ -815,6 +817,10 @@ func AppealBan(appeal schemas.ReviewDBAppeal, user *schemas.URUser) (err error) 
 							{
 								Name:  "Reason to appeal",
 								Value: appeal.AppealText,
+							},
+							{
+								Name:  "Review Content",
+								Value: user.BanInfo.ReviewContent,
 							},
 						},
 					},

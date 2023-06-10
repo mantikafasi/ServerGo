@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"server-go/modules"
 	"strconv"
 	"strings"
+	random "math/rand"
 
 	"github.com/go-chi/chi"
 	"golang.org/x/exp/slices"
@@ -254,6 +256,23 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	for i, j := 0, len(reviews)-1; i < j; i, j = i+1, j-1 {
 		reviews[i], reviews[j] = reviews[j], reviews[i]
 	}
+
+	if (len(reviews) > 8 ) {
+		var ix = random.Intn(len(reviews) - 1)
+		reviews = append(reviews[:ix+1], reviews[ix:]...)
+		reviews[ix] = schemas.UserReview{
+			ID: 0,
+			Sender: schemas.Sender{
+				ID:           0,
+				Username:     "ReviewDB",
+				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
+				DiscordID:    "287555395151593473",
+				Badges:       []schemas.UserBadge{},
+			}, Comment: "If you like ReviewDB try out ReviewDB Twitter at https://chrome.google.com/webstore/detail/reviewdb-twitter/kmgbgncbggoffjbefmnknffpofcajohj",
+			Type: 3,
+		}
+	}
+
 
 	if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && !(flags&AdFlag == AdFlag) {
 		reviews = append([]schemas.UserReview{{
