@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -257,7 +256,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		reviews[i], reviews[j] = reviews[j], reviews[i]
 	}
 
-	if (len(reviews) > 8 ) {
+	if (len(reviews) > 8 && offset == 0) {
 		var ix = random.Intn(len(reviews) - 1)
 		reviews = append(reviews[:ix+1], reviews[ix:]...)
 		reviews[ix] = schemas.UserReview{
@@ -268,7 +267,8 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
 				DiscordID:    "287555395151593473",
 				Badges:       []schemas.UserBadge{},
-			}, Comment: "If you like ReviewDB try out ReviewDB Twitter at https://chrome.google.com/webstore/detail/reviewdb-twitter/kmgbgncbggoffjbefmnknffpofcajohj",
+			}, 
+			Comment: "If you like ReviewDB try out ReviewDB Twitter at https://chrome.google.com/webstore/detail/reviewdb-twitter/kmgbgncbggoffjbefmnknffpofcajohj",
 			Type: 3,
 		}
 	}
