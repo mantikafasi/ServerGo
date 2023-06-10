@@ -273,19 +273,6 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-
-	if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && !(flags&AdFlag == AdFlag) {
-		reviews = append([]schemas.UserReview{{
-			Comment: "If you like the plugins I make, please consider supporting me at: \nhttps://github.com/sponsors/mantikafasi\n You can disable this in settings",
-			Type:    2,
-			Sender: schemas.Sender{
-				DiscordID:    "287555395151593473",
-				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
-				Username:     "ReviewDB",
-			},
-		}}, reviews...)
-	}
-
 	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) && offset == 0 {
 		reviews = append([]schemas.UserReview{{
 			ID:      0,
