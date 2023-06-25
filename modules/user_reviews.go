@@ -188,6 +188,10 @@ func AddReview(data UR_RequestData) (string, error) {
 		return "", errors.New("You have been banned from ReviewDB until " + reviewer.BanInfo.BanEndDate.Format("2006-01-02 15:04:05") + "UTC")
 	}
 
+	if reviewer.Type == -1 {
+		return "", errors.New("You have been banned from ReviewDB permanently")
+	}
+
 	count, _ := GetReviewCountInLastHour(reviewer.ID)
 	if count > 20 {
 		return "", errors.New("You are reviewing too much")
