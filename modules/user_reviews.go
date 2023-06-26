@@ -82,9 +82,9 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 
 		if review.Type == 4 {
 			badges = append(badges, schemas.UserBadge{
-				Name:        "StartIt",
+				Name:        "StartIT",
 				Icon:        "https://cdn.discordapp.com/attachments/1096421101132853369/1122886750763749488/logo-color.png?size=128",
-				Description: "This review has been made by StartIt bot",
+				Description: "This review has been made by StartIT bot",
 				RedirectURL: "https://startit.bot",
 			})
 		}
@@ -772,7 +772,7 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (s
 	user.WarningCount = 0
 	user.ClientMods = []string{"startitbot"}
 	user.AvatarURL = profilePhoto
-	user.Token = discordid
+	user.Token = GenerateToken()
 
 	_, err := database.DB.NewInsert().Model(&user).Exec(context.Background())
 	if err != nil {
