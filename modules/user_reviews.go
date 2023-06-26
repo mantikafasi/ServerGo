@@ -581,11 +581,12 @@ func DeleteReviewWithData(data UR_RequestData) (err error) {
 		return errors.New("Invalid Review ID")
 	}
 
-	user, err := // The above code is likely defining a function in the Go programming language called
-	// `GetDBUserViaTokenAndInfo`. The purpose of the function is not clear from the code
-	// snippet alone, but it may involve retrieving a user from a database based on a token
-	// and some additional information.
-	GetDBUserViaTokenAndData(data.Token, data)
+	user, err := GetDBUserViaTokenAndData(data.Token, data)
+
+	if err != nil {
+		println(err.Error())
+		return errors.New("Invalid Token")
+	}
 
 	if (review.User.DiscordID == user.DiscordID) || user.IsAdmin() || data.Token == common.Config.AdminToken {
 		LogAction("DELETE", review, user.ID)
