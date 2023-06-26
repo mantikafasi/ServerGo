@@ -780,6 +780,12 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (s
 		return schemas.URUser{}, errors.New("An Error Occured") //todo maybe convert this to pointer so we can return nil
 	}
 
+	SendLoggerWebhook(WebhookData{
+		Username:  username,
+		AvatarURL: profilePhoto,
+		Content:   fmt.Sprintf("User <@%s> has been registered to ReviewDB from StartIT Bot", discordid),
+	})
+
 	return user, nil
 }
 
