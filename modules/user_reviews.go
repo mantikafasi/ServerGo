@@ -83,7 +83,7 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 		if review.Type == 4 {
 			badges = append(badges, schemas.UserBadge{
 				Name:        "StartIt",
-				Icon:        "https://cdn.discordapp.com/attachments/1096421101132853369/1122874945437970574/logo-white-2c96bd02.png?size=64",
+				Icon:        "https://cdn.discordapp.com/attachments/1096421101132853369/1122886750763749488/logo-color.png?size=128",
 				Description: "This review has been made by StartIt bot",
 				RedirectURL: "https://startit.bot",
 			})
