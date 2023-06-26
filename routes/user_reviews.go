@@ -130,7 +130,7 @@ func ReviewDBAuthWeb(w http.ResponseWriter, r *http.Request) {
 }
 
 func ReportReview(w http.ResponseWriter, r *http.Request) {
-	var data modules.ReportData
+	var data modules.UR_RequestData
 	json.NewDecoder(r.Body).Decode(&data)
 
 	response := Response{}
@@ -142,7 +142,7 @@ func ReportReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := modules.ReportReview(data.ReviewID, data.Token)
+	err := modules.ReportReview(data)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response.Message = err.Error()
@@ -155,7 +155,7 @@ func ReportReview(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteReview(w http.ResponseWriter, r *http.Request) {
-	var data modules.ReportData //both reportdata and deletedata are same
+	var data modules.UR_RequestData //both reportdata and deletedata are same
 	json.NewDecoder(r.Body).Decode(&data)
 
 	responseData := Response{
@@ -172,7 +172,7 @@ func DeleteReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := modules.DeleteReview(data.ReviewID, data.Token)
+	err := modules.DeleteReviewWithData(data)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		responseData.Message = err.Error()

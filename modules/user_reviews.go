@@ -24,6 +24,7 @@ import (
 type UR_RequestData struct {
 	DiscordID  Snowflake `json:"userid"`
 	Token      string    `json:"token"`
+	ReviewID   int32     `json:"reviewid"`
 	Comment    string    `json:"comment"`
 	ReviewType int       `json:"reviewtype"`
 	Sender     struct {
@@ -67,7 +68,7 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 		Limit(51)
 
 	if options.IncludeReviewsById != "" {
-		req = req.OrderExpr("reviewer_id = ? desc ,\"user\".discord_id = ? desc , id desc",options.IncludeReviewsById,options.IncludeReviewsById)
+		req = req.OrderExpr("reviewer_id = ? desc ,\"user\".discord_id = ? desc , id desc", options.IncludeReviewsById, options.IncludeReviewsById)
 	} else {
 		req = req.OrderExpr("id desc")
 	}
@@ -81,8 +82,8 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 
 		if review.Type == 4 {
 			badges = append(badges, schemas.UserBadge{
-				Name: "StartIt",
-				Icon: "https://cdn.discordapp.com/attachments/1096421101132853369/1122874945437970574/logo-white-2c96bd02.png?size=64",
+				Name:        "StartIt",
+				Icon:        "https://cdn.discordapp.com/attachments/1096421101132853369/1122874945437970574/logo-white-2c96bd02.png?size=64",
 				Description: "This review has been made by StartIt bot",
 				RedirectURL: "https://startit.bot",
 			})
@@ -157,25 +158,10 @@ func AddReview(data UR_RequestData) (string, error) {
 	}
 
 	if data.Token == common.Config.StartItBotToken {
-
-		user, err := GetDBUserViaDiscordID(data.Sender.DiscordID)
-		if err != nil {
-			return common.ERROR, err
-		}
-
-		if user == nil {
-			reviewer, err = CreateUserViaBot(data.Sender.DiscordID, data.Sender.Username, data.Sender.ProfilePhoto)
-			if err != nil {
-				return common.ERROR, err
-			}
-			data.ReviewType = 4
-		} else {
-			reviewer = *user
-		}
-
-	} else {
-		reviewer, err = GetDBUserViaToken(data.Token)
+		data.ReviewType = 4 // startit bot review type
 	}
+
+	reviewer, err = GetDBUserViaTokenAndData(data.Token, data)
 
 	if err != nil {
 		return "", errors.New(common.INVALID_TOKEN)
@@ -274,7 +260,26 @@ func GetIDWithToken(token string) (id int32) {
 	return
 }
 
-func GetDBUserViaToken(token string) (user schemas.URUser, err error) {
+func GetDBUserViaTokenAndData(token string, data UR_RequestData) (user schemas.URUser, err error) {
+
+	if token == common.Config.StartItBotToken {
+		user, err := GetDBUserViaDiscordID(data.Sender.DiscordID)
+		if err != nil {
+			return schemas.URUser{}, err
+			// todo sometime change retrun value to pointer
+		}
+
+		if user == nil {
+			reviewer, err := CreateUserViaBot(data.Sender.DiscordID, data.Sender.Username, data.Sender.ProfilePhoto)
+			if err != nil {
+				return schemas.URUser{}, err
+			}
+			return reviewer, nil
+		} else {
+			return *user, nil
+		}
+	}
+
 	err = database.DB.
 		NewSelect().
 		Model(&user).
@@ -287,6 +292,10 @@ func GetDBUserViaToken(token string) (user schemas.URUser, err error) {
 	}
 
 	return
+}
+
+func GetDBUserViaToken(token string) (user schemas.URUser, err error) {
+	return GetDBUserViaTokenAndData(token, UR_RequestData{})
 }
 
 func GetReviewCountInLastHour(userID int32) (int, error) {
@@ -390,9 +399,9 @@ func GetReview(id int32) (rep schemas.UserReview, err error) {
 	return
 }
 
-func ReportReview(reviewID int32, token string) error {
+func ReportReview(data UR_RequestData) error {
 
-	user, err := GetDBUserViaToken(token)
+	user, err := GetDBUserViaTokenAndData(data.Token, data)
 	if err != nil {
 		return errors.New(common.INVALID_REVIEW)
 	}
@@ -407,12 +416,12 @@ func ReportReview(reviewID int32, token string) error {
 		return errors.New("You are reporting too much")
 	}
 
-	count, _ := database.DB.NewSelect().Model(&schemas.ReviewReport{}).Where("review_id = ? AND reporter_id = ?", reviewID, user.ID).Count(context.Background())
+	count, _ := database.DB.NewSelect().Model(&schemas.ReviewReport{}).Where("review_id = ? AND reporter_id = ?", data.ReviewID, user.ID).Count(context.Background())
 	if count > 0 {
 		return errors.New("You have already reported this review")
 	}
 
-	review, err := GetReview(reviewID)
+	review, err := GetReview(data.ReviewID)
 	if err != nil {
 		return errors.New("Invalid Review ID")
 	}
@@ -424,7 +433,7 @@ func ReportReview(reviewID int32, token string) error {
 	reportedUser, _ := GetDBUserViaID(review.ReviewerID)
 
 	report := schemas.ReviewReport{
-		ReviewID:   reviewID,
+		ReviewID:   data.ReviewID,
 		ReporterID: user.ID,
 	}
 
@@ -444,7 +453,7 @@ func ReportReview(reviewID int32, token string) error {
 						Type:     2,
 						Label:    "Delete Review",
 						Style:    4,
-						CustomID: fmt.Sprintf("delete_review:%d", reviewID),
+						CustomID: fmt.Sprintf("delete_review:%d", data.ReviewID),
 						Emoji: WebhookEmoji{
 							Name: "🗑️",
 						},
@@ -453,7 +462,7 @@ func ReportReview(reviewID int32, token string) error {
 						Type:     2,
 						Label:    "Ban User",
 						Style:    4,
-						CustomID: fmt.Sprintf("ban_select:%s:%d", reportedUser.DiscordID, reviewID), //string(reportedUser.DiscordID)
+						CustomID: fmt.Sprintf("ban_select:%s:%d", reportedUser.DiscordID, data.ReviewID), //string(reportedUser.DiscordID)
 						Emoji: WebhookEmoji{
 							Name:     "banned",
 							ID:       "590237837299941382",
@@ -464,7 +473,7 @@ func ReportReview(reviewID int32, token string) error {
 						Type:     2,
 						Label:    "Delete Review and Ban User",
 						Style:    4,
-						CustomID: fmt.Sprintf("select_delete_and_ban:%d:%s", reviewID, string(reportedUser.DiscordID)),
+						CustomID: fmt.Sprintf("select_delete_and_ban:%d:%s", data.ReviewID, string(reportedUser.DiscordID)),
 						Emoji: WebhookEmoji{
 							Name:     "banned",
 							ID:       "590237837299941382",
@@ -558,17 +567,30 @@ func GetDBUserViaID(id int32) (user schemas.URUser, err error) {
 }
 
 func DeleteReview(reviewID int32, token string) (err error) {
-	review, err := GetReview(reviewID)
+	data := UR_RequestData{
+		ReviewID: reviewID,
+		Token:    token,
+	}
+	return DeleteReviewWithData(data)
+}
+
+func DeleteReviewWithData(data UR_RequestData) (err error) {
+	review, err := GetReview(data.ReviewID)
 	if err != nil {
 		fmt.Println(err.Error())
 		return errors.New("Invalid Review ID")
 	}
-	user, err := GetDBUserViaToken(token)
 
-	if (review.User.DiscordID == user.DiscordID) || user.IsAdmin() || token == common.Config.AdminToken {
+	user, err := // The above code is likely defining a function in the Go programming language called
+	// `GetDBUserViaTokenAndInfo`. The purpose of the function is not clear from the code
+	// snippet alone, but it may involve retrieving a user from a database based on a token
+	// and some additional information.
+	GetDBUserViaTokenAndData(data.Token, data)
+
+	if (review.User.DiscordID == user.DiscordID) || user.IsAdmin() || data.Token == common.Config.AdminToken {
 		LogAction("DELETE", review, user.ID)
 
-		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", reviewID).Exec(context.Background())
+		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", data.ReviewID).Exec(context.Background())
 		return nil
 	}
 	return errors.New("You are not allowed to delete this review")
