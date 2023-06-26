@@ -28,7 +28,7 @@ type ConfigStr struct {
 	ReportWebhook        string    `json:"report_webhook"`
 	AppealWebhook        string    `json:"appeal_webhook"`
 	AdminToken           string    `json:"admin_token"`
-	StupidityBotToken    string    `json:"stupidity_bot_token"`
+	StartItBotToken      string    `json:"start_it_bot_token"`
 	LoggerWebhook        string    `json:"logger_webhook"`
 	Discord              *Client   `json:"discord"`
 	Twitter              *Client   `json:"twitter"`

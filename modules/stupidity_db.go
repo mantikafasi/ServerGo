@@ -68,7 +68,7 @@ func GetDiscordIDWithToken(token string) string {
 
 func VoteStupidity(discordID int64, token string, stupidity int32, senderDiscordID string) string {
 	var senderID string
-	if token == common.Config.StupidityBotToken {
+	if token == common.Config.StartItBotToken {
 		senderID = senderDiscordID
 	} else {
 		senderID = GetDiscordIDWithToken(token)

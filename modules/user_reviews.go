@@ -29,7 +29,7 @@ type UR_RequestData struct {
 	Sender     struct {
 		Username     string `json:"username"`
 		ProfilePhoto string `json:"profile_photo"`
-		DiscordID    string `json:"discordid"`
+		DiscordID    string `json:"discord_id"`
 	} `json:"sender"`
 }
 
@@ -65,9 +65,9 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 		Where("\"user\".\"opted_out\" = 'f'").
 		Offset(offset).
 		Limit(51)
-	
+
 	if options.IncludeReviewsById != "" {
-		req = req.OrderExpr("reviewer_id = ? desc, id desc")
+		req = req.OrderExpr("reviewer_id = ? desc ,\"user\".discord_id = ? desc , id desc",options.IncludeReviewsById,options.IncludeReviewsById)
 	} else {
 		req = req.OrderExpr("id desc")
 	}
@@ -77,10 +77,15 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 	}
 
 	for i, review := range reviews {
-		dbBadges := GetBadgesOfUser(review.User.DiscordID)
-		badges := make([]schemas.UserBadge, len(dbBadges))
-		for i, b := range dbBadges {
-			badges[i] = schemas.UserBadge(b)
+		badges := GetBadgesOfUser(review.User.DiscordID)
+
+		if review.Type == 4 {
+			badges = append(badges, schemas.UserBadge{
+				Name: "StartIt",
+				Icon: "",
+				Description: "This review has been made by StartIt bot",
+				RedirectURL: "https://startit.bot",
+			})
 		}
 
 		if review.User != nil {
@@ -147,18 +152,23 @@ func AddReview(data UR_RequestData) (string, error) {
 	var err error
 	var reviewer schemas.URUser
 
-	if data.Token == common.Config.StupidityBotToken {
+	if !(data.ReviewType == 0 || data.ReviewType == 1) && reviewer.Type != 1 {
+		return "", errors.New(common.INVALID_REVIEW_TYPE)
+	}
+
+	if data.Token == common.Config.StartItBotToken {
 
 		user, err := GetDBUserViaDiscordID(data.Sender.DiscordID)
 		if err != nil {
-			return common.UNAUTHORIZED, err
+			return common.ERROR, err
 		}
 
 		if user == nil {
 			reviewer, err = CreateUserViaBot(data.Sender.DiscordID, data.Sender.Username, data.Sender.ProfilePhoto)
 			if err != nil {
-				return common.UNAUTHORIZED, err
+				return common.ERROR, err
 			}
+			data.ReviewType = 4
 		} else {
 			reviewer = *user
 		}
@@ -178,10 +188,6 @@ func AddReview(data UR_RequestData) (string, error) {
 
 	if reviewer.OptedOut {
 		return "", errors.New(common.OPTED_OUT)
-	}
-
-	if !(data.ReviewType == 0 || data.ReviewType == 1) && reviewer.Type != 1 {
-		return "", errors.New(common.INVALID_REVIEW_TYPE)
 	}
 
 	if reviewer.IsBanned() {
@@ -741,13 +747,14 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (s
 	user.Username = username
 	user.Type = 0
 	user.WarningCount = 0
-	user.ClientMods = []string{"discordbot"}
+	user.ClientMods = []string{"startitbot"}
 	user.AvatarURL = profilePhoto
 	user.Token = discordid
 
 	_, err := database.DB.NewInsert().Model(&user).Exec(context.Background())
 	if err != nil {
-		return schemas.URUser{}, nil //todo maybe convert this to pointer so we can return nil
+		println(err.Error())
+		return schemas.URUser{}, errors.New("An Error Occured") //todo maybe convert this to pointer so we can return nil
 	}
 
 	return user, nil
@@ -805,7 +812,7 @@ func GetReportCountInLastHour(userID int32) (int, error) {
 
 func AppealBan(appeal schemas.ReviewDBAppeal, user *schemas.URUser) (err error) {
 	_, err = database.DB.NewInsert().Model(&appeal).Exec(context.Background())
-	
+
 	if err == nil {
 		SendAppealWebhook(
 			WebhookData{

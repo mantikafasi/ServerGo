@@ -92,7 +92,7 @@ type UserReview struct {
 	ProfileID    int64     `bun:"profile_id,type:numeric" json:"-"`
 	Sender       Sender    `bun:"-" json:"sender"`
 	Comment      string    `bun:"comment" json:"comment"`
-	Type         int32     `bun:"type" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review
+	Type         int32     `bun:"type" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review, 4 = StartIt bot review
 	TimestampStr time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 	Timestamp    int64     `bun:"-" json:"timestamp"`
 
