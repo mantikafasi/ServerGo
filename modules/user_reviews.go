@@ -583,7 +583,7 @@ func DeleteReviewWithData(data UR_RequestData) (err error) {
 
 	user, err := GetDBUserViaTokenAndData(data.Token, data)
 
-	if err != nil {
+	if err != nil && data.Token != common.Config.AdminToken { // todo create a admin account on database and handle things that way
 		println(err.Error())
 		return errors.New("Invalid Token")
 	}
