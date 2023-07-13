@@ -274,6 +274,7 @@ func GetDBUserViaTokenAndData(token string, data UR_RequestData) (user schemas.U
 			if err != nil {
 				return schemas.URUser{}, err
 			}
+			
 			return reviewer, nil
 		} else {
 			return *user, nil

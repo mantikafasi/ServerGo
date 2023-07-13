@@ -94,6 +94,7 @@ func cors(handler http.Handler) http.Handler {
 }
 
 func main() {
+
 	common.InitCache()
 	database.InitDB()
 

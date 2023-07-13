@@ -265,7 +265,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 				ID:           0,
 				Username:     "ReviewDB",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
-				DiscordID:    "287555395151593473",
+				DiscordID:    "343383572805058560",
 				Badges:       []schemas.UserBadge{},
 			}, 
 			Comment: "If you like ReviewDB try out ReviewDB Twitter at https://chrome.google.com/webstore/detail/reviewdb-twitter/kmgbgncbggoffjbefmnknffpofcajohj",
@@ -279,7 +279,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			Comment: "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
 			Type:    3,
 			Sender: schemas.Sender{
-				DiscordID:    "287555395151593473",
+				DiscordID:    "343383572805058560",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",
 				Username:     "Warning",
 				Badges:       []schemas.UserBadge{},
