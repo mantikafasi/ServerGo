@@ -11,7 +11,6 @@ import (
 	"server-go/modules"
 	"strconv"
 	"strings"
-	random "math/rand"
 
 	"github.com/go-chi/chi"
 	"golang.org/x/exp/slices"
