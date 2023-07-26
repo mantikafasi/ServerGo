@@ -256,6 +256,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		reviews[i], reviews[j] = reviews[j], reviews[i]
 	}
 
+	/*
 	if (len(reviews) > 8 && offset == 0) {
 		var ix = random.Intn(len(reviews) - 1)
 		reviews = append(reviews[:ix+1], reviews[ix:]...)
@@ -272,6 +273,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			Type: 3,
 		}
 	}
+	*/
 
 	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) && offset == 0 {
 		reviews = append([]schemas.UserReview{{

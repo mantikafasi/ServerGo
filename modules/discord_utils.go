@@ -311,6 +311,7 @@ func SendWebhook(url string, data WebhookData) error {
 
 	resp, err = http.Post(url, "application/json", strings.NewReader(string(body)))
 	_, err = io.ReadAll(resp.Body)
+	
 	return err
 }
 
