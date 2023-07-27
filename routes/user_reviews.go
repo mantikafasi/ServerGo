@@ -283,7 +283,15 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 				DiscordID:    "343383572805058560",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",
 				Username:     "Warning",
-				Badges:       []schemas.UserBadge{},
+				Badges:       []schemas.UserBadge{
+					{
+						Name: "Donor",
+						Icon: "https://cdn.discordapp.com/emojis/1084121193591885906.webp?size=96&quality=lossless",
+						Description: "This badge is special to donors.",
+						RedirectURL: "https://github.com/sponsors/mantikafasi",
+						Type: 1,
+					},
+				},
 			},
 		}}, reviews...)
 	}
