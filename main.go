@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"server-go/common"
 	"server-go/database"
@@ -16,6 +17,7 @@ import (
 	"server-go/routes"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/httprate"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -113,6 +115,7 @@ func main() {
 	mux := Mux{chi.NewRouter()}
 
 	mux.Use(cors)
+	mux.Use(httprate.LimitByRealIP(2,1 * time.Second))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "artgallery/index.html")
