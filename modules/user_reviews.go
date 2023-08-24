@@ -91,7 +91,7 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 
 		if review.User.DiscordID == "1134864775000629298" {
 			// troll
-			review.Type = 3
+			reviews[i].Type = 3
 		}
 
 		if review.User != nil {
