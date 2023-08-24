@@ -89,6 +89,11 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 			})
 		}
 
+		if review.User.DiscordID == "1134864775000629298" {
+			// troll
+			review.Type = 3
+		}
+
 		if review.User != nil {
 			reviews[i].Sender.DiscordID = review.User.DiscordID
 			reviews[i].Sender.ProfilePhoto = review.User.AvatarURL
