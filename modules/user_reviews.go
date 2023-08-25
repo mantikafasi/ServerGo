@@ -459,11 +459,11 @@ func ReportReview(data UR_RequestData) error {
 	}
 
 	sourceLang := ""
-	translatedContent := "-"
+	translatedContent := ""
 	if res, err := http.Get("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&dj=1&source=input&q=" + url.QueryEscape(review.Comment)); err == nil {
 		var trans Trans
 		if err = json.NewDecoder(res.Body).Decode(&trans); err == nil {
-			if trans.Confidence > 0.5 {
+			if trans.Confidence > 0.3 {
 				sourceLang = " (" + trans.Src + ")"
 				translatedContent = ""
 				for _, sentence := range trans.Sentences {
@@ -544,6 +544,12 @@ func ReportReview(data UR_RequestData) error {
 				},
 			},
 		},
+	}
+
+	if translatedContent == "" {
+		embed := webhookData.Embeds[0]
+		// remove translated content field if no translation
+		embed.Fields = append(embed.Fields[:2], embed.Fields[3:]...)
 	}
 
 	if reportedUser.DiscordID != user.DiscordID {
