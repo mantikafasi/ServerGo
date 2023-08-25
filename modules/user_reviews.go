@@ -281,7 +281,7 @@ func GetDBUserViaTokenAndData(token string, data UR_RequestData) (user schemas.U
 			if err != nil {
 				return schemas.URUser{}, err
 			}
-			
+
 			return reviewer, nil
 		} else {
 			return *user, nil
@@ -460,9 +460,9 @@ func ReportReview(data UR_RequestData) error {
 
 	sourceLang := ""
 	translatedContent := "-"
-	if res, err := http.Get("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&dj=1&source=input&q+" + url.QueryEscape(review.Comment)); err != nil {
+	if res, err := http.Get("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&dj=1&source=input&q+" + url.QueryEscape(review.Comment)); err == nil {
 		var trans Trans
-		if err = json.NewDecoder(res.Body).Decode(&trans); err != nil {
+		if err = json.NewDecoder(res.Body).Decode(&trans); err == nil {
 			if trans.Confidence > 0.5 {
 				sourceLang = " (" + trans.Src + ")"
 				translatedContent = ""
