@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"server-go/common"
-	"server-go/database"
+	"server-go/database/schemas"
 	"server-go/modules"
 	"strconv"
 	"strings"
@@ -29,8 +30,9 @@ type ReviewDBAuthResponse struct {
 
 type ReviewResponse struct {
 	Response
-	HasNextPage bool                  `json:"hasNextPage"`
-	Reviews     []database.UserReview `json:"reviews"`
+	HasNextPage bool                 `json:"hasNextPage"`
+	ReviewCount int                  `json:"reviewCount"`
+	Reviews     []schemas.UserReview `json:"reviews"`
 }
 
 func AddUserReview(w http.ResponseWriter, r *http.Request) {
@@ -115,8 +117,19 @@ func ReviewDBAuth(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(response))
 }
 
+func ReviewDBAuthWeb(w http.ResponseWriter, r *http.Request) {
+	token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), "website", "/api/reviewdb/authweb", r.Header.Get("CF-Connecting-IP"))
+
+	if err != nil {
+		http.Redirect(w, r, common.WEBSITE+"/error ", http.StatusTemporaryRedirect)
+		return
+	}
+
+	http.Redirect(w, r, common.WEBSITE+"/api/redirect?token="+url.QueryEscape(token), http.StatusTemporaryRedirect)
+}
+
 func ReportReview(w http.ResponseWriter, r *http.Request) {
-	var data modules.ReportData
+	var data modules.UR_RequestData
 	json.NewDecoder(r.Body).Decode(&data)
 
 	response := Response{}
@@ -128,7 +141,7 @@ func ReportReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := modules.ReportReview(data.ReviewID, data.Token)
+	err := modules.ReportReview(data)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response.Message = err.Error()
@@ -141,7 +154,7 @@ func ReportReview(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteReview(w http.ResponseWriter, r *http.Request) {
-	var data modules.ReportData //both reportdata and deletedata are same
+	var data modules.UR_RequestData //both reportdata and deletedata are same
 	json.NewDecoder(r.Body).Decode(&data)
 
 	responseData := Response{
@@ -158,7 +171,7 @@ func DeleteReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := modules.DeleteReview(data.ReviewID, data.Token)
+	err := modules.DeleteReviewWithData(data)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		responseData.Message = err.Error()
@@ -186,26 +199,29 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		userIDString = r.URL.Query().Get("discordid")
 	}
 
+	includeReviewsBy := r.URL.Query().Get("always_include_reviews_by")
+
 	userID, _ := strconv.ParseInt(userIDString, 10, 64)
 	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 
 	flags := int32(flags64)
 
-	var reviews []database.UserReview
+	var reviews []schemas.UserReview
 	var err error
 
 	response := ReviewResponse{}
+	count := 0
 
 	if slices.Contains(common.OptedOut, fmt.Sprint(userID)) {
-		reviews = append([]database.UserReview{{
+		reviews = append([]schemas.UserReview{{
 			ID: 0,
-			Sender: database.Sender{
+			Sender: schemas.Sender{
 				ID:           0,
 				Username:     "ReviewDB",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
 				DiscordID:    "287555395151593473",
-				Badges:       []database.UserBadge{},
+				Badges:       []schemas.UserBadge{},
 			}, Comment: "This user has opted out of ReviewDB. It means you cannot review this user.",
 			Type: 3,
 		}})
@@ -214,7 +230,12 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		common.SendStructResponse(w, response)
 		return
 	} else {
-		reviews, err = modules.GetReviews(userID, offset)
+		options := modules.GetReviewsOptions{
+			IncludeReviewsById: includeReviewsBy,
+		}
+		reviews, count, err = modules.GetReviewsWithOptions(userID, offset, options)
+
+		response.ReviewCount = count
 	}
 
 	if err != nil {
@@ -234,34 +255,49 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		reviews[i], reviews[j] = reviews[j], reviews[i]
 	}
 
-	if r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)" && !(flags&AdFlag == AdFlag) {
-		reviews = append([]database.UserReview{{
-			Comment: "If you like the plugins I make, please consider supporting me at: \nhttps://github.com/sponsors/mantikafasi\n You can disable this in settings",
-			Type:    2,
-			Sender: database.Sender{
-				DiscordID:    "287555395151593473",
-				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
+	/*
+	if (len(reviews) > 8 && offset == 0) {
+		var ix = random.Intn(len(reviews) - 1)
+		reviews = append(reviews[:ix+1], reviews[ix:]...)
+		reviews[ix] = schemas.UserReview{
+			ID: 0,
+			Sender: schemas.Sender{
+				ID:           0,
 				Username:     "ReviewDB",
-			},
-		}}, reviews...)
+				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
+				DiscordID:    "343383572805058560",
+				Badges:       []schemas.UserBadge{},
+			}, 
+			Comment: "If you like ReviewDB try out ReviewDB Twitter at https://chrome.google.com/webstore/detail/reviewdb-twitter/kmgbgncbggoffjbefmnknffpofcajohj",
+			Type: 3,
+		}
 	}
+	*/
 
-	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) {
-		reviews = append([]database.UserReview{{
+	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) && offset == 0 {
+		reviews = append([]schemas.UserReview{{
 			ID:      0,
 			Comment: "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
 			Type:    3,
-			Sender: database.Sender{
-				DiscordID:    "287555395151593473",
+			Sender: schemas.Sender{
+				DiscordID:    "1134864775000629298",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",
 				Username:     "Warning",
-				Badges:       []database.UserBadge{},
+				Badges:       []schemas.UserBadge{
+					{
+						Name: "Donor",
+						Icon: "https://cdn.discordapp.com/emojis/1084121193591885906.webp?size=96&quality=lossless",
+						Description: "This badge is special to donors.",
+						RedirectURL: "https://github.com/sponsors/mantikafasi",
+						Type: 1,
+					},
+				},
 			},
 		}}, reviews...)
 	}
 
 	if reviews == nil { //we dont want to send null
-		reviews = []database.UserReview{}
+		reviews = []schemas.UserReview{}
 	}
 
 	response.Reviews = reviews
@@ -274,7 +310,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	var data modules.UR_RequestData
 
 	type UserInfo struct {
-		database.URUser
+		schemas.URUser
 		LastReviewID int32 `json:"lastReviewID"`
 		UserType     int   `json:"type"`
 	}
@@ -296,9 +332,9 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dbBadges := modules.GetBadgesOfUser(user.DiscordID)
-	badges := make([]database.UserBadge, len(dbBadges))
+	badges := make([]schemas.UserBadge, len(dbBadges))
 	for i, b := range dbBadges {
-		badges[i] = database.UserBadge(b)
+		badges[i] = schemas.UserBadge(b)
 	}
 
 	response.Badges = badges
@@ -308,7 +344,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 
 func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 	type UserBadge struct {
-		database.UserBadge
+		schemas.UserBadge
 		DiscordID string `json:"discordID"`
 	}
 
@@ -319,7 +355,7 @@ func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 	}
 	badges := make([]UserBadge, len(legacyBadges))
 	for i, b := range legacyBadges {
-		badges[i] = UserBadge{database.UserBadge(b), b.TargetDiscordID}
+		badges[i] = UserBadge{schemas.UserBadge(b), b.TargetDiscordID}
 	}
 	json.NewEncoder(w).Encode(badges)
 }
@@ -407,11 +443,14 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	optedOutUsers, err := modules.GetOptedOutUsers()
+	if err != nil {
+		fmt.Println(err)
+	}
 	common.OptedOut = optedOutUsers
 }
 
 func AppealReview(w http.ResponseWriter, r *http.Request) {
-	appealRequest := database.ReviewDBAppeal{}
+	appealRequest := schemas.ReviewDBAppeal{}
 
 	user, err := Authorize(r)
 	if err != nil {
@@ -419,7 +458,7 @@ func AppealReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if (!user.IsBanned()) {
+	if !user.IsBanned() {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -427,9 +466,11 @@ func AppealReview(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&appealRequest)
 
 	appealRequest.UserID = user.ID
+	appealRequest.BanID = user.BanID
 
-	err = modules.AppealBan(appealRequest,user)
+	err = modules.AppealBan(appealRequest, user)
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusConflict)
 		return
 	}

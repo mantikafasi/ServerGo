@@ -15,7 +15,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/state"
 
 	"server-go/common"
-	"server-go/database"
+	"server-go/database/schemas"
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -37,8 +37,8 @@ type DiscordUser struct {
 }
 
 var oauthEndpoint = oauth2.Endpoint{
-	AuthURL:   common.Config.ApiEndpoint + "/oauth2/authorize",
-	TokenURL:  common.Config.ApiEndpoint + "/oauth2/token",
+	AuthURL:   common.Config.Discord.ApiEndpoint + "/oauth2/authorize",
+	TokenURL:  common.Config.Discord.ApiEndpoint + "/oauth2/token",
 	AuthStyle: oauth2.AuthStyleInParams,
 }
 
@@ -144,7 +144,7 @@ func Interactions(data InteractionsData) (string, error) {
 
 			banDuration, _ := strconv.ParseInt(data.Data.Values[0], 10, 32)
 			reviewid, err := strconv.ParseInt(action[2], 10, 32)
-			review := database.UserReview{}
+			review := schemas.UserReview{}
 
 			if err == nil {
 				review, _ = GetReview(int32(reviewid))
@@ -178,7 +178,7 @@ func Interactions(data InteractionsData) (string, error) {
 
 			banDuration, _ := strconv.ParseInt(data.Data.Values[0], 10, 32)
 			reviewid, err := strconv.ParseInt(action[2], 10, 32)
-			review := database.UserReview{}
+			review := schemas.UserReview{}
 
 			if err == nil {
 				review, _ = GetReview(int32(reviewid))
@@ -212,8 +212,8 @@ func ExchangeCode(code, redirectURL string) (*oauth2.Token, error) {
 		Endpoint:     oauthEndpoint,
 		Scopes:       []string{"identify"},
 		RedirectURL:  redirectURL,
-		ClientID:     common.Config.ClientId,
-		ClientSecret: common.Config.ClientSecret,
+		ClientID:     common.Config.Discord.ClientID,
+		ClientSecret: common.Config.Discord.ClientSecret,
 	}
 
 	token, err := conf.Exchange(context.Background(), code)
@@ -228,7 +228,7 @@ func ExchangeCode(code, redirectURL string) (*oauth2.Token, error) {
 
 func GetUser(token string) (user *DiscordUser, err error) {
 	// TODO discordid is always 0 fix
-	req, _ := http.NewRequest(http.MethodGet, common.Config.ApiEndpoint+"/users/@me", nil)
+	req, _ := http.NewRequest(http.MethodGet, common.Config.Discord.ApiEndpoint+"/users/@me", nil)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
@@ -241,7 +241,7 @@ func GetUser(token string) (user *DiscordUser, err error) {
 }
 
 func GetUserViaID(userid int64) (user *DiscordUser, err error) {
-	req, _ := http.NewRequest(http.MethodGet, common.Config.ApiEndpoint+"/users/"+fmt.Sprint(userid), nil)
+	req, _ := http.NewRequest(http.MethodGet, common.Config.Discord.ApiEndpoint+"/users/"+fmt.Sprint(userid), nil)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bot "+common.Config.BotToken)
 	resp, err := http.DefaultClient.Do(req)
@@ -311,6 +311,7 @@ func SendWebhook(url string, data WebhookData) error {
 
 	resp, err = http.Post(url, "application/json", strings.NewReader(string(body)))
 	_, err = io.ReadAll(resp.Body)
+	
 	return err
 }
 

@@ -3,17 +3,24 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	goaway "github.com/TwiN/go-away"
 )
 
+const (
+	WEBSITE = "https://reviewdb.mantikafasi.dev"
+)
+
+type Client struct {
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	ApiEndpoint  string `json:"api_endpoint"`
+}
+
 type ConfigStr struct {
-	ApiEndpoint          string    `json:"api_endpoint"`
 	DB                   *ConfigDB `json:"db"`
-	RedirectUri          string    `json:"redirect_uri"`
-	ClientId             string    `json:"client_id"`
-	ClientSecret         string    `json:"client_secret"`
 	GithubWebhookSecret  string    `json:"github_webhook_secret"`
 	Origin               string    `json:"origin"`
 	Port                 string    `json:"port"`
@@ -21,8 +28,10 @@ type ConfigStr struct {
 	ReportWebhook        string    `json:"report_webhook"`
 	AppealWebhook        string    `json:"appeal_webhook"`
 	AdminToken           string    `json:"admin_token"`
-	StupidityBotToken    string    `json:"stupidity_bot_token"`
+	StartItBotToken      string    `json:"start_it_bot_token"`
 	LoggerWebhook        string    `json:"logger_webhook"`
+	Discord              *Client   `json:"discord"`
+	Twitter              *Client   `json:"twitter"`
 	Debug                bool      `json:"debug"`
 	ProfaneWordList      []string  `json:"profane_word_list"`
 	LightProfaneWordList []string  `json:"light_profane_word_list"`
@@ -52,18 +61,18 @@ func LoadConfig() {
 	f.Close()
 
 	ProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(Config.ProfaneWordList, nil, nil)
-	LightProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(Config.LightProfaneWordList, nil, nil)
+	LightProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(Config.LightProfaneWordList, nil,nil)
 }
 
 func SaveConfig() {
-	f, err := os.OpenFile("config.json", os.O_WRONLY, 0777)
+
+	data, err := json.MarshalIndent(*Config, "", "  ")
+
+	err = ioutil.WriteFile("config.json", data, 0644)
 	if err != nil {
 		fmt.Println(err)
 	}
-	encoder := json.NewEncoder(f)
-	encoder.SetIndent("", "    ")
-	err = encoder.Encode(&Config)
-	f.Close()
+
 }
 
 func init() {

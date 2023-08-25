@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"server-go/common"
 	"server-go/database"
@@ -16,6 +17,7 @@ import (
 	"server-go/routes"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/httprate"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -57,7 +59,7 @@ var ReviewCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
 
 func (c *Mux) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 
-	metric := strings.NewReplacer("{", "", "}", "", "/", "", "*", "").Replace(pattern)
+	metric := strings.NewReplacer("{", "", "}", "", "/", "", "*", "", "-", "").Replace(pattern)
 
 	if metric == "" {
 		metric = "root"
@@ -94,6 +96,7 @@ func cors(handler http.Handler) http.Handler {
 }
 
 func main() {
+
 	common.InitCache()
 	database.InitDB()
 
@@ -112,6 +115,7 @@ func main() {
 	mux := Mux{chi.NewRouter()}
 
 	mux.Use(cors)
+	mux.Use(httprate.LimitByRealIP(2,1 * time.Second))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "artgallery/index.html")
@@ -153,8 +157,9 @@ func main() {
 
 	mux.HandleFunc("/api/reviewdb/settings", routes.Settings)
 
-	mux.Put("/api/reviewdb/appeals", routes.AppealReview)
+	mux.HandleFunc("/api/reviewdb/authweb", routes.ReviewDBAuthWeb)
 
+	mux.Put("/api/reviewdb/appeals", routes.AppealReview)
 
 	mux.Group(func(r chi.Router) {
 		r.Use(routes.AdminMiddleware)
@@ -166,6 +171,10 @@ func main() {
 			r.Get("/reload", routes.ReloadConfig)
 		})
 	})
+
+	mux.HandleFunc("/api/reviewdb-twitter/auth", routes.ReviewDBTwitterAuth)
+	mux.HandleFunc("/api/reviewdb-twitter/users/{profileid}/reviews", routes.HandleTwitterRoutes)
+	mux.HandleFunc("/api/reviewdb-twitter/reports", routes.ReportTwitterReview)
 
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
