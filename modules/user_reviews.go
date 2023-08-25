@@ -549,7 +549,9 @@ func ReportReview(data UR_RequestData) error {
 	if translatedContent == "" {
 		embed := webhookData.Embeds[0]
 		// remove translated content field if no translation
-		embed.Fields = append(embed.Fields[:2], embed.Fields[3:]...)
+		fields := make([]EmbedField, 0)
+		fields = append(fields,embed.Fields[:2]...)
+		embed.Fields = append(fields, embed.Fields[3:]...)	
 	}
 
 	if reportedUser.DiscordID != user.DiscordID {
