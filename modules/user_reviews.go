@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -405,6 +407,14 @@ func GetReview(id int32) (rep schemas.UserReview, err error) {
 	return
 }
 
+type Trans struct {
+	Sentences []struct {
+		Trans string `json:"trans"`
+	} `json:"sentences"`
+	Src        string  `json:"src"`
+	Confidence float32 `json:"confidence"`
+}
+
 func ReportReview(data UR_RequestData) error {
 
 	user, err := GetDBUserViaTokenAndData(data.Token, data)
@@ -446,6 +456,21 @@ func ReportReview(data UR_RequestData) error {
 	reviewedUsername := "?"
 	if reviewedUser, err := ArikawaState.User(discord.UserID(review.ProfileID)); err == nil {
 		reviewedUsername = reviewedUser.Tag()
+	}
+
+	sourceLang := ""
+	translatedContent := "-"
+	if res, err := http.Get("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&dj=1&source=input&q+" + url.QueryEscape(review.Comment)); err != nil {
+		var trans Trans
+		if err = json.NewDecoder(res.Body).Decode(&trans); err != nil {
+			if trans.Confidence > 0.5 {
+				sourceLang = " (" + trans.Src + ")"
+				translatedContent = ""
+				for _, sentence := range trans.Sentences {
+					translatedContent += sentence.Trans + "\n"
+				}
+			}
+		}
 	}
 
 	webhookData := WebhookData{
@@ -499,6 +524,10 @@ func ReportReview(data UR_RequestData) error {
 					{
 						Name:  "**Content**",
 						Value: fmt.Sprint(review.Comment),
+					},
+					{
+						Name:  "**Translated Content" + sourceLang + "**",
+						Value: translatedContent,
 					},
 					{
 						Name:  "**Author**",
