@@ -463,7 +463,7 @@ func ReportReview(data UR_RequestData) error {
 	if res, err := http.Get("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&dj=1&source=input&q=" + url.QueryEscape(review.Comment)); err == nil {
 		var trans Trans
 		if err = json.NewDecoder(res.Body).Decode(&trans); err == nil {
-			if trans.Confidence > 0.3 {
+			if trans.Src != "en" && trans.Confidence > 0.3 {
 				sourceLang = " (" + trans.Src + ")"
 				translatedContent = ""
 				for _, sentence := range trans.Sentences {
