@@ -100,7 +100,6 @@ type UserReview struct {
 	ReviewerID int32   `bun:"reviewer_id" json:"-"`
 }
 
-
 type UserBadge struct {
 	bun.BaseModel `bun:"table:user_badges"`
 
@@ -119,7 +118,7 @@ func (user *URUser) IsAdmin() bool {
 
 func (user *URUser) IsBanned() bool {
 	if user.Type == -1 {
-		return false
+		return true
 	}
 	if user.BanInfo == nil {
 		return false
