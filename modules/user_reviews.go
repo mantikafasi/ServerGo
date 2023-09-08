@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/discord"
+
 	"golang.org/x/exp/slices"
 
 	"server-go/common"
@@ -174,9 +175,8 @@ func AddReview(data UR_RequestData) (string, error) {
 		return "", errors.New(common.INVALID_TOKEN)
 	}
 
-	if len(reviewer.Token) == 64 && len(data.Token) != 64 { // try to get rid of old token system as much as possible
-		reviewer.Token = data.Token
-		database.DB.NewUpdate().Model(reviewer).Set("token = ?", data.Token).Where("id = ?", reviewer.ID).Exec(context.Background())
+	if reviewer.Type != 1 && ContainsCustomDiscordEmoji(data.Comment) {
+		return "", errors.New("You are not allowed to use custom emojis")
 	}
 
 	if reviewer.OptedOut {

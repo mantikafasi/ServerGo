@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -70,6 +71,10 @@ type InteractionsData struct {
 
 func BanTimeSelectComponent(userid string) discord.ContainerComponents {
 	return BanTimeSelectComponentWithID(userid, "ban_user")
+}
+
+func ContainsCustomDiscordEmoji(s string) bool {
+	return regexp.MustCompile(`(<a?)?:\w+:(\d{18,19}>)?`).MatchString(s)
 }
 
 func BanTimeSelectComponentWithID(userid string, componentID string) discord.ContainerComponents {
