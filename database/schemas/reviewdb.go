@@ -21,7 +21,7 @@ type URUser struct {
 	OptedOut     bool          `bun:"opted_out" json:"-"`
 	IpHash       string        `bun:"ip_hash" json:"-"`
 	RefreshToken string        `bun:"refresh_token" json:"-"`
-	Notification *Notification `json:"notification" bun:"rel:has-many,join:user_id=id,join:read=false"`
+	Notification *Notification `json:"notification" bun:"rel:has-one,join:id=user_id"`
 
 	BanID int32 `bun:"ban_id" json:"-"`
 
