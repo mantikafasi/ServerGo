@@ -256,22 +256,22 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	}
 
 	/*
-	if (len(reviews) > 8 && offset == 0) {
-		var ix = random.Intn(len(reviews) - 1)
-		reviews = append(reviews[:ix+1], reviews[ix:]...)
-		reviews[ix] = schemas.UserReview{
-			ID: 0,
-			Sender: schemas.Sender{
-				ID:           0,
-				Username:     "ReviewDB",
-				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
-				DiscordID:    "343383572805058560",
-				Badges:       []schemas.UserBadge{},
-			}, 
-			Comment: "If you like ReviewDB try out ReviewDB Twitter at https://chrome.google.com/webstore/detail/reviewdb-twitter/kmgbgncbggoffjbefmnknffpofcajohj",
-			Type: 3,
+		if (len(reviews) > 8 && offset == 0) {
+			var ix = random.Intn(len(reviews) - 1)
+			reviews = append(reviews[:ix+1], reviews[ix:]...)
+			reviews[ix] = schemas.UserReview{
+				ID: 0,
+				Sender: schemas.Sender{
+					ID:           0,
+					Username:     "ReviewDB",
+					ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
+					DiscordID:    "343383572805058560",
+					Badges:       []schemas.UserBadge{},
+				},
+				Comment: "If you like ReviewDB try out ReviewDB Twitter at https://chrome.google.com/webstore/detail/reviewdb-twitter/kmgbgncbggoffjbefmnknffpofcajohj",
+				Type: 3,
+			}
 		}
-	}
 	*/
 
 	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) && offset == 0 {
@@ -283,13 +283,13 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 				DiscordID:    "1134864775000629298",
 				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",
 				Username:     "Warning",
-				Badges:       []schemas.UserBadge{
+				Badges: []schemas.UserBadge{
 					{
-						Name: "Donor",
-						Icon: "https://cdn.discordapp.com/emojis/1084121193591885906.webp?size=96&quality=lossless",
+						Name:        "Donor",
+						Icon:        "https://cdn.discordapp.com/emojis/1084121193591885906.webp?size=96&quality=lossless",
 						Description: "This badge is special to donors.",
 						RedirectURL: "https://github.com/sponsors/mantikafasi",
-						Type: 1,
+						Type:        1,
 					},
 				},
 			},
@@ -311,8 +311,8 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 
 	type UserInfo struct {
 		schemas.URUser
-		LastReviewID int32 `json:"lastReviewID"`
-		UserType     int   `json:"type"`
+		LastReviewID int32                `json:"lastReviewID"`
+		UserType     int                  `json:"type"`
 	}
 
 	token := r.Header.Get("Authorization")

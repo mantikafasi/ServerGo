@@ -21,6 +21,7 @@ func CreateReviewDBSchemas() error {
 		(*schemas.ReviewDBAppeal)(nil),
 		(*schemas.UserReview)(nil),
 		(*schemas.UserBadge)(nil),
+		(*schemas.Notification)(nil),
 	}
 
 	for _, model := range models {

@@ -21,6 +21,7 @@ type EmbedFooter struct {
 }
 
 type InteractionsData struct {
+	Type int `json:"type"` // 1 = ping
 	Data struct {
 		ID     string   `json:"custom_id"`
 		Values []string `json:"values"`

@@ -293,6 +293,7 @@ func GetDBUserViaTokenAndData(token string, data UR_RequestData) (user schemas.U
 		Model(&user).
 		Where("token = ? or token = ?", token, CalculateHash(token)).
 		Relation("BanInfo").
+		Relation("Notification").
 		Scan(context.Background(), &user)
 
 	if user.BanInfo != nil && user.BanInfo.BanEndDate.Before(time.Now()) {

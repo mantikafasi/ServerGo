@@ -9,18 +9,19 @@ import (
 type URUser struct {
 	bun.BaseModel `bun:"table:users"`
 
-	ID           int32       `bun:"id,pk,autoincrement" json:"ID"`
-	DiscordID    string      `bun:"discord_id,type:numeric" json:"discordID"`
-	Token        string      `bun:"token" json:"-"`
-	Username     string      `bun:"username" json:"username"`
-	Type         int32       `bun:"column:type" json:"-"`
-	AvatarURL    string      `bun:"avatar_url" json:"profilePhoto"`
-	ClientMods   []string    `bun:"client_mods,array" json:"clientMods"`
-	WarningCount int32       `bun:"warning_count" json:"warningCount"`
-	Badges       []UserBadge `bun:"-" json:"badges"`
-	OptedOut     bool        `bun:"opted_out" json:"-"`
-	IpHash       string      `bun:"ip_hash" json:"-"`
-	RefreshToken string      `bun:"refresh_token" json:"-"`
+	ID           int32         `bun:"id,pk,autoincrement" json:"ID"`
+	DiscordID    string        `bun:"discord_id,type:numeric" json:"discordID"`
+	Token        string        `bun:"token" json:"-"`
+	Username     string        `bun:"username" json:"username"`
+	Type         int32         `bun:"column:type" json:"-"`
+	AvatarURL    string        `bun:"avatar_url" json:"profilePhoto"`
+	ClientMods   []string      `bun:"client_mods,array" json:"clientMods"`
+	WarningCount int32         `bun:"warning_count" json:"warningCount"`
+	Badges       []UserBadge   `bun:"-" json:"badges"`
+	OptedOut     bool          `bun:"opted_out" json:"-"`
+	IpHash       string        `bun:"ip_hash" json:"-"`
+	RefreshToken string        `bun:"refresh_token" json:"-"`
+	Notification *Notification `json:"notification" bun:"rel:has-many,join:user_id=id,join:read=false"`
 
 	BanID int32 `bun:"ban_id" json:"-"`
 
@@ -66,6 +67,25 @@ type ActionLog struct {
 
 	UpdatedString string `bun:"comment_new"`
 	ActionUserID  int32  `bun:"action_user_id"`
+}
+
+const (
+	NotificationTypeBan = iota
+	NotificationTypeUnban
+	NotificationTypeWarning
+)
+
+type NotificationType int32
+
+type Notification struct {
+	bun.BaseModel `bun:"table:notifications"`
+
+	ID     int32 `bun:"id,pk,autoincrement" json:"id"`
+	UserID int32 `bun:"user_id,type:numeric" json:"-"`
+
+	Type NotificationType `bun:"type" json:"notificationType"`
+	Text string           `bun:"text" json:"notificationText"`
+	Read bool             `bun:"read" json:"read"`
 }
 
 type ReviewDBAppeal struct {
