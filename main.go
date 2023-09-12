@@ -115,7 +115,7 @@ func main() {
 	mux := Mux{chi.NewRouter()}
 
 	mux.Use(cors)
-	mux.Use(httprate.LimitByRealIP(2,1 * time.Second))
+	mux.Use(httprate.LimitByRealIP(2, 1*time.Second))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "artgallery/index.html")
@@ -156,6 +156,8 @@ func main() {
 	mux.HandleFunc("/api/reviewdb/reviews", routes.SearchReview)
 
 	mux.HandleFunc("/api/reviewdb/settings", routes.Settings)
+
+	mux.HandleFunc("/api/reviewdb/notifications", routes.Notifications)
 
 	mux.HandleFunc("/api/reviewdb/authweb", routes.ReviewDBAuthWeb)
 

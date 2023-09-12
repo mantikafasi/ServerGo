@@ -21,6 +21,7 @@ func CreateReviewDBSchemas() error {
 		(*schemas.ReviewDBAppeal)(nil),
 		(*schemas.UserReview)(nil),
 		(*schemas.UserBadge)(nil),
+		(*schemas.ReviewDBBanLog)(nil),
 		(*schemas.Notification)(nil),
 	}
 

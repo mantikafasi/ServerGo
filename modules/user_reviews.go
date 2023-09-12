@@ -292,15 +292,55 @@ func GetDBUserViaTokenAndData(token string, data UR_RequestData) (user schemas.U
 		NewSelect().
 		Model(&user).
 		Where("token = ? or token = ?", token, CalculateHash(token)).
-		Relation("BanInfo").
-		Relation("Notification").
+		Relation("BanInfo", func(sq *bun.SelectQuery) *bun.SelectQuery {
+			// this does absolutely nothing but hoping that they will update bun this should work
+			// https://github.com/uptrace/bun/issues/554
+			return sq.JoinOn("join on ban_info.ban_end_date > now()").Order("ban_info.ban_end_date desc")
+		}).
+		Relation("Notification", func(sq *bun.SelectQuery) *bun.SelectQuery {
+			return sq.JoinOn("join on notification.read = false").Order("notification.id desc")
+		}).
 		Scan(context.Background(), &user)
 
 	if user.BanInfo != nil && user.BanInfo.BanEndDate.Before(time.Now()) {
 		user.BanInfo = nil
 	}
 
-	return
+	if user.Notification.Read {
+		user.Notification = nil
+	}
+
+	// var notification *schemas.Notification
+	// var banInfo *schemas.ReviewDBBanLog
+
+	// response := &struct {
+	// 	*schemas.URUser
+	// 	*schemas.ReviewDBBanLog
+	// 	*schemas.Notification
+	// }{
+	// 	&user,
+	// 	banInfo,
+	// 	notification,
+	// }
+
+	// err = database.DB.NewRaw(
+	// 	`SELECT users.id as id,users.discord_id as discord_id,* FROM users
+	// 	LEFT OUTER JOIN user_bans b ON b.discord_id = users.discord_id and b.ban_end_date > now()
+	// 	LEFT OUTER JOIN notifications n ON n.user_id = users.id and n.read = false
+	// 	WHERE token = ? or token = ?`,
+	// 	CalculateHash(token), token).Scan(context.Background(), response)
+
+	// guh := database.DB.DB.QueryRowContext(context.Background(), `SELECT users.id as id,users.discord_id as discord_id,* FROM users
+	// 	LEFT OUTER JOIN user_bans b ON b.discord_id = users.discord_id and b.ban_end_date > now()
+	// 	LEFT OUTER JOIN notifications n ON n.user_id = users.id and n.read = false
+	// 	WHERE token = ? or token = ?`, CalculateHash(token), token)
+
+	// err = guh.Scan(&user, &banInfo, &notification)
+
+	// user.Notification = notification
+	// user.BanInfo = banInfo
+
+	return user, err
 }
 
 func GetDBUserViaToken(token string) (user schemas.URUser, err error) {
