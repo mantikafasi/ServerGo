@@ -306,7 +306,7 @@ func GetDBUserViaTokenAndData(token string, data UR_RequestData) (user schemas.U
 		user.BanInfo = nil
 	}
 
-	if user.Notification.Read {
+	if user.Notification != nil && user.Notification.Read {
 		user.Notification = nil
 	}
 
