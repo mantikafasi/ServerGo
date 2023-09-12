@@ -70,7 +70,8 @@ type ActionLog struct {
 }
 
 const (
-	NotificationTypeBan = iota
+	NotificationTypeInfo = iota
+	NotificationTypeBan
 	NotificationTypeUnban
 	NotificationTypeWarning
 )
@@ -84,6 +85,7 @@ type Notification struct {
 	UserID int32 `bun:"user_id,type:numeric" json:"-"`
 
 	Type    NotificationType `bun:"type" json:"type"`
+	Title   string           `bun:"title" json:"title"`
 	Content string           `bun:"content" json:"content"`
 	Read    bool             `bun:"read" json:"read"`
 }

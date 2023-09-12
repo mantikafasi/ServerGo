@@ -49,7 +49,7 @@ func Notifications(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if (r.Method == "UPDATE") {
+	if (r.Method == "PATCH") {
 		notificationId, err := strconv.Atoi(r.URL.Query().Get("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
