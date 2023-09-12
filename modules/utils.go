@@ -22,7 +22,7 @@ func GenerateToken() string {
 }
 
 func ReadNotification(user *schemas.URUser, notificationId int32) (err error) {
-	res, err := database.DB.NewUpdate().Model(&schemas.Notification{}).Where("id = ?", notificationId).Where("user_id = ?", user.ID).Set("read", true).Exec(context.Background())
+	res, err := database.DB.NewUpdate().Model(&schemas.Notification{}).Where("id = ?", notificationId).Where("user_id = ?", user.ID).Set("read = true").Exec(context.Background())
 	if err != nil {
 		return
 	}
