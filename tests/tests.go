@@ -18,7 +18,7 @@ func main() {
 func SendNotification(userId int32) {
 	notification := schemas.Notification{
 		UserID:  userId,
-		Text: "Hello world \n\n Goodbye World!",
+		Content: "Hello world \n\n Goodbye World!",
 	}
 
 	if _, err := database.DB.NewInsert().Model(&notification).Exec(context.Background()); err != nil {

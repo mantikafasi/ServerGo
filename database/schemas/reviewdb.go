@@ -83,9 +83,9 @@ type Notification struct {
 	ID     int32 `bun:"id,pk,autoincrement" json:"id"`
 	UserID int32 `bun:"user_id,type:numeric" json:"-"`
 
-	Type NotificationType `bun:"type" json:"notificationType"`
-	Text string           `bun:"text" json:"notificationText"`
-	Read bool             `bun:"read" json:"read"`
+	Type    NotificationType `bun:"type" json:"type"`
+	Content string           `bun:"content" json:"content"`
+	Read    bool             `bun:"read" json:"read"`
 }
 
 type ReviewDBAppeal struct {
