@@ -6,19 +6,17 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
 	"server-go/common"
 	"server-go/database"
-	"server-go/legacy_routes"
 	"server-go/modules"
 	"server-go/routes"
 
+	chiprometheus "github.com/766b/chi-prometheus"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/httprate"
-	"github.com/766b/chi-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -82,20 +80,6 @@ func (c *Mux) HandleFunc(pattern string, handler func(http.ResponseWriter, *http
 	})
 }
 
-func cors(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		handler.ServeHTTP(w, r)
-	})
-}
-
 func main() {
 
 	common.InitCache()
@@ -116,13 +100,15 @@ func main() {
 	mux := Mux{chi.NewRouter()}
 	prometheusMiddleware := chiprometheus.NewPatternMiddleware("reviewdb")
 
-	mux.Use(cors)
+	mux.Use(routes.CorsMiddleware)
 	mux.Use(httprate.LimitByRealIP(2, 1*time.Second))
 	mux.Use(prometheusMiddleware)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "artgallery/index.html")
 	})
+
+	mux.Handle("/metrics", promhttp.Handler())
 
 	mux.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("artgallery/static"))))
 
@@ -141,8 +127,6 @@ func main() {
 	mux.HandleFunc("/auth", routes.StupidityDBAuth)
 
 	//ReviewDB
-
-	mux.HandleFunc("/URauth", legacy_routes.ReviewDBAuth)
 
 	mux.HandleFunc("/api/reviewdb/users", routes.GetUserInfo)
 
@@ -184,14 +168,6 @@ func main() {
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
 	})
-
-	mux.HandleFunc("/getLastReviewID", func(w http.ResponseWriter, r *http.Request) {
-		id := r.URL.Query().Get("discordid")
-
-		w.Write([]byte(strconv.Itoa(int(modules.GetLastReviewID(id)))))
-	})
-
-	mux.Handle("/metrics", promhttp.Handler())
 
 	err = http.ListenAndServe(":"+common.Config.Port, mux)
 	if errors.Is(err, http.ErrServerClosed) {
