@@ -114,7 +114,7 @@ func main() {
 	common.OptedOut = append(common.OptedOut, optedOutUsers...)
 
 	mux := Mux{chi.NewRouter()}
-	prometheusMiddleware := chiprometheus.NewMiddleware("reviewdb")
+	prometheusMiddleware := chiprometheus.NewPatternMiddleware("reviewdb")
 
 	mux.Use(cors)
 	mux.Use(httprate.LimitByRealIP(2, 1*time.Second))
