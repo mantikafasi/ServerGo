@@ -6,6 +6,13 @@ import (
 	"github.com/uptrace/bun"
 )
 
+const (
+	UserTypeBanned = -1
+	UserTypeUser   = 0
+	UserTypeAdmin  = 1
+	UserTypeModerator = 2
+)
+
 type URUser struct {
 	bun.BaseModel `bun:"table:users"`
 

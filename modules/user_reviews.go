@@ -310,6 +310,13 @@ func GetDBUserViaTokenAndData(token string, data UR_RequestData) (user schemas.U
 		user.Notification = nil
 	}
 
+	// err = database.DB.NewSelect().
+	// 	Model(&user).
+	// 	Join("LEFT OUTER JOIN user_bans AS ban_info").JoinOn("ban_info.discord_id = ur_user.discord_id AND ban_info.ban_end_date > now()").
+	// 	Join("LEFT OUTER JOIN notifications AS notification").JoinOn("notification.user_id = ur_user.id AND notification.read = false").
+	// 	Where("token = ? or token = ?", token, CalculateHash(token)).
+	// 	Scan(context.Background(), &user)
+
 	// var notification *schemas.Notification
 	// var banInfo *schemas.ReviewDBBanLog
 
@@ -632,8 +639,9 @@ func GetReports() (reports []schemas.ReviewReport, err error) {
 	return
 }
 
+// checks if user is admin **or** moderator
 func IsUserAdminDC(discordid int64) bool {
-	count, _ := database.DB.NewSelect().Model(&schemas.URUser{}).Where("discord_id = ? and type = 1", discordid).Count(context.Background())
+	count, _ := database.DB.NewSelect().Model(&schemas.URUser{}).Where("discord_id = ? and (type = 1 or type = 2)", discordid).Count(context.Background())
 
 	if count > 0 {
 		return true
