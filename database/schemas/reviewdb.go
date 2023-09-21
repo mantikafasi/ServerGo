@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	UserTypeBanned = -1
-	UserTypeUser   = 0
-	UserTypeAdmin  = 1
+	UserTypeBanned    = -1
+	UserTypeUser      = 0
+	UserTypeAdmin     = 1
 	UserTypeModerator = 2
 )
 
@@ -91,10 +91,11 @@ type Notification struct {
 	ID     int32 `bun:"id,pk,autoincrement" json:"id"`
 	UserID int32 `bun:"user_id,type:numeric" json:"-"`
 
-	Type    NotificationType `bun:"type" json:"type"`
-	Title   string           `bun:"title" json:"title"`
-	Content string           `bun:"content" json:"content"`
-	Read    bool             `bun:"read" json:"read"`
+	Type      NotificationType `bun:"type" json:"type"`
+	Title     string           `bun:"title" json:"title"`
+	Content   string           `bun:"content" json:"content"`
+	Read      bool             `bun:"read" json:"read"`
+	Timestamp time.Time        `bun:"timestamp,default:current_timestamp" json:"-"`
 }
 
 type ReviewDBAppeal struct {
