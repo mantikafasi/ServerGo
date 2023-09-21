@@ -18,6 +18,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/httprate"
+	"github.com/766b/chi-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -113,9 +114,11 @@ func main() {
 	common.OptedOut = append(common.OptedOut, optedOutUsers...)
 
 	mux := Mux{chi.NewRouter()}
+	prometheusMiddleware := chiprometheus.NewMiddleware("reviewdb")
 
 	mux.Use(cors)
 	mux.Use(httprate.LimitByRealIP(2, 1*time.Second))
+	mux.Use(prometheusMiddleware)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "artgallery/index.html")
