@@ -108,6 +108,7 @@ type WebhookComponent struct {
 	Type       int                `json:"type"`
 	Style      int                `json:"style"`
 	Label      string             `json:"label"`
+	Value      string             `json:"value"`
 	CustomID   string             `json:"custom_id"`
 	Emoji      WebhookEmoji       `json:"emoji,omitempty"`
 	Options    []ComponentOption  `json:"options,omitempty"`

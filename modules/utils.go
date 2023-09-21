@@ -21,6 +21,14 @@ func GenerateToken() string {
 	return "rdb." + token
 }
 
+func SendNotification(notification *schemas.Notification) (err error) {
+	_, err = database.DB.NewInsert().Model(notification).Exec(context.Background())
+	if err != nil {
+		println(err.Error())
+	}
+	return
+}
+
 func ReadNotification(user *schemas.URUser, notificationId int32) (err error) {
 	res, err := database.DB.NewUpdate().Model(&schemas.Notification{}).Where("id = ?", notificationId).Where("user_id = ?", user.ID).Set("read = true").Exec(context.Background())
 	if err != nil {

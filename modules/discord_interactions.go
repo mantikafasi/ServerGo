@@ -23,8 +23,9 @@ type EmbedFooter struct {
 type InteractionsData struct {
 	Type int `json:"type"` // 1 = ping
 	Data struct {
-		ID     string   `json:"custom_id"`
-		Values []string `json:"values"`
+		ID         string             `json:"custom_id"`
+		Values     []string           `json:"values"`
+		Components []WebhookComponent `json:"components"`
 	}
 	Message struct {
 		Content string `json:"content"`
@@ -73,12 +74,26 @@ func BanTimeSelectComponentWithID(userid string, componentID string) discord.Con
 	}
 }
 
+
+func AppealDenyTextComponent(appealID int32) discord.ContainerComponents {
+	
+	return discord.ContainerComponents{
+		&discord.ActionRowComponent{
+			&discord.TextInputComponent{
+				Label:        "Deny Reason",
+				Placeholder:  "You wrote such a dumb reason even I could think of a better one",
+				Style:        discord.TextInputParagraphStyle,
+				Required:     true,
+			},
+		},
+	}
+}
+
 func Interactions(data InteractionsData) (string, error) {
 
 	if data.Type == 1 {
 		return "{\"type\":1}", nil //copilot I hope you die
 	}
-
 	response := api.InteractionResponse{}
 
 	response.Type = 4
@@ -89,7 +104,7 @@ func Interactions(data InteractionsData) (string, error) {
 
 	action := strings.Split(data.Data.ID, ":")
 
-	if data.Type == 3 && IsUserAdminDC(userid) {
+	if (data.Type == 3 || data.Type == 5) && IsUserAdminDC(userid) {
 
 		response.Data.Embeds = &[]discord.Embed{{
 			Footer: &discord.EmbedFooter{
@@ -165,14 +180,50 @@ func Interactions(data InteractionsData) (string, error) {
 
 			response.Data.Components = &discord.ContainerComponents{} // remove components
 
+		} else if action[0] == "accept_appeal" {
+			appeal, err := GetAppeal(int32(firstVariable))
+			if err != nil {
+				response.Data.Content = option.NewNullableString(err.Error())
+			}
+			err = UnbanUser(appeal.UserID)
+
+			if err == nil {
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully unbanned user %d", appeal.UserID))
+			} else {
+				response.Data.Content = option.NewNullableString(err.Error())
+			}
+
+		} else if action[0] == "text_deny_appeal" {
+			appealId := int32(firstVariable)
+			component := AppealDenyTextComponent(appealId)
+			response.Data.Components = &component
+			response.Data.Title = option.NewNullableString("Enter Deny Reason")
+			response.Data.CustomID = option.NewNullableString(fmt.Sprintf("deny_appeal:%d", appealId))
+			response.Type = 9 // modal
+		} else if action[0] == "deny_appeal" {
+			appeal, err := GetAppeal(int32(firstVariable))
+
+			if err != nil {
+				response.Data.Content = option.NewNullableString(err.Error())
+			} else {
+				denyReason := data.Data.Components[0].Components[0].Value
+				err := DenyAppeal(appeal, denyReason)
+				if err != nil {
+					response.Data.Content = option.NewNullableString(err.Error())
+				} else {
+					response.Data.Content = option.NewNullableString("Successfully denied appeal\n\n ```" + denyReason + "```")
+				}
+			}
 		}
 	}
 
-	if response.Data.Content.Val != "" {
+	if response.Data.Content != nil || response.Data.Title != nil {
 		b, err := json.Marshal(response)
 		if err != nil {
 			return "", err
 		}
+		fmt.Println(string(b))
+
 		return string(b), nil
 	}
 	return "", errors.New("invalid interaction")

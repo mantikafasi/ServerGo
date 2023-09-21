@@ -26,6 +26,7 @@ var HandleInteractions = func(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(message[len(timestamp):], &data)
 	response, err := modules.Interactions(data)
 	if err != nil {
+		println(err.Error())
 		w.WriteHeader(500)
 		return
 	}

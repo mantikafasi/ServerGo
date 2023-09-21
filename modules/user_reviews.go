@@ -824,6 +824,22 @@ func BanUser(userToBan string, adminToken string, banDuration int32, review sche
 	if err != nil {
 		return err
 	}
+
+	SendNotification(&schemas.Notification{
+		UserID: user.ID,
+		Title:  "You have been banned from ReviewDB",
+		Type:   schemas.NotificationTypeBan,
+		Content: fmt.Sprintf(`
+			You have been banned from ReviewDB %s
+
+			**Offending Review:** %s
+
+			Continued offenses will result in a permanent ban.
+		`,
+			common.Ternary(user.Type == schemas.UserTypeBanned, "permanently", "until <t:"+strconv.FormatInt(banData.BanEndDate.UnixMilli(), 10)+":F>"),
+			review.Comment,
+		),
+	})
 	return nil
 }
 
@@ -932,7 +948,7 @@ func GetReportCountInLastHour(userID int32) (int, error) {
 }
 
 func AppealBan(appeal schemas.ReviewDBAppeal, user *schemas.URUser) (err error) {
-	_, err = database.DB.NewInsert().Model(&appeal).Exec(context.Background())
+	_,err = database.DB.NewInsert().Model(&appeal).Exec(context.Background())
 
 	if err == nil {
 		SendAppealWebhook(
@@ -957,9 +973,68 @@ func AppealBan(appeal schemas.ReviewDBAppeal, user *schemas.URUser) (err error) 
 						},
 					},
 				},
+				Components: []WebhookComponent{
+					{
+						Type: 1,
+						Components: []WebhookComponent{
+							{
+								Type:     2,
+								Label:    "Accept",
+								Style:    3,
+								CustomID: fmt.Sprintf("accept_appeal:%d", appeal.ID),
+								Emoji: WebhookEmoji{
+									Name: "✅",
+								},
+							},
+							{
+								Type:     2,
+								Label:    "Deny",
+								Style:    4,
+								CustomID: fmt.Sprintf("text_deny_appeal:%d", appeal.ID),
+								Emoji: WebhookEmoji{
+									Name: "❌",
+								},
+							},
+						},
+					},
+				},
 			},
 		)
 	}
 
 	return
+}
+
+func GetAppeal(id int32) (appeal schemas.ReviewDBAppeal, err error) {
+	database.DB.NewSelect().Model(&appeal).Where("id = ?", id).Scan(context.Background(), &appeal)
+	return
+}
+
+func UnbanUser(userId int32) (err error) {
+	_, err = database.DB.NewUpdate().Model(&schemas.URUser{}).Set("type = 0").Set("ban_id = NULL").Set("warning_count = GREATEST(0, warning_count - 1)").Where("id = ?", userId).Exec(context.Background())
+
+	if err != nil {
+		return
+	}
+
+	err = SendNotification(&schemas.Notification{
+		UserID:  userId,
+		Title:   "ReviewDB",
+		Content: "You have been unbanned from ReviewDB",
+	})
+
+	return
+}
+
+func DenyAppeal(appeal schemas.ReviewDBAppeal, denyText string) (err error) {
+	return SendNotification(&schemas.Notification{
+		UserID: appeal.UserID,
+		Title:  "ReviewDB",
+		Content: fmt.Sprintf(`
+			Your appeal has been denied
+	
+			**Reason:** %s,
+		
+		`, denyText),
+	})
 }
