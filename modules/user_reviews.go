@@ -179,6 +179,10 @@ func AddReview(data UR_RequestData) (string, error) {
 		return "", errors.New("You are not allowed to use custom emojis")
 	}
 
+	if reviewer.Type != 1 && common.ContainsURL(data.Comment) {
+		return "", errors.New("You are not allowed to have URLs in your review")
+	}
+
 	if reviewer.OptedOut {
 		return "", errors.New(common.OPTED_OUT)
 	}

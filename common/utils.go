@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"regexp"
 )
 
 var PublicKeyString string = "a6953fb61ec1e9107fae66ff1c56437c322f561e2f1578b0f52dbcb3d9eda694"
@@ -24,7 +25,14 @@ func Ternary[T any](b bool, ifTrue, ifFalse T) T {
 	if b {
 		return ifTrue
 	}
+
 	return ifFalse
+}
+
+var urlRegex *regexp.Regexp = regexp.MustCompile(`[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+
+func ContainsURL(s string) bool {
+	return urlRegex.MatchString(s)
 }
 
 const (
