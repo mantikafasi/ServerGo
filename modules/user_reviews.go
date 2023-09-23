@@ -840,7 +840,7 @@ func BanUser(userToBan string, adminToken string, banDuration int32, review sche
 
 			Continued offenses will result in a permanent ban.
 		`,
-			common.Ternary(user.Type == schemas.UserTypeBanned, "permanently", "until <t:"+strconv.FormatInt(banData.BanEndDate.UnixMilli(), 10)+":F>"),
+			common.Ternary(user.Type == schemas.UserTypeBanned, "permanently", "until <t:"+strconv.FormatInt(banData.BanEndDate.Unix(), 10)+":F>"),
 			review.Comment,
 		),
 	})
