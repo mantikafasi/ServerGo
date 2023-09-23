@@ -30,7 +30,7 @@ func SendNotification(notification *schemas.Notification) (err error) {
 }
 
 func ReadNotification(user *schemas.URUser, notificationId int32) (err error) {
-	res, err := database.DB.NewUpdate().Model(&schemas.Notification{}).Where("id = ?", notificationId).Where("user_id = ?", user.ID).Set("read = true").Exec(context.Background())
+	res, err := database.DB.NewDelete().Model(&schemas.Notification{}).Where("id = ?", notificationId).Where("user_id = ?", user.ID).Exec(context.Background())
 	if err != nil {
 		return
 	}
@@ -38,7 +38,7 @@ func ReadNotification(user *schemas.URUser, notificationId int32) (err error) {
 	rowsAffected, err := res.RowsAffected()
 
 	if rowsAffected == 0 {
-		fmt.Println("Couldnt update notification")
+		fmt.Println("Couldnt delete notification")
 	}
 	return
 }
