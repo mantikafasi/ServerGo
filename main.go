@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"server-go/common"
@@ -17,77 +16,13 @@ import (
 	chiprometheus "github.com/766b/chi-prometheus"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/httprate"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
-
-type Mux struct {
-	*chi.Mux
-}
-
-var Counters = map[string]prometheus.Counter{}
-var TotalRequestCounter = prometheus.NewCounter(prometheus.CounterOpts{
-	Name: "total_request",
-	Help: "Total request count",
-})
-var URUserCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
-	Name: "user_count",
-	Help: "Count of user reviews users",
-}, func() float64 {
-	userCount, err := modules.GetURUserCount()
-
-	if err != nil {
-		return 0
-	}
-
-	return float64(userCount)
-})
-
-var ReviewCounter = prometheus.NewCounterFunc(prometheus.CounterOpts{
-	Name: "review_count",
-	Help: "Count of total user reviews",
-}, func() float64 {
-	count, err := modules.GetReviewCount()
-
-	if err != nil {
-		return 0
-	}
-
-	return float64(count)
-})
-
-func (c *Mux) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
-
-	metric := strings.NewReplacer("{", "", "}", "", "/", "", "*", "", "-", "").Replace(pattern)
-
-	if metric == "" {
-		metric = "root"
-	}
-
-	if _, exists := Counters[metric]; !exists {
-		Counters[metric] = prometheus.NewCounter(prometheus.CounterOpts{
-			Name: metric,
-			Help: "Number of requests on " + pattern,
-		})
-		prometheus.MustRegister(Counters[metric])
-	}
-
-	c.Mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-		TotalRequestCounter.Inc()
-		Counters[metric].Inc()
-
-		handler(w, r)
-	})
-}
 
 func main() {
 
 	common.InitCache()
 	database.InitDB()
-
-	prometheus.MustRegister(ReviewCounter)
-	prometheus.MustRegister(URUserCounter)
-	prometheus.MustRegister(TotalRequestCounter)
 
 	optedOutUsers, err := modules.GetOptedOutUsers()
 	if err != nil {
@@ -97,7 +32,7 @@ func main() {
 
 	common.OptedOut = append(common.OptedOut, optedOutUsers...)
 
-	mux := Mux{chi.NewRouter()}
+	mux := chi.NewRouter()
 	prometheusMiddleware := chiprometheus.NewPatternMiddleware("reviewdb")
 
 	mux.Use(routes.CorsMiddleware)
@@ -128,27 +63,26 @@ func main() {
 
 	//ReviewDB
 
-	mux.HandleFunc("/api/reviewdb/users", routes.GetUserInfo)
+	mux.Route("/api/reviewdb", func(r chi.Router) {
+		r.HandleFunc("/users/{discordid}/reviews", routes.HandleReviews)
+		r.HandleFunc("/users", routes.GetUserInfo)
+		r.HandleFunc("/reports", routes.ReportReview)
+		r.HandleFunc("/badges", routes.GetAllBadges)
+		r.HandleFunc("/reviews", routes.SearchReview)
+		r.HandleFunc("/settings", routes.Settings)
+		r.HandleFunc("/notifications", routes.Notifications)
+		r.HandleFunc("/settings", routes.Settings)
+		r.Put("/appeals", routes.AppealReview)
+	})
 
 	mux.HandleFunc("/admins", routes.Admins)
 
-	mux.HandleFunc("/api/reviewdb/auth", routes.ReviewDBAuth)
+	mux.Group(func(r chi.Router) {
+		r.Use(httprate.LimitByRealIP(10, 1*time.Hour))
 
-	mux.HandleFunc("/api/reviewdb/users/{discordid}/reviews", routes.HandleReviews)
-
-	mux.HandleFunc("/api/reviewdb/badges", routes.GetAllBadges)
-
-	mux.HandleFunc("/api/reviewdb/reports", routes.ReportReview)
-
-	mux.HandleFunc("/api/reviewdb/reviews", routes.SearchReview)
-
-	mux.HandleFunc("/api/reviewdb/settings", routes.Settings)
-
-	mux.HandleFunc("/api/reviewdb/notifications", routes.Notifications)
-
-	mux.HandleFunc("/api/reviewdb/authweb", routes.ReviewDBAuthWeb)
-
-	mux.Put("/api/reviewdb/appeals", routes.AppealReview)
+		r.HandleFunc("/api/reviewdb/authweb", routes.ReviewDBAuthWeb)
+		r.HandleFunc("/api/reviewdb/auth", routes.ReviewDBAuth)
+	})
 
 	mux.Group(func(r chi.Router) {
 		r.Use(routes.AdminMiddleware)
@@ -161,9 +95,11 @@ func main() {
 		})
 	})
 
-	mux.HandleFunc("/api/reviewdb-twitter/auth", routes.ReviewDBTwitterAuth)
-	mux.HandleFunc("/api/reviewdb-twitter/users/{profileid}/reviews", routes.HandleTwitterRoutes)
-	mux.HandleFunc("/api/reviewdb-twitter/reports", routes.ReportTwitterReview)
+	mux.Route("/api/reviewdb-twitter", func(r chi.Router) {
+		r.HandleFunc("/auth", routes.ReviewDBTwitterAuth)
+		r.HandleFunc("/users/{profileid}/reviews", routes.HandleTwitterRoutes)
+		r.HandleFunc("/reports", routes.ReportTwitterReview)
+	})
 
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
