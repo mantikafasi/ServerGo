@@ -5,14 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/diamondburned/arikawa/v3/discord"
 
 	"golang.org/x/exp/slices"
 
@@ -20,16 +16,18 @@ import (
 	"server-go/database"
 	"server-go/database/schemas"
 
+	discord_utils "server-go/modules/discord"
+
 	"github.com/patrickmn/go-cache"
 	"github.com/uptrace/bun"
 )
 
 type UR_RequestData struct {
-	DiscordID  Snowflake `json:"userid"`
-	Token      string    `json:"token"`
-	ReviewID   int32     `json:"reviewid"`
-	Comment    string    `json:"comment"`
-	ReviewType int       `json:"reviewtype"`
+	DiscordID  discord_utils.Snowflake `json:"userid"`
+	Token      string                  `json:"token"`
+	ReviewID   int32                   `json:"reviewid"`
+	Comment    string                  `json:"comment"`
+	ReviewType int                     `json:"reviewtype"`
 	Sender     struct {
 		Username     string `json:"username"`
 		ProfilePhoto string `json:"profile_photo"`
@@ -157,91 +155,10 @@ func SearchReviews(query string, token string) ([]schemas.UserReview, error) {
 	return reviews, nil
 }
 
-func AddReview(data UR_RequestData) (string, error) {
+func AddReview(reviewer *schemas.URUser, review *schemas.UserReview) (string, error) {
 	var err error
-	var reviewer schemas.URUser
 
-	if !(data.ReviewType == 0 || data.ReviewType == 1) && reviewer.Type != 1 {
-		return "", errors.New(common.INVALID_REVIEW_TYPE)
-	}
-
-	if data.Token == common.Config.StartItBotToken {
-		data.ReviewType = 4 // startit bot review type
-	}
-
-	reviewer, err = GetDBUserViaTokenAndData(data.Token, data)
-
-	if err != nil {
-		return "", errors.New(common.INVALID_TOKEN)
-	}
-
-	if reviewer.Type != 1 && ContainsCustomDiscordEmoji(data.Comment) {
-		return "", errors.New("You are not allowed to use custom emojis")
-	}
-
-	if reviewer.Type != 1 && common.ContainsURL(data.Comment) {
-		return "", errors.New("You are not allowed to have URLs in your review")
-	}
-
-	if reviewer.OptedOut {
-		return "", errors.New(common.OPTED_OUT)
-	}
-
-	if reviewer.IsBanned() {
-		return "", errors.New("You have been banned from ReviewDB until " + reviewer.BanInfo.BanEndDate.Format("2006-01-02 15:04:05") + "UTC")
-	}
-
-	if reviewer.Type == -1 {
-		return "", errors.New("You have been banned from ReviewDB permanently")
-	}
-
-	count, _ := GetReviewCountInLastHour(reviewer.ID)
-	if count > 20 {
-		return "", errors.New("You are reviewing too much")
-	}
-
-	if common.LightProfanityDetector.IsProfane(data.Comment) {
-		return "", errors.New("Your review contains profanity")
-	}
-
-	review := &schemas.UserReview{
-
-		ProfileID:    int64(data.DiscordID),
-		ReviewerID:   reviewer.ID,
-		Comment:      data.Comment,
-		Type:         int32(data.ReviewType),
-		TimestampStr: time.Now(),
-	}
-
-	if common.ProfanityDetector.IsProfane(data.Comment) {
-		review.ID = -1
-		BanUser(reviewer.DiscordID, common.Config.AdminToken, 7, *review)
-		SendLoggerWebhook(WebhookData{
-			Username: "ReviewDB",
-			Content:  "User <@" + reviewer.DiscordID + "> has been banned for 1 week for trying to post a profane review",
-			Embeds: []Embed{
-				{
-					Fields: []EmbedField{
-						{
-							Name:  "Review Content",
-							Value: data.Comment,
-						},
-						{
-							Name:  "ReviewDB ID",
-							Value: strconv.Itoa(int(reviewer.ID)),
-						},
-						{
-							Name:  "Reviewed Profile",
-							Value: "<@" + strconv.FormatInt(int64(data.DiscordID), 10) + ">",
-						},
-					},
-				},
-			},
-		})
-		return "", errors.New("Because of trying to post a profane review, you have been banned from ReviewDB for 1 week")
-	}
-
-	res, err := database.DB.NewUpdate().Where("profile_id = ? AND reviewer_id = ?", data.DiscordID, reviewer.ID).OmitZero().Model(review).Exec(context.Background())
+	res, err := database.DB.NewUpdate().Where("profile_id = ? AND reviewer_id = ?", review.ProfileID, reviewer.ID).OmitZero().Model(review).Exec(context.Background())
 	if err != nil {
 		return common.UPDATE_FAILED, err
 	}
@@ -375,12 +292,12 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	if authUrl == "" {
 		authUrl = "/URauth"
 	}
-	discordToken, err := ExchangeCode(code, common.Config.Origin+authUrl)
+	discordToken, err := discord_utils.ExchangeCode(code, common.Config.Origin+authUrl)
 	if err != nil {
 		return "", err
 	}
 
-	discordUser, err := GetUser(discordToken.AccessToken)
+	discordUser, err := discord_utils.GetUser(discordToken.AccessToken)
 	if err != nil {
 		return "", err
 	}
@@ -390,7 +307,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		DiscordID:    discordUser.ID,
 		Token:        token,
 		Username:     discordUser.Username + "#" + discordUser.Discriminator,
-		AvatarURL:    GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
+		AvatarURL:    discord_utils.GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
 		Type:         0,
 		ClientMods:   []string{clientmod},
 		IpHash:       CalculateHash(ip),
@@ -428,9 +345,9 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		return "An Error occurred", err
 	}
 
-	SendLoggerWebhook(WebhookData{
+	discord_utils.SendLoggerWebhook(discord_utils.WebhookData{
 		Username:  discordUser.Username + "#" + discordUser.Discriminator,
-		AvatarURL: GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
+		AvatarURL: discord_utils.GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
 		Content:   fmt.Sprintf("User <@%s> has been registered to ReviewDB from %s", discordUser.ID, clientmod),
 	})
 
@@ -457,14 +374,6 @@ func GetReview(id int32) (rep schemas.UserReview, err error) {
 	rep.Timestamp = rep.TimestampStr.Unix()
 
 	return
-}
-
-type Trans struct {
-	Sentences []struct {
-		Trans string `json:"trans"`
-	} `json:"sentences"`
-	Src        string  `json:"src"`
-	Confidence float32 `json:"confidence"`
 }
 
 func ReportReview(data UR_RequestData) error {
@@ -505,122 +414,7 @@ func ReportReview(data UR_RequestData) error {
 		ReporterID: user.ID,
 	}
 
-	reviewedUsername := "?"
-	if reviewedUser, err := ArikawaState.User(discord.UserID(review.ProfileID)); err == nil {
-		reviewedUsername = reviewedUser.Tag()
-	}
-
-	sourceLang := ""
-	translatedContent := ""
-	if res, err := http.Get("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&dj=1&source=input&q=" + url.QueryEscape(review.Comment)); err == nil {
-		var trans Trans
-		if err = json.NewDecoder(res.Body).Decode(&trans); err == nil {
-			if trans.Src != "en" && trans.Confidence > 0.3 {
-				sourceLang = " (" + trans.Src + ")"
-				translatedContent = ""
-				for _, sentence := range trans.Sentences {
-					translatedContent += sentence.Trans + "\n"
-				}
-			}
-		}
-	}
-
-	webhookData := WebhookData{
-		Username: "ReviewDB",
-		Content:  "Reported Review",
-		Components: []WebhookComponent{
-			{
-				Type: 1,
-				Components: []WebhookComponent{
-					{
-						Type:     2,
-						Label:    "Delete Review",
-						Style:    4,
-						CustomID: fmt.Sprintf("delete_review:%d", data.ReviewID),
-						Emoji: WebhookEmoji{
-							Name: "🗑️",
-						},
-					},
-					{
-						Type:     2,
-						Label:    "Ban User",
-						Style:    4,
-						CustomID: fmt.Sprintf("ban_select:%s:%d", reportedUser.DiscordID, data.ReviewID), //string(reportedUser.DiscordID)
-						Emoji: WebhookEmoji{
-							Name:     "banned",
-							ID:       "590237837299941382",
-							Animated: true,
-						},
-					},
-					{
-						Type:     2,
-						Label:    "Delete Review and Ban User",
-						Style:    4,
-						CustomID: fmt.Sprintf("select_delete_and_ban:%d:%s", data.ReviewID, string(reportedUser.DiscordID)),
-						Emoji: WebhookEmoji{
-							Name:     "banned",
-							ID:       "590237837299941382",
-							Animated: true,
-						},
-					},
-				},
-			},
-		},
-		Embeds: []Embed{
-			{
-				Fields: []EmbedField{
-					{
-						Name:  "**Review ID**",
-						Value: fmt.Sprint(review.ID),
-					},
-					{
-						Name:  "**Content**",
-						Value: fmt.Sprint(review.Comment),
-					},
-					{
-						Name:  "**Translated Content" + sourceLang + "**",
-						Value: translatedContent,
-					},
-					{
-						Name:  "**Author**",
-						Value: formatUser(reportedUser.Username, reportedUser.ID, reportedUser.DiscordID),
-					},
-					{
-						Name:  "**Reviewed User**",
-						Value: formatUser(reviewedUsername, 0, strconv.FormatInt(review.ProfileID, 10)),
-					},
-					{
-						Name:  "**Reporter**",
-						Value: formatUser(user.Username, user.ID, user.DiscordID),
-					},
-				},
-			},
-		},
-	}
-
-	if translatedContent == "" {
-		embed := webhookData.Embeds[0]
-		// remove translated content field if no translation
-		fields := make([]EmbedField, 0)
-		fields = append(fields, embed.Fields[:2]...)
-		webhookData.Embeds[0].Fields = append(fields, embed.Fields[3:]...)
-	}
-
-	if reportedUser.DiscordID != user.DiscordID {
-		webhookData.Components[0].Components = append(webhookData.Components[0].Components, WebhookComponent{
-			Type:     2,
-			Label:    "Ban Reporter",
-			Style:    4,
-			CustomID: fmt.Sprintf("ban_select:" + user.DiscordID + ":" + "0"),
-			Emoji: WebhookEmoji{
-				Name:     "banned",
-				ID:       "590237837299941382",
-				Animated: true,
-			},
-		})
-	}
-
-	err = SendReportWebhook(webhookData)
+	err = discord_utils.SendReportWebhook(&user, &review, &reportedUser)
 
 	if err != nil {
 		println(err.Error())
@@ -628,13 +422,6 @@ func ReportReview(data UR_RequestData) error {
 
 	database.DB.NewInsert().Model(&report).Exec(context.Background())
 	return nil
-}
-
-func formatUser(username string, id int32, discordId string) string {
-	if id == 0 {
-		return fmt.Sprintf("Username: %v\nDiscord ID: %v (<@%v>)", username, discordId, discordId)
-	}
-	return fmt.Sprintf("Username: %v\nDiscord ID: %v (<@%v>)\nReviewDB ID: %v", username, discordId, discordId, id)
 }
 
 func GetReports() (reports []schemas.ReviewReport, err error) {
@@ -892,7 +679,7 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (s
 		return schemas.URUser{}, errors.New("An Error Occured") //todo maybe convert this to pointer so we can return nil
 	}
 
-	SendLoggerWebhook(WebhookData{
+	discord_utils.SendLoggerWebhook(discord_utils.WebhookData{
 		Username:  username,
 		AvatarURL: profilePhoto,
 		Content:   fmt.Sprintf("User <@%s> has been registered to ReviewDB from StartIT Bot", discordid),
@@ -952,58 +739,10 @@ func GetReportCountInLastHour(userID int32) (int, error) {
 }
 
 func AppealBan(appeal schemas.ReviewDBAppeal, user *schemas.URUser) (err error) {
-	_,err = database.DB.NewInsert().Model(&appeal).Exec(context.Background())
+	_, err = database.DB.NewInsert().Model(&appeal).Exec(context.Background())
 
 	if err == nil {
-		SendAppealWebhook(
-			WebhookData{
-				Username: "ReviewDB Appeals",
-				Embeds: []Embed{
-					{
-						Title: "Appeal Form",
-						Fields: []EmbedField{
-							{
-								Name:  "User",
-								Value: formatUser(user.Username, user.ID, user.DiscordID),
-							},
-							{
-								Name:  "Reason to appeal",
-								Value: appeal.AppealText,
-							},
-							{
-								Name:  "Review Content",
-								Value: user.BanInfo.ReviewContent,
-							},
-						},
-					},
-				},
-				Components: []WebhookComponent{
-					{
-						Type: 1,
-						Components: []WebhookComponent{
-							{
-								Type:     2,
-								Label:    "Accept",
-								Style:    3,
-								CustomID: fmt.Sprintf("accept_appeal:%d", appeal.ID),
-								Emoji: WebhookEmoji{
-									Name: "✅",
-								},
-							},
-							{
-								Type:     2,
-								Label:    "Deny",
-								Style:    4,
-								CustomID: fmt.Sprintf("text_deny_appeal:%d", appeal.ID),
-								Emoji: WebhookEmoji{
-									Name: "❌",
-								},
-							},
-						},
-					},
-				},
-			},
-		)
+		discord_utils.SendAppealWebhook(&appeal, user)
 	}
 
 	return

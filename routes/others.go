@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"server-go/common"
-	"server-go/modules"
 
 	"github.com/go-chi/chi"
 )
@@ -21,10 +20,10 @@ var HandleInteractions = func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)
 		return
 	}
-	var data modules.InteractionsData
+	var data InteractionsData
 
 	json.Unmarshal(message[len(timestamp):], &data)
-	response, err := modules.Interactions(data)
+	response, err := Interactions(data)
 	if err != nil {
 		println(err.Error())
 		w.WriteHeader(500)

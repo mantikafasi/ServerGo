@@ -1,4 +1,4 @@
-package modules
+package discord
 
 import (
 	"context"
@@ -7,15 +7,60 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"server-go/common"
 	"strconv"
 	"strings"
 
 	"github.com/diamondburned/arikawa/v3/state"
-
-	"server-go/common"
-
 	"golang.org/x/oauth2"
 )
+
+type WebhookData struct {
+	Content    string             `json:"content"`
+	Username   string             `json:"username"`
+	AvatarURL  string             `json:"avatar_url"`
+	Embeds     []Embed            `json:"embeds"`
+	Components []WebhookComponent `json:"components"`
+}
+
+type EmbedField struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type EmbedFooter struct {
+	Text         string `json:"text"`
+	IconURL      string `json:"icon_url"`
+	ProxyIconURL string `json:"proxy_icon_url"`
+}
+
+type Embed struct {
+	Title  string       `json:"title"`
+	Fields []EmbedField `json:"fields"`
+	Footer EmbedFooter  `json:"footer"`
+}
+
+type WebhookEmoji struct {
+	Name     string `json:"name,omitempty"`
+	ID       string `json:"id,omitempty"`
+	Animated bool   `json:"animated,omitempty"`
+}
+
+type WebhookComponent struct {
+	Type       int                `json:"type"`
+	Style      int                `json:"style"`
+	Label      string             `json:"label"`
+	Value      string             `json:"value"`
+	CustomID   string             `json:"custom_id"`
+	Emoji      WebhookEmoji       `json:"emoji,omitempty"`
+	Options    []ComponentOption  `json:"options,omitempty"`
+	Components []WebhookComponent `json:"components"`
+}
+
+type ComponentOption struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
+}
 
 var ArikawaState *state.State
 var emojiRegex *regexp.Regexp = regexp.MustCompile(`(<a?)?:\w+:(\d{18,19}>)?`)
@@ -87,69 +132,6 @@ func GetUserViaID(userid int64) (user *DiscordUser, err error) {
 	return nil, err
 }
 
-type EmbedField struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-type Embed struct {
-	Title  string       `json:"title"`
-	Fields []EmbedField `json:"fields"`
-	Footer EmbedFooter  `json:"footer"`
-}
-
-type WebhookEmoji struct {
-	Name     string `json:"name,omitempty"`
-	ID       string `json:"id,omitempty"`
-	Animated bool   `json:"animated,omitempty"`
-}
-
-type WebhookComponent struct {
-	Type       int                `json:"type"`
-	Style      int                `json:"style"`
-	Label      string             `json:"label"`
-	Value      string             `json:"value"`
-	CustomID   string             `json:"custom_id"`
-	Emoji      WebhookEmoji       `json:"emoji,omitempty"`
-	Options    []ComponentOption  `json:"options,omitempty"`
-	Components []WebhookComponent `json:"components"`
-}
-
-type ComponentOption struct {
-	Label string `json:"label"`
-	Value string `json:"value"`
-}
-
-type WebhookData struct {
-	Content    string             `json:"content"`
-	Username   string             `json:"username"`
-	AvatarURL  string             `json:"avatar_url"`
-	Embeds     []Embed            `json:"embeds"`
-	Components []WebhookComponent `json:"components"`
-}
-
-func SendWebhook(url string, data WebhookData) error {
-	body, err := json.Marshal(data)
-	var resp *http.Response
-
-	resp, err = http.Post(url, "application/json", strings.NewReader(string(body)))
-	_, err = io.ReadAll(resp.Body)
-
-	return err
-}
-
-func SendReportWebhook(data WebhookData) error {
-	return SendWebhook(common.Config.ReportWebhook, data)
-}
-
-func SendLoggerWebhook(data WebhookData) error {
-	return SendWebhook(common.Config.LoggerWebhook, data)
-}
-
-func SendAppealWebhook(data WebhookData) error {
-	return SendWebhook(common.Config.AppealWebhook, data)
-}
-
 func GetProfilePhotoURL(userid string, avatar string) string {
 	return fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.%s", userid, avatar, common.Ternary(strings.HasPrefix(avatar, "a_"), "gif", "png"))
 }
@@ -164,4 +146,18 @@ func (s *Snowflake) UnmarshalJSON(v []byte) error {
 
 	*s = Snowflake(parsed)
 	return nil
+}
+
+func SendWebhook(url string, data WebhookData) error {
+	body, err := json.Marshal(data)
+	var resp *http.Response
+
+	resp, err = http.Post(url, "application/json", strings.NewReader(string(body)))
+	_, err = io.ReadAll(resp.Body)
+
+	return err
+}
+
+func SendLoggerWebhook(data WebhookData) error {
+	return SendWebhook(common.Config.LoggerWebhook, data)
 }

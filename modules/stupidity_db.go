@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"log"
 
+	discord_utils "server-go/modules/discord"
 	"server-go/common"
 	"server-go/database"
 	"server-go/database/schemas"
@@ -24,12 +25,12 @@ func CalculateHash(token string) string {
 }
 
 func AddStupidityDBUser(code string) (string, error) {
-	discordToken, err := ExchangeCode(code, common.Config.Origin+"/auth")
+	discordToken, err := discord_utils.ExchangeCode(code, common.Config.Origin+"/auth")
 	if err != nil {
 		return "", err
 	}
 
-	discordUser, err := GetUser(discordToken.AccessToken)
+	discordUser, err := discord_utils.GetUser(discordToken.AccessToken)
 	if err != nil {
 		return "", err
 	}

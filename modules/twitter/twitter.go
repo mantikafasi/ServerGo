@@ -9,6 +9,8 @@ import (
 	"server-go/database/schemas"
 	"server-go/modules"
 
+	discord_utils "server-go/modules/discord"
+
 	"github.com/patrickmn/go-cache"
 )
 
@@ -194,7 +196,7 @@ func AddTwitterUser(code string, ip string) (*schemas.TwitterUser, error) {
 		return nil, errors.New(common.ERROR)
 	}
 
-	modules.SendLoggerWebhook(modules.WebhookData{
+	discord_utils.SendLoggerWebhook(discord_utils.WebhookData{
 		Username:  twitterUser.Data.Username,
 		AvatarURL: twitterUser.Data.AvatarURL,
 		Content:   fmt.Sprintf("User %s (%s) has been registered to ReviewDB Twitter", twitterUser.Data.Username, twitterUser.Data.ID),
@@ -265,7 +267,7 @@ func DeleteReview(user *schemas.TwitterUser, reviewID int32) (err error) {
 	return errors.New("You are not allowed to delete this review")
 }
 
-func ReportReview(user *schemas.TwitterUser,reviewID int32) error {
+func ReportReview(user *schemas.TwitterUser, reviewID int32) error {
 
 	if user.IsBanned() {
 		return errors.New("You cant report reviews while banned")
@@ -299,58 +301,58 @@ func ReportReview(user *schemas.TwitterUser,reviewID int32) error {
 	}
 
 	/*
-	reviewedUsername := "?"
-	if reviewedUser, err := ArikawaState.User(discord.UserID(review.ProfileID)); err == nil {
-		reviewedUsername = reviewedUser.Tag()
-	}
+		reviewedUsername := "?"
+		if reviewedUser, err := ArikawaState.User(discord.UserID(review.ProfileID)); err == nil {
+			reviewedUsername = reviewedUser.Tag()
+		}
 
-			Components: []modules.WebhookComponent{
-			{
-				Type: 1,
 				Components: []modules.WebhookComponent{
-					{
-						Type:     2,
-						Label:    "Delete Review",
-						Style:    4,
-						CustomID: fmt.Sprintf("delete_review:%d", reviewID),
-						Emoji: modules.WebhookEmoji{
-							Name: "🗑️",
+				{
+					Type: 1,
+					Components: []modules.WebhookComponent{
+						{
+							Type:     2,
+							Label:    "Delete Review",
+							Style:    4,
+							CustomID: fmt.Sprintf("delete_review:%d", reviewID),
+							Emoji: modules.WebhookEmoji{
+								Name: "🗑️",
+							},
 						},
-					},
-					{
-						Type:     2,
-						Label:    "Ban User",
-						Style:    4,
-						CustomID: fmt.Sprintf("ban_select:%s:%d", reportedUser.DiscordID, reviewID), //string(reportedUser.DiscordID)
-						Emoji: modules.WebhookEmoji{
-							Name:     "banned",
-							ID:       "590237837299941382",
-							Animated: true,
+						{
+							Type:     2,
+							Label:    "Ban User",
+							Style:    4,
+							CustomID: fmt.Sprintf("ban_select:%s:%d", reportedUser.DiscordID, reviewID), //string(reportedUser.DiscordID)
+							Emoji: modules.WebhookEmoji{
+								Name:     "banned",
+								ID:       "590237837299941382",
+								Animated: true,
+							},
 						},
-					},
-					{
-						Type:     2,
-						Label:    "Delete Review and Ban User",
-						Style:    4,
-						CustomID: fmt.Sprintf("select_delete_and_ban:%d:%s", reviewID, string(reportedUser.DiscordID)),
-						Emoji: modules.WebhookEmoji{
-							Name:     "banned",
-							ID:       "590237837299941382",
-							Animated: true,
+						{
+							Type:     2,
+							Label:    "Delete Review and Ban User",
+							Style:    4,
+							CustomID: fmt.Sprintf("select_delete_and_ban:%d:%s", reviewID, string(reportedUser.DiscordID)),
+							Emoji: modules.WebhookEmoji{
+								Name:     "banned",
+								ID:       "590237837299941382",
+								Animated: true,
+							},
 						},
 					},
 				},
 			},
-		},
 	*/
 
-	webhookData := modules.WebhookData{
+	webhookData := discord_utils.WebhookData{
 		Username: "ReviewDB Twitter",
 		Content:  "Reported Review",
 
-		Embeds: []modules.Embed{
+		Embeds: []discord_utils.Embed{
 			{
-				Fields: []modules.EmbedField{
+				Fields: []discord_utils.EmbedField{
 					{
 						Name:  "**Review ID**",
 						Value: fmt.Sprint(review.ID),
@@ -377,22 +379,22 @@ func ReportReview(user *schemas.TwitterUser,reviewID int32) error {
 	}
 
 	/*
-	if reportedUser.TwitterID != user.TwitterID {
-		webhookData.Components[0].Components = append(webhookData.Components[0].Components, WebhookComponent{
-			Type:     2,
-			Label:    "Ban Reporter",
-			Style:    4,
-			CustomID: fmt.Sprintf("ban_select:" + user.DiscordID + ":" + "0"),
-			Emoji: WebhookEmoji{
-				Name:     "banned",
-				ID:       "590237837299941382",
-				Animated: true,
-			},
-		})
-	}
+		if reportedUser.TwitterID != user.TwitterID {
+			webhookData.Components[0].Components = append(webhookData.Components[0].Components, WebhookComponent{
+				Type:     2,
+				Label:    "Ban Reporter",
+				Style:    4,
+				CustomID: fmt.Sprintf("ban_select:" + user.DiscordID + ":" + "0"),
+				Emoji: WebhookEmoji{
+					Name:     "banned",
+					ID:       "590237837299941382",
+					Animated: true,
+				},
+			})
+		}
 	*/
 
-	err = modules.SendReportWebhook(webhookData)
+	err = discord_utils.SendWebhook(common.Config.ReportWebhook, webhookData)
 
 	if err != nil {
 		println(err.Error())
@@ -401,7 +403,6 @@ func ReportReview(user *schemas.TwitterUser,reviewID int32) error {
 	database.DB.NewInsert().Model(&report).Exec(context.Background())
 	return nil
 }
-
 
 func GetReportCountInLastHour(twitterUserID string) (int, error) {
 	count, err := database.DB.

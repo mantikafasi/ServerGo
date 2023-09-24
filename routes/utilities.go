@@ -3,6 +3,7 @@ package routes
 import (
 	"errors"
 	"net/http"
+	"server-go/common"
 	"server-go/database/schemas"
 	"server-go/modules"
 	twitter_modules "server-go/modules/twitter"
@@ -49,7 +50,7 @@ func Notifications(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if (r.Method == "PATCH") {
+	if r.Method == "PATCH" {
 		notificationId, err := strconv.Atoi(r.URL.Query().Get("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -65,4 +66,14 @@ func Notifications(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
+}
+
+func Error(w http.ResponseWriter, err error) {
+	w.WriteHeader(http.StatusInternalServerError)
+
+	response := Response{}
+	response.Success = false
+	response.Message = err.Error()
+	common.SendStructResponse(w, response)
+	return
 }

@@ -9,8 +9,11 @@ import (
 	"server-go/common"
 	"server-go/database/schemas"
 	"server-go/modules"
+	"server-go/modules/discord"
+	"server-go/modules/filtering"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi"
 	"golang.org/x/exp/slices"
@@ -46,7 +49,7 @@ func AddUserReview(w http.ResponseWriter, r *http.Request) {
 
 	if chi.URLParam(r, "discordid") != "" {
 		discordid, _ := strconv.ParseUint(chi.URLParam(r, "discordid"), 10, 64)
-		data.DiscordID = modules.Snowflake(discordid)
+		data.DiscordID = discord.Snowflake(discordid)
 	}
 
 	if len(data.Comment) > 1000 {
@@ -64,12 +67,38 @@ func AddUserReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := modules.AddReview(data)
+	if data.Token == common.Config.StartItBotToken {
+		data.ReviewType = 4 // startit bot review type
+	}
+
+	reviewer, err := modules.GetDBUserViaTokenAndData(data.Token, data)
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		response.Success = false
-		response.Message = err.Error()
+		Error(w, err)
+		return
+	}
+
+	review := schemas.UserReview{
+		ProfileID:    int64(data.DiscordID),
+		ReviewerID:   reviewer.ID,
+		Comment:      data.Comment,
+		Type:         int32(data.ReviewType),
+		TimestampStr: time.Now(),
+	}
+
+	for _, filterFunction := range filtering.ReviewDB {
+		err = filterFunction(&reviewer, &review)
+
+		if err != nil {
+			Error(w, err)
+			return
+		}
+	}
+
+	res, err := modules.AddReview(&reviewer, &review)
+
+	if err != nil {
+		Error(w, err)
 		println(err.Error())
 	} else {
 		response.Success = true
@@ -311,8 +340,8 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 
 	type UserInfo struct {
 		schemas.URUser
-		LastReviewID int32                `json:"lastReviewID"`
-		UserType     int                  `json:"type"`
+		LastReviewID int32 `json:"lastReviewID"`
+		UserType     int   `json:"type"`
 	}
 
 	token := r.Header.Get("Authorization")

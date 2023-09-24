@@ -1,4 +1,4 @@
-package modules
+package routes
 
 import (
 	"encoding/json"
@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"server-go/common"
 	"server-go/database/schemas"
+	"server-go/modules"
+	discord_utils "server-go/modules/discord"
 	"strconv"
 	"strings"
 
@@ -14,18 +16,12 @@ import (
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
-type EmbedFooter struct {
-	Text         string `json:"text"`
-	IconURL      string `json:"icon_url"`
-	ProxyIconURL string `json:"proxy_icon_url"`
-}
-
 type InteractionsData struct {
 	Type int `json:"type"` // 1 = ping
 	Data struct {
-		ID         string             `json:"custom_id"`
-		Values     []string           `json:"values"`
-		Components []WebhookComponent `json:"components"`
+		ID         string                           `json:"custom_id"`
+		Values     []string                         `json:"values"`
+		Components []discord_utils.WebhookComponent `json:"components"`
 	}
 	Message struct {
 		Content string `json:"content"`
@@ -74,16 +70,15 @@ func BanTimeSelectComponentWithID(userid string, componentID string) discord.Con
 	}
 }
 
-
 func AppealDenyTextComponent(appealID int32) discord.ContainerComponents {
-	
+
 	return discord.ContainerComponents{
 		&discord.ActionRowComponent{
 			&discord.TextInputComponent{
-				Label:        "Deny Reason",
-				Placeholder:  "You wrote such a dumb reason even I could think of a better one",
-				Style:        discord.TextInputParagraphStyle,
-				Required:     true,
+				Label:       "Deny Reason",
+				Placeholder: "You wrote such a dumb reason even I could think of a better one",
+				Style:       discord.TextInputParagraphStyle,
+				Required:    true,
 			},
 		},
 	}
@@ -104,7 +99,7 @@ func Interactions(data InteractionsData) (string, error) {
 
 	action := strings.Split(data.Data.ID, ":")
 
-	if (data.Type == 3 || data.Type == 5) && IsUserAdminDC(userid) {
+	if (data.Type == 3 || data.Type == 5) && modules.IsUserAdminDC(userid) {
 
 		response.Data.Embeds = &[]discord.Embed{{
 			Footer: &discord.EmbedFooter{
@@ -114,7 +109,7 @@ func Interactions(data InteractionsData) (string, error) {
 
 		firstVariable, _ := strconv.ParseInt(action[1], 10, 32) // if action is delete review or delete_and_ban its reviewid otherwise userid
 		if action[0] == "delete_review" {
-			err := DeleteReview(int32(firstVariable), common.Config.AdminToken)
+			err := modules.DeleteReview(int32(firstVariable), common.Config.AdminToken)
 			if err == nil {
 				response.Data.Content = option.NewNullableString("Successfully Deleted review with id " + action[1])
 			} else {
@@ -133,11 +128,11 @@ func Interactions(data InteractionsData) (string, error) {
 			review := schemas.UserReview{}
 
 			if err == nil {
-				review, _ = GetReview(int32(reviewid))
+				review, _ = modules.GetReview(int32(reviewid))
 			}
 
-			err = BanUser(action[1], common.Config.AdminToken, int32(banDuration), review)
-			err2 := DeleteReview(int32(reviewid), common.Config.AdminToken)
+			err = modules.BanUser(action[1], common.Config.AdminToken, int32(banDuration), review)
+			err2 := modules.DeleteReview(int32(reviewid), common.Config.AdminToken)
 
 			if err == nil && err2 == nil {
 				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully deleted review with id %s and banned user %s for %d days", action[2], action[1], int32(banDuration)))
@@ -167,10 +162,10 @@ func Interactions(data InteractionsData) (string, error) {
 			review := schemas.UserReview{}
 
 			if err == nil {
-				review, _ = GetReview(int32(reviewid))
+				review, _ = modules.GetReview(int32(reviewid))
 			}
 
-			err = BanUser(action[1], common.Config.AdminToken, int32(banDuration), review)
+			err = modules.BanUser(action[1], common.Config.AdminToken, int32(banDuration), review)
 			if err == nil {
 				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully banned user %s for %d days", action[1], int32(banDuration)))
 			} else {
@@ -181,11 +176,11 @@ func Interactions(data InteractionsData) (string, error) {
 			response.Data.Components = &discord.ContainerComponents{} // remove components
 
 		} else if action[0] == "accept_appeal" {
-			appeal, err := GetAppeal(int32(firstVariable))
+			appeal, err := modules.GetAppeal(int32(firstVariable))
 			if err != nil {
 				response.Data.Content = option.NewNullableString(err.Error())
 			}
-			err = UnbanUser(appeal.UserID)
+			err = modules.UnbanUser(appeal.UserID)
 
 			if err == nil {
 				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully unbanned user %d", appeal.UserID))
@@ -201,13 +196,13 @@ func Interactions(data InteractionsData) (string, error) {
 			response.Data.CustomID = option.NewNullableString(fmt.Sprintf("deny_appeal:%d", appealId))
 			response.Type = 9 // modal
 		} else if action[0] == "deny_appeal" {
-			appeal, err := GetAppeal(int32(firstVariable))
+			appeal, err := modules.GetAppeal(int32(firstVariable))
 
 			if err != nil {
 				response.Data.Content = option.NewNullableString(err.Error())
 			} else {
 				denyReason := data.Data.Components[0].Components[0].Value
-				err := DenyAppeal(appeal, denyReason)
+				err := modules.DenyAppeal(appeal, denyReason)
 				if err != nil {
 					response.Data.Content = option.NewNullableString(err.Error())
 				} else {

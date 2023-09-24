@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
 )
@@ -11,7 +12,7 @@ import (
 var PublicKeyString string = "a6953fb61ec1e9107fae66ff1c56437c322f561e2f1578b0f52dbcb3d9eda694"
 
 func VerifySignature(signatureString string, message []byte) bool {
-	signature,_ := hex.DecodeString(signatureString)
+	signature, _ := hex.DecodeString(signatureString)
 	publicKey, _ := hex.DecodeString(PublicKeyString)
 	return ed25519.Verify(publicKey, message, signature)
 }
@@ -36,16 +37,30 @@ func ContainsURL(s string) bool {
 }
 
 const (
-	ADDED = "Added your review"
-	ERROR = "An error occurred"
-	UPDATED = "Updated your review"
-	EDITED = "Successfully updated review"
-	DELETED = "Successfully deleted review"
-	UNAUTHORIZED = "Unauthorized"
-	INVALID_TOKEN = "Invalid Token, please reauthenticate from settings"
-	OPTED_OUT = "You have opted out of ReviewDB"
-	INVALID_REVIEW = "Invalid review"
+	ADDED               = "Added your review"
+	ERROR               = "An error occurred"
+	UPDATED             = "Updated your review"
+	EDITED              = "Successfully updated review"
+	DELETED             = "Successfully deleted review"
+	UNAUTHORIZED        = "Unauthorized"
+	INVALID_TOKEN       = "Invalid Token, please reauthenticate from settings"
+	OPTED_OUT           = "You have opted out of ReviewDB"
+	INVALID_REVIEW      = "Invalid review"
 	INVALID_REVIEW_TYPE = "Invalid review type"
-	UPDATE_FAILED = "An Error occurred while updating your review"
+	UPDATE_FAILED       = "An Error occurred while updating your review"
 )
 
+type Translate struct {
+	Sentences []struct {
+		Trans string `json:"trans"`
+	} `json:"sentences"`
+	Src        string  `json:"src"`
+	Confidence float32 `json:"confidence"`
+}
+
+func FormatUser(username string, id int32, discordId string) string {
+	if id == 0 {
+		return fmt.Sprintf("Username: %v\nDiscord ID: %v (<@%v>)", username, discordId, discordId)
+	}
+	return fmt.Sprintf("Username: %v\nDiscord ID: %v (<@%v>)\nReviewDB ID: %v", username, discordId, discordId, id)
+}
