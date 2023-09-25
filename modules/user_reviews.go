@@ -231,6 +231,11 @@ func GetDBUserViaTokenAndData(token string, data UR_RequestData) (user schemas.U
 		user.Notification = nil
 	}
 
+	if err != nil {
+		fmt.Println(err.Error())
+		return schemas.URUser{}, errors.New("Invalid Token")
+	}
+
 	// err = database.DB.NewSelect().
 	// 	Model(&user).
 	// 	Join("LEFT OUTER JOIN user_bans AS ban_info").JoinOn("ban_info.discord_id = ur_user.discord_id AND ban_info.ban_end_date > now()").
