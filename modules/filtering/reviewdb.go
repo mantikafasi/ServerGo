@@ -46,7 +46,7 @@ func init() {
 
 		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
 			if reviewer.IsBanned() {
-				err = errors.New("You have been banned from ReviewDB until " + reviewer.BanInfo.BanEndDate.Format("2006-01-02 15:04:05") + "UTC")
+				err = errors.New("You have been banned from ReviewDB " + common.Ternary(reviewer.Type == -1, "permanently", "until "+reviewer.BanInfo.BanEndDate.Format("2006-01-02 15:04:05")+" UTC"))
 			}
 			return
 		},
