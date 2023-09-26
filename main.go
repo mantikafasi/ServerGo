@@ -64,7 +64,11 @@ func main() {
 	//ReviewDB
 
 	mux.Route("/api/reviewdb", func(r chi.Router) {
-		r.HandleFunc("/users/{discordid}/reviews", routes.HandleReviews)
+		r.Route("/users/{discordid}/reviews", func(r1 chi.Router) {
+			r1.Get("/", routes.GetReviews)
+			r1.Put("/", routes.AddReview)
+			r1.Delete("/", routes.DeleteReview)
+		})
 		r.HandleFunc("/users", routes.GetUserInfo)
 		r.HandleFunc("/reports", routes.ReportReview)
 		r.HandleFunc("/badges", routes.GetAllBadges)

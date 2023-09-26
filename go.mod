@@ -3,6 +3,7 @@ module server-go
 go 1.18
 
 require (
+	github.com/766b/chi-prometheus v0.0.0-20211217152057-87afa9aa2ca8
 	github.com/go-chi/httprate v0.7.4
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_golang v1.16.0
@@ -14,9 +15,7 @@ require (
 )
 
 require (
-	github.com/766b/chi-prometheus v0.0.0-20211217152057-87afa9aa2ca8 // indirect
 	github.com/fatih/color v1.15.0 // indirect
-	github.com/go-chi/chi/v5 v5.0.8 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 )
@@ -25,7 +24,6 @@ require (
 	github.com/TwiN/go-away v1.6.11
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/diamondburned/arikawa v1.3.14 // indirect
 	github.com/diamondburned/arikawa/v3 v3.3.3
 	github.com/go-chi/chi v1.5.5
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -42,7 +40,6 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	golang.org/x/crypto v0.13.0 // indirect
-	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect

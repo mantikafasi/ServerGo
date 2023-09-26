@@ -38,7 +38,7 @@ type ReviewResponse struct {
 	Reviews     []schemas.UserReview `json:"reviews"`
 }
 
-func AddUserReview(w http.ResponseWriter, r *http.Request) {
+func AddReview(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Response
 		Updated bool `json:"updated"`
@@ -183,7 +183,7 @@ func ReportReview(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteReview(w http.ResponseWriter, r *http.Request) {
-	var data modules.UR_RequestData //both reportdata and deletedata are same
+	var data modules.UR_RequestData
 	json.NewDecoder(r.Body).Decode(&data)
 
 	responseData := Response{
@@ -220,14 +220,7 @@ const (
 )
 
 func GetReviews(w http.ResponseWriter, r *http.Request) {
-	var userIDString string
-
-	if r.URL.Query().Get("discordid") == "" {
-		userIDString = chi.URLParam(r, "discordid")
-	} else {
-		userIDString = r.URL.Query().Get("discordid")
-	}
-
+	userIDString := chi.URLParam(r, "discordid")
 	includeReviewsBy := r.URL.Query().Get("always_include_reviews_by")
 
 	userID, _ := strconv.ParseInt(userIDString, 10, 64)
@@ -360,13 +353,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbBadges := modules.GetBadgesOfUser(user.DiscordID)
-	badges := make([]schemas.UserBadge, len(dbBadges))
-	for i, b := range dbBadges {
-		badges[i] = schemas.UserBadge(b)
-	}
-
-	response.Badges = badges
+	response.Badges = modules.GetBadgesOfUser(user.DiscordID)
 
 	json.NewEncoder(w).Encode(response)
 }
@@ -387,21 +374,6 @@ func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 		badges[i] = UserBadge{schemas.UserBadge(b), b.TargetDiscordID}
 	}
 	json.NewEncoder(w).Encode(badges)
-}
-
-var HandleReviews = func(w http.ResponseWriter, r *http.Request) {
-	method := r.Method
-
-	switch method {
-	case "GET":
-		GetReviews(w, r)
-	case "PUT":
-		AddUserReview(w, r)
-	case "DELETE":
-		DeleteReview(w, r)
-	case "REPORT":
-		ReportReview(w, r)
-	}
 }
 
 func SearchReview(w http.ResponseWriter, r *http.Request) {
@@ -506,14 +478,3 @@ func AppealReview(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
-
-/*
-func AppealReview(w http.ResponseWriter,r *http.Request) {
-	var user,err := common.Authorize(r)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
-}
-*/
