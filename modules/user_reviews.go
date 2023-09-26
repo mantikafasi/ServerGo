@@ -584,6 +584,11 @@ func BanUser(userToBan string, adminToken string, banDuration int32, review sche
 	if user.Type == 1 {
 		return errors.New("You can't ban an admin")
 	}
+
+	if user.IsBanned() {
+		return errors.New("This user is already banned")
+	}
+
 	if user.WarningCount >= 3 {
 		_, err := database.DB.NewUpdate().Model(&schemas.URUser{}).Where("discord_id = ?", userToBan).Set("type = -1").Exec(context.Background())
 		if err != nil {
