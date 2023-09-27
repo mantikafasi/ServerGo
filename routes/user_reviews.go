@@ -67,10 +67,6 @@ func AddReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if data.Token == common.Config.StartItBotToken {
-		data.ReviewType = 4 // startit bot review type
-	}
-
 	reviewer, err := modules.GetDBUserViaTokenAndData(data.Token, data)
 
 	if err != nil {
@@ -93,6 +89,10 @@ func AddReview(w http.ResponseWriter, r *http.Request) {
 			Error(w, err)
 			return
 		}
+	}
+
+	if data.Token == common.Config.StartItBotToken {
+		data.ReviewType = 4 // startit bot review type
 	}
 
 	res, err := modules.AddReview(&reviewer, &review)
