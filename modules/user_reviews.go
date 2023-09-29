@@ -763,12 +763,14 @@ func GetAppeal(id int32) (appeal schemas.ReviewDBAppeal, err error) {
 	return
 }
 
-func UnbanUser(userId int32) (err error) {
+func AcceptAppeal(appeal *schemas.ReviewDBAppeal, userId int32) (err error) {
 	_, err = database.DB.NewUpdate().Model(&schemas.URUser{}).Set("type = 0").Set("ban_id = NULL").Set("warning_count = GREATEST(0, warning_count - 1)").Where("id = ?", userId).Exec(context.Background())
 
 	if err != nil {
 		return
 	}
+
+	_, err = database.DB.NewUpdate().Model(appeal).Set("action_taken=true").Exec(context.Background())
 
 	err = SendNotification(&schemas.Notification{
 		UserID:  userId,
@@ -779,7 +781,10 @@ func UnbanUser(userId int32) (err error) {
 	return
 }
 
-func DenyAppeal(appeal schemas.ReviewDBAppeal, denyText string) (err error) {
+func DenyAppeal(appeal *schemas.ReviewDBAppeal, denyText string) (err error) {
+
+	database.DB.NewUpdate().Model(appeal).Set("action_taken=true").Exec(context.Background())
+
 	return SendNotification(&schemas.Notification{
 		UserID: appeal.UserID,
 		Title:  "ReviewDB",

@@ -179,8 +179,14 @@ func Interactions(data InteractionsData) (string, error) {
 			appeal, err := modules.GetAppeal(int32(firstVariable))
 			if err != nil {
 				response.Data.Content = option.NewNullableString(err.Error())
+				return InteractionResponse(&response), nil
 			}
-			err = modules.UnbanUser(appeal.UserID)
+
+			if appeal.ActionTaken {
+				response.Data.Content = option.NewNullableString("Appeal action already taken")
+				return InteractionResponse(&response), nil
+			}
+			err = modules.AcceptAppeal(&appeal, appeal.UserID)
 
 			if err == nil {
 				response.Data.Content = option.NewNullableString(fmt.Sprintf("Successfully unbanned user %d", appeal.UserID))
@@ -200,14 +206,18 @@ func Interactions(data InteractionsData) (string, error) {
 
 			if err != nil {
 				response.Data.Content = option.NewNullableString(err.Error())
+				return InteractionResponse(&response), nil
+			}
+			if appeal.ActionTaken {
+				response.Data.Content = option.NewNullableString("Appeal action already taken")
+				return InteractionResponse(&response), nil
+			}
+			denyReason := data.Data.Components[0].Components[0].Value
+			err = modules.DenyAppeal(&appeal, denyReason)
+			if err != nil {
+				response.Data.Content = option.NewNullableString(err.Error())
 			} else {
-				denyReason := data.Data.Components[0].Components[0].Value
-				err := modules.DenyAppeal(appeal, denyReason)
-				if err != nil {
-					response.Data.Content = option.NewNullableString(err.Error())
-				} else {
-					response.Data.Content = option.NewNullableString("Successfully denied appeal\n\n ```" + denyReason + "```")
-				}
+				response.Data.Content = option.NewNullableString("Successfully denied appeal\n\n ```" + denyReason + "```")
 			}
 		}
 	}
@@ -222,4 +232,9 @@ func Interactions(data InteractionsData) (string, error) {
 		return string(b), nil
 	}
 	return "", errors.New("invalid interaction")
+}
+
+func InteractionResponse(response *api.InteractionResponse) string {
+	b, _ := json.Marshal(response)
+	return string(b)
 }

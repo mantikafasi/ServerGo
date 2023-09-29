@@ -101,10 +101,11 @@ type Notification struct {
 type ReviewDBAppeal struct {
 	bun.BaseModel `bun:"table:appeals"`
 
-	ID         int32  `bun:"id,pk,autoincrement" json:"id"`
-	UserID     int32  `bun:"user_id,type:numeric" json:"-"`
-	BanID      int32  `bun:"ban_id" json:"-"`
-	AppealText string `bun:"appeal_text" json:"appealText"`
+	ID          int32  `bun:"id,pk,autoincrement" json:"id"`
+	UserID      int32  `bun:"user_id,type:numeric" json:"-"`
+	BanID       int32  `bun:"ban_id" json:"-"`
+	AppealText  string `bun:"appeal_text" json:"appealText"`
+	ActionTaken bool   `bun:"action_taken" json:"actionTaken"`
 }
 
 type Sender struct {
