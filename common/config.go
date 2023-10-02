@@ -35,10 +35,12 @@ type ConfigStr struct {
 	Debug                bool      `json:"debug"`
 	ProfaneWordList      []string  `json:"profane_word_list"`
 	LightProfaneWordList []string  `json:"light_profane_word_list"`
+	BanWordList          []string  `json:"ban_word_list"`
 }
 
 var LightProfanityDetector *goaway.ProfanityDetector
 var ProfanityDetector *goaway.ProfanityDetector
+var BanWordDetector *goaway.ProfanityDetector
 
 type ConfigDB struct {
 	IP       string `json:"ip"`
@@ -61,7 +63,8 @@ func LoadConfig() {
 	f.Close()
 
 	ProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(Config.ProfaneWordList, nil, nil)
-	LightProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(Config.LightProfaneWordList, nil,nil)
+	LightProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(Config.LightProfaneWordList, nil, nil)
+	BanWordDetector = goaway.NewProfanityDetector().WithCustomDictionary(Config.BanWordList, nil, nil)
 }
 
 func SaveConfig() {

@@ -1,8 +1,10 @@
 package filtering
 
 import (
+	"context"
 	"errors"
 	"server-go/common"
+	"server-go/database"
 	"server-go/database/schemas"
 	"server-go/modules"
 	discord_utils "server-go/modules/discord"
@@ -19,6 +21,14 @@ func init() {
 		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
 			if !(review.Type == 0 || review.Type == 1) && reviewer.Type != 1 {
 				err = errors.New(common.INVALID_REVIEW_TYPE)
+			}
+			return
+		},
+
+		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
+			if common.BanWordDetector.IsProfane(review.Comment) {
+				database.DB.NewUpdate().Model(&schemas.URUser{}).Set("type", -1).Exec(context.Background())
+				err = errors.New("Your have been banned from reviewdb")
 			}
 			return
 		},
