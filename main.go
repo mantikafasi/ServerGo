@@ -11,6 +11,7 @@ import (
 	"server-go/common"
 	"server-go/database"
 	"server-go/modules"
+	"server-go/modules/discord"
 	"server-go/routes"
 
 	chiprometheus "github.com/766b/chi-prometheus"
@@ -107,6 +108,10 @@ func main() {
 
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
+	})
+
+	discord.SendLoggerWebhook(discord.WebhookData{
+		Content: "Starting Server...",
 	})
 
 	err = http.ListenAndServe(":"+common.Config.Port, mux)
