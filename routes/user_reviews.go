@@ -9,12 +9,12 @@ import (
 	"server-go/common"
 	"server-go/database/schemas"
 	"server-go/modules"
-	"server-go/modules/discord"
 	"server-go/modules/filtering"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/go-chi/chi"
 	"golang.org/x/exp/slices"
 )

@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"regexp"
 	"server-go/common"
-	"strconv"
 	"strings"
 
+	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/state"
 	"golang.org/x/oauth2"
 )
@@ -70,10 +70,10 @@ func init() {
 }
 
 type DiscordUser struct {
-	ID            string `json:"id"`
-	Username      string `json:"username"`
-	Discriminator string `json:"discriminator"`
-	Avatar        string `json:"avatar"`
+	ID            discord.Snowflake `json:"id"`
+	Username      string            `json:"username"`
+	Discriminator string            `json:"discriminator"`
+	Avatar        string            `json:"avatar"`
 }
 
 var oauthEndpoint = oauth2.Endpoint{
@@ -134,18 +134,6 @@ func GetUserViaID(userid int64) (user *DiscordUser, err error) {
 
 func GetProfilePhotoURL(userid string, avatar string) string {
 	return fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.%s", userid, avatar, common.Ternary(strings.HasPrefix(avatar, "a_"), "gif", "png"))
-}
-
-type Snowflake uint64
-
-func (s *Snowflake) UnmarshalJSON(v []byte) error {
-	parsed, err := strconv.ParseUint(strings.Trim(string(v), `"`), 10, 64)
-	if err != nil {
-		return err
-	}
-
-	*s = Snowflake(parsed)
-	return nil
 }
 
 func SendWebhook(url string, data WebhookData) error {

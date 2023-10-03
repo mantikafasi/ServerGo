@@ -36,7 +36,7 @@ func AddStupidityDBUser(code string) (string, error) {
 	}
 	token := GenerateToken()
 
-	var user = &schemas.UserInfo{DiscordID: discordUser.ID, Token: token}
+	var user = &schemas.UserInfo{DiscordID: discordUser.ID.String(), Token: token}
 
 	res, err := database.DB.NewUpdate().Where("discord_id = ?", discordUser.ID).Model(user).Exec(context.Background())
 	if err != nil {

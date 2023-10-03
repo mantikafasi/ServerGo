@@ -18,12 +18,13 @@ import (
 
 	discord_utils "server-go/modules/discord"
 
+	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/patrickmn/go-cache"
 	"github.com/uptrace/bun"
 )
 
 type UR_RequestData struct {
-	DiscordID  discord_utils.Snowflake `json:"userid"`
+	DiscordID  discord.Snowflake `json:"userid"`
 	Token      string                  `json:"token"`
 	ReviewID   int32                   `json:"reviewid"`
 	Comment    string                  `json:"comment"`
@@ -303,16 +304,22 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	}
 
 	discordUser, err := discord_utils.GetUser(discordToken.AccessToken)
+
 	if err != nil {
 		return "", err
 	}
+
+	if discordUser.ID.Time().Before(time.Now().Add(-time.Hour * 24 * 30)) {
+		return "", errors.New("Your account is too new")
+	}
+
 	token := GenerateToken()
 
 	user := &schemas.URUser{
-		DiscordID:    discordUser.ID,
+		DiscordID:    discordUser.ID.String(),
 		Token:        token,
 		Username:     discordUser.Username + "#" + discordUser.Discriminator,
-		AvatarURL:    discord_utils.GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
+		AvatarURL:    discord_utils.GetProfilePhotoURL(discordUser.ID.String(), discordUser.Avatar),
 		Type:         0,
 		ClientMods:   []string{clientmod},
 		IpHash:       CalculateHash(ip),
@@ -322,7 +329,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		user.Username = discordUser.Username
 	}
 
-	dbUser, err := GetDBUserViaDiscordID(discordUser.ID)
+	dbUser, err := GetDBUserViaDiscordID(discordUser.ID.String())
 
 	if dbUser != nil {
 		if dbUser.Type == -1 {
@@ -352,7 +359,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 
 	discord_utils.SendLoggerWebhook(discord_utils.WebhookData{
 		Username:  discordUser.Username + "#" + discordUser.Discriminator,
-		AvatarURL: discord_utils.GetProfilePhotoURL(discordUser.ID, discordUser.Avatar),
+		AvatarURL: discord_utils.GetProfilePhotoURL(discordUser.ID.String(), discordUser.Avatar),
 		Content:   fmt.Sprintf("User <@%s> has been registered to ReviewDB from %s", discordUser.ID, clientmod),
 	})
 
