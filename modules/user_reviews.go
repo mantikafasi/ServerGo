@@ -25,10 +25,10 @@ import (
 
 type UR_RequestData struct {
 	DiscordID  discord.Snowflake `json:"userid"`
-	Token      string                  `json:"token"`
-	ReviewID   int32                   `json:"reviewid"`
-	Comment    string                  `json:"comment"`
-	ReviewType int                     `json:"reviewtype"`
+	Token      string            `json:"token"`
+	ReviewID   int32             `json:"reviewid"`
+	Comment    string            `json:"comment"`
+	ReviewType int               `json:"reviewtype"`
 	Sender     struct {
 		Username     string `json:"username"`
 		ProfilePhoto string `json:"profile_photo"`
@@ -309,7 +309,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		return "", err
 	}
 
-	if discordUser.ID.Time().Before(time.Now().Add(-time.Hour * 24 * 30)) {
+	if discordUser.CreatedAt().Before(time.Now().Add(-time.Hour * 24 * 30)) {
 		return "", errors.New("Your account is too new")
 	}
 
@@ -319,7 +319,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		DiscordID:    discordUser.ID.String(),
 		Token:        token,
 		Username:     discordUser.Username + "#" + discordUser.Discriminator,
-		AvatarURL:    discord_utils.GetProfilePhotoURL(discordUser.ID.String(), discordUser.Avatar),
+		AvatarURL:    discordUser.AvatarURL(),
 		Type:         0,
 		ClientMods:   []string{clientmod},
 		IpHash:       CalculateHash(ip),
@@ -359,7 +359,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 
 	discord_utils.SendLoggerWebhook(discord_utils.WebhookData{
 		Username:  discordUser.Username + "#" + discordUser.Discriminator,
-		AvatarURL: discord_utils.GetProfilePhotoURL(discordUser.ID.String(), discordUser.Avatar),
+		AvatarURL: discordUser.AvatarURL(),
 		Content:   fmt.Sprintf("User <@%s> has been registered to ReviewDB from %s", discordUser.ID, clientmod),
 	})
 

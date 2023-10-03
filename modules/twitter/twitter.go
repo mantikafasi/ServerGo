@@ -11,6 +11,7 @@ import (
 
 	discord_utils "server-go/modules/discord"
 
+	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -350,9 +351,9 @@ func ReportReview(user *schemas.TwitterUser, reviewID int32) error {
 		Username: "ReviewDB Twitter",
 		Content:  "Reported Review",
 
-		Embeds: []discord_utils.Embed{
+		Embeds: []discord.Embed{
 			{
-				Fields: []discord_utils.EmbedField{
+				Fields: []discord.EmbedField{
 					{
 						Name:  "**Review ID**",
 						Value: fmt.Sprint(review.ID),

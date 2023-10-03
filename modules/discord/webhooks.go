@@ -16,9 +16,9 @@ func SendUserBannedWebhook(reviewer *schemas.URUser, review *schemas.UserReview)
 	SendLoggerWebhook(WebhookData{
 		Username: "ReviewDB",
 		Content:  "User <@" + reviewer.DiscordID + "> has been banned for 1 week for trying to post a profane review",
-		Embeds: []Embed{
+		Embeds: []discord.Embed{
 			{
-				Fields: []EmbedField{
+				Fields: []discord.EmbedField{
 					{
 						Name:  "Review Content",
 						Value: review.Comment,
@@ -71,7 +71,7 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 						Label:    "Delete Review",
 						Style:    4,
 						CustomID: fmt.Sprintf("delete_review:%d", review.ID),
-						Emoji: WebhookEmoji{
+						Emoji: discord.ComponentEmoji{
 							Name: "🗑️",
 						},
 					},
@@ -80,9 +80,9 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 						Label:    "Ban User",
 						Style:    4,
 						CustomID: fmt.Sprintf("ban_select:%s:%d", reportedUser.DiscordID, review.ID), //string(reportedUser.DiscordID)
-						Emoji: WebhookEmoji{
+						Emoji: discord.ComponentEmoji{
 							Name:     "banned",
-							ID:       "590237837299941382",
+							ID:       590237837299941382,
 							Animated: true,
 						},
 					},
@@ -91,18 +91,18 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 						Label:    "Delete Review and Ban User",
 						Style:    4,
 						CustomID: fmt.Sprintf("select_delete_and_ban:%d:%s", review.ID, string(reportedUser.DiscordID)),
-						Emoji: WebhookEmoji{
+						Emoji: discord.ComponentEmoji{
 							Name:     "banned",
-							ID:       "590237837299941382",
+							ID:       590237837299941382,
 							Animated: true,
 						},
 					},
 				},
 			},
 		},
-		Embeds: []Embed{
+		Embeds: []discord.Embed{
 			{
-				Fields: []EmbedField{
+				Fields: []discord.EmbedField{
 					{
 						Name:  "**Review ID**",
 						Value: fmt.Sprint(review.ID),
@@ -135,7 +135,7 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 	if translatedContent == "" {
 		embed := webhookData.Embeds[0]
 		// remove translated content field if no translation
-		fields := make([]EmbedField, 0)
+		fields := make([]discord.EmbedField, 0)
 		fields = append(fields, embed.Fields[:2]...)
 		webhookData.Embeds[0].Fields = append(fields, embed.Fields[3:]...)
 	}
@@ -146,9 +146,9 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 			Label:    "Ban Reporter",
 			Style:    4,
 			CustomID: fmt.Sprintf("ban_select:" + reporter.DiscordID + ":" + "0"),
-			Emoji: WebhookEmoji{
+			Emoji: discord.ComponentEmoji{
 				Name:     "banned",
-				ID:       "590237837299941382",
+				ID:       590237837299941382,
 				Animated: true,
 			},
 		})
@@ -163,10 +163,10 @@ func SendAppealWebhook(appeal *schemas.ReviewDBAppeal, user *schemas.URUser) {
 	SendWebhook(common.Config.AppealWebhook,
 		WebhookData{
 			Username: "ReviewDB Appeals",
-			Embeds: []Embed{
+			Embeds: []discord.Embed{
 				{
 					Title: "Appeal Form",
-					Fields: []EmbedField{
+					Fields: []discord.EmbedField{
 						{
 							Name:  "User",
 							Value: common.FormatUser(user.Username, user.ID, user.DiscordID),
@@ -191,7 +191,7 @@ func SendAppealWebhook(appeal *schemas.ReviewDBAppeal, user *schemas.URUser) {
 							Label:    "Accept",
 							Style:    3,
 							CustomID: fmt.Sprintf("accept_appeal:%d", appeal.ID),
-							Emoji: WebhookEmoji{
+							Emoji: discord.ComponentEmoji{
 								Name: "✅",
 							},
 						},
@@ -200,7 +200,7 @@ func SendAppealWebhook(appeal *schemas.ReviewDBAppeal, user *schemas.URUser) {
 							Label:    "Deny",
 							Style:    4,
 							CustomID: fmt.Sprintf("text_deny_appeal:%d", appeal.ID),
-							Emoji: WebhookEmoji{
+							Emoji: discord.ComponentEmoji{
 								Name: "❌",
 							},
 						},
