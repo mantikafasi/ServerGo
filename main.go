@@ -110,9 +110,14 @@ func main() {
 		io.WriteString(w, "An Error occurred\n")
 	})
 
-	discord.SendLoggerWebhook(discord.WebhookData{
+	err = discord.SendLoggerWebhook(discord.WebhookData{
+		Username: "ReviewDB Logger",
 		Content: "Starting Server...",
 	})
+	
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	err = http.ListenAndServe(":"+common.Config.Port, mux)
 	if errors.Is(err, http.ErrServerClosed) {
