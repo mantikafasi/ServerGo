@@ -309,7 +309,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		return "", err
 	}
 
-	if discordUser.CreatedAt().Before(time.Now().Add(-time.Hour * 24 * 30)) {
+	if discordUser.CreatedAt().After(time.Now().Add(-time.Hour * 24 * 30)) {
 		return "", errors.New("Your account is too new")
 	}
 
