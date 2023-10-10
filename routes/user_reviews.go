@@ -16,6 +16,7 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/go-chi/chi"
+	"github.com/mileusna/useragent"
 	"golang.org/x/exp/slices"
 )
 
@@ -304,10 +305,34 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		}
 	*/
 
-	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) && offset == 0 {
+	agent := useragent.Parse(r.Header.Get("User-Agent")).Name
+
+	if (len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) && offset == 0) && agent != "discord" {
 		reviews = append([]schemas.UserReview{{
 			ID:      0,
 			Comment: "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
+			Type:    3,
+			Sender: schemas.Sender{
+				DiscordID:    "1134864775000629298",
+				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",
+				Username:     "Warning",
+				Badges: []schemas.UserBadge{
+					{
+						Name:        "Donor",
+						Icon:        "https://cdn.discordapp.com/emojis/1084121193591885906.webp?size=96&quality=lossless",
+						Description: "This badge is special to donors.",
+						RedirectURL: "https://github.com/sponsors/mantikafasi",
+						Type:        1,
+					},
+				},
+			},
+		}}, reviews...)
+	}
+
+	if (agent == "discord") {
+		reviews = append([]schemas.UserReview{{
+			ID:      0,
+			Comment: "ReviewDB has been removed on latest version of Vencord, if you want to know why and continue using it please take a look at https://reviewdb.mantikafasi.dev/blog/vencord-removal",
 			Type:    3,
 			Sender: schemas.Sender{
 				DiscordID:    "1134864775000629298",
