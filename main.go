@@ -14,7 +14,7 @@ import (
 	"server-go/modules/discord"
 	"server-go/routes"
 
-	chiprometheus "github.com/766b/chi-prometheus"
+	chiprometheus "server-go/middlewares/prometheus"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/httprate"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

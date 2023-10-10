@@ -3,8 +3,8 @@ module server-go
 go 1.18
 
 require (
-	github.com/766b/chi-prometheus v0.0.0-20211217152057-87afa9aa2ca8
 	github.com/go-chi/httprate v0.7.4
+	github.com/mileusna/useragent v1.3.4
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_golang v1.16.0
 	github.com/uptrace/bun v1.1.16
