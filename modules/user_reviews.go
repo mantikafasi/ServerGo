@@ -483,7 +483,7 @@ func DeleteReviewWithData(data UR_RequestData) (err error) {
 		return errors.New("Invalid Token")
 	}
 
-	if (review.User.DiscordID == user.DiscordID) || user.IsAdmin() || data.Token == common.Config.AdminToken {
+	if (review.User.DiscordID == user.DiscordID) || user.IsAdmin() || data.Token == common.Config.AdminToken || user.DiscordID == strconv.FormatInt(review.ProfileID, 10) {
 		LogAction("DELETE", review, user.ID)
 
 		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", data.ReviewID).Exec(context.Background())
