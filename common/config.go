@@ -20,22 +20,24 @@ type Client struct {
 }
 
 type ConfigStr struct {
-	DB                   *ConfigDB `json:"db"`
-	GithubWebhookSecret  string    `json:"github_webhook_secret"`
-	Origin               string    `json:"origin"`
-	Port                 string    `json:"port"`
-	BotToken             string    `json:"bot_token"`
-	ReportWebhook        string    `json:"report_webhook"`
-	AppealWebhook        string    `json:"appeal_webhook"`
-	AdminToken           string    `json:"admin_token"`
-	StartItBotToken      string    `json:"start_it_bot_token"`
-	LoggerWebhook        string    `json:"logger_webhook"`
-	Discord              *Client   `json:"discord"`
-	Twitter              *Client   `json:"twitter"`
-	Debug                bool      `json:"debug"`
-	ProfaneWordList      []string  `json:"profane_word_list"`
-	LightProfaneWordList []string  `json:"light_profane_word_list"`
-	BanWordList          []string  `json:"ban_word_list"`
+	DB                    *ConfigDB `json:"db"`
+	GithubWebhookSecret   string    `json:"github_webhook_secret"`
+	Origin                string    `json:"origin"`
+	Port                  string    `json:"port"`
+	BotToken              string    `json:"bot_token"`
+	ReportWebhook         string    `json:"report_webhook"`
+	JunkReportWebhook     string    `json:"junk_report_webhook"`
+	AppealWebhook         string    `json:"appeal_webhook"`
+	AdminToken            string    `json:"admin_token"`
+	StartItBotToken       string    `json:"start_it_bot_token"`
+	LoggerWebhook         string    `json:"logger_webhook"`
+	Discord               *Client   `json:"discord"`
+	Twitter               *Client   `json:"twitter"`
+	Debug                 bool      `json:"debug"`
+	CommentAnalyzerAPIKey string    `json:"comment_analyzer_api_key"`
+	ProfaneWordList       []string  `json:"profane_word_list"`
+	LightProfaneWordList  []string  `json:"light_profane_word_list"`
+	BanWordList           []string  `json:"ban_word_list"`
 }
 
 var LightProfanityDetector *goaway.ProfanityDetector

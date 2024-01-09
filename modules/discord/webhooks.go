@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"server-go/common"
 	"server-go/database/schemas"
+	commentanaylzer "server-go/modules/commentanalyzer"
+	"slices"
 	"strconv"
 
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -59,6 +61,22 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 		}
 	}
 
+	var commentSuffix string
+
+	analyzation,err := commentanaylzer.AnalyzeComment(common.Ternary(translatedContent != "" && sourceLang != "en" && !slices.Contains(commentanaylzer.SupportedLanguages, sourceLang), translatedContent, review.Comment))
+	if err == nil {
+		if len(analyzation.AttributeScores) == 0 {
+			commentSuffix = ""
+		} else {
+			name,score := commentanaylzer.GetHighestScore(analyzation);
+			commentSuffix = fmt.Sprintf(" (%s - %d%%)", name, int(score * 100))
+		}
+	} else {
+		println(err.Error())
+		commentSuffix = fmt.Sprintf(" (Rating: Error)")
+	}
+
+
 	webhookData := WebhookData{
 		Username: "ReviewDB",
 		Content:  "Reported Review",
@@ -109,7 +127,7 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 					},
 					{
 						Name:  "**Content**",
-						Value: fmt.Sprint(review.Comment),
+						Value: fmt.Sprint(review.Comment,commentSuffix),
 					},
 					{
 						Name:  "**Translated Content" + sourceLang + "**",
@@ -152,10 +170,15 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 				Animated: true,
 			},
 		})
+	}	
+
+
+	if commentSuffix != "" {
+		err = SendWebhook(common.Config.ReportWebhook, webhookData)
+	} else {
+		err = SendWebhook(common.Config.JunkReportWebhook, webhookData)
 	}
-
-	err := SendWebhook(common.Config.ReportWebhook, webhookData)
-
+	
 	return err
 }
 

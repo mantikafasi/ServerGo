@@ -118,9 +118,9 @@ func ReviewDBAuth(w http.ResponseWriter, r *http.Request) {
 
 	if clientmod == "" && !(r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)") {
 		w.WriteHeader(http.StatusInternalServerError)
-		
-		io.WriteString(w, fmt.Sprintf(`{"token": "%s", "success": true}`,modules.GenerateToken()))
-		return;
+
+		io.WriteString(w, fmt.Sprintf(`{"token": "%s", "success": true}`, modules.GenerateToken()))
+		return
 	}
 
 	if clientmod == "" {

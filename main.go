@@ -14,10 +14,10 @@ import (
 	"server-go/modules/discord"
 	"server-go/routes"
 
-	chiprometheus "server-go/middlewares/prometheus"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/httprate"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	chiprometheus "server-go/middlewares/prometheus"
 )
 
 func main() {
@@ -112,9 +112,9 @@ func main() {
 
 	err = discord.SendLoggerWebhook(discord.WebhookData{
 		Username: "ReviewDB Logger",
-		Content: "Starting Server...",
+		Content:  "Starting Server...",
 	})
-	
+
 	if err != nil {
 		fmt.Println(err)
 	}
