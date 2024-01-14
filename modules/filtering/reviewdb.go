@@ -2,6 +2,7 @@ package filtering
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"server-go/common"
 	"server-go/database"
@@ -98,9 +99,10 @@ func init() {
 
 			profileUser := &schemas.URUser{}
 
-			err := database.DB.NewSelect().Column("blocked_users").Model(&schemas.URUser{}).Where("discord_id = ?", review.ProfileID).Scan(context.Background(), profileUser)
+			err := database.DB.NewSelect().Model(&schemas.URUser{}).Column("blocked_users").Where("discord_id = ?", review.ProfileID).Scan(context.Background(), profileUser)
 
-			if err != nil {
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
+				println(err.Error())
 				return errors.New("An Error Occured")
 			}
 
