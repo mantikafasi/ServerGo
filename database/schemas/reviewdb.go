@@ -36,6 +36,18 @@ type URUser struct {
 	BanInfo *ReviewDBBanLog `bun:"rel:has-one,join:ban_id=id" json:"banInfo"`
 }
 
+type BaseRDBUser struct {
+	bun.BaseModel `bun:"table:users"`
+
+	ID           int32         `bun:"id,pk,autoincrement" json:"ID"`
+	DiscordID    string        `bun:"discord_id,type:numeric" json:"discordID"`
+	Username     string        `bun:"username" json:"username"`
+	Type         int32         `bun:"column:type" json:"-"`
+	AvatarURL    string        `bun:"avatar_url" json:"profilePhoto"`
+	Badges       []UserBadge   `bun:"-" json:"badges"`
+	OptedOut     bool          `bun:"opted_out" json:"-"`
+}
+
 type AdminUser struct {
 	bun.BaseModel `bun:"table:users"`
 	DiscordID     string `bun:"discord_id,type:numeric"`

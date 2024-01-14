@@ -502,10 +502,12 @@ func Blocks(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		blocks := user.BlockedUsers
+		blocks,err := modules.GetBlockedUsers(user)
 
-		if blocks == nil {
-			blocks = []string{}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		json.NewEncoder(w).Encode(blocks)

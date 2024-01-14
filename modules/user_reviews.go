@@ -804,6 +804,16 @@ func DenyAppeal(appeal *schemas.ReviewDBAppeal, denyText string) (err error) {
 	})
 }
 
+func GetBlockedUsers(blocker *schemas.URUser) (users []schemas.BaseRDBUser, err error) {
+	if blocker.BlockedUsers == nil {
+		return []schemas.BaseRDBUser{}, nil
+	}
+
+	users = []schemas.BaseRDBUser{}
+	err = database.DB.NewSelect().Model(&users).Where("discord_id IN (?)", bun.In(blocker.BlockedUsers)).Scan(context.Background(), &users)
+	return
+}
+
 func BlockUser(blocker *schemas.URUser, discordID string) (err error) {
 	if len(blocker.BlockedUsers) > 50 {
 		return errors.New("You can block maximum 50 users")

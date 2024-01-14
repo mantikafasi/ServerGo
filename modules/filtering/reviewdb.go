@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"server-go/common"
 	"server-go/database"
 	"server-go/database/schemas"
@@ -102,7 +103,7 @@ func init() {
 			err := database.DB.NewSelect().Model(&schemas.URUser{}).Column("blocked_users").Where("discord_id = ?", review.ProfileID).Scan(context.Background(), profileUser)
 
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
-				println(err.Error())
+				fmt.Println(err)
 				return errors.New("An Error Occured")
 			}
 
