@@ -486,3 +486,40 @@ func AppealReview(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+type BlockRequest struct {
+	Action    string `json:"action"`
+	DiscordID string `json:"discordId"`
+}
+
+func Blocks(w http.ResponseWriter, r *http.Request) {
+	user, err := Authorize(r)
+
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	switch r.Method {
+	case "GET":
+		blocks := user.BlockedUsers
+
+		if blocks == nil {
+			blocks = []string{}
+		}
+
+		json.NewEncoder(w).Encode(blocks)
+		w.WriteHeader(http.StatusOK)
+	case "PATCH":
+		var blockRequest BlockRequest
+		json.NewDecoder(r.Body).Decode(&blockRequest)
+
+		switch blockRequest.Action {
+		case "block":
+			err = modules.BlockUser(user, blockRequest.DiscordID)
+		case "unblock":
+			err = modules.UnblockUser(user, blockRequest.DiscordID)
+		}
+		w.WriteHeader(common.Ternary(err != nil, http.StatusInternalServerError, http.StatusOK))
+	}
+}

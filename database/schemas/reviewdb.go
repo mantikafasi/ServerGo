@@ -29,6 +29,7 @@ type URUser struct {
 	IpHash       string        `bun:"ip_hash" json:"-"`
 	RefreshToken string        `bun:"refresh_token" json:"-"`
 	Notification *Notification `json:"notification" bun:"rel:has-one,join:id=user_id"`
+	BlockedUsers []string       `bun:"blocked_users,array" json:"blockedUsers"`
 
 	BanID int32 `bun:"ban_id" json:"-"`
 

@@ -74,6 +74,7 @@ func main() {
 		r.HandleFunc("/reports", routes.ReportReview)
 		r.HandleFunc("/badges", routes.GetAllBadges)
 		r.HandleFunc("/reviews", routes.SearchReview)
+		r.HandleFunc("/blocks", routes.Blocks)
 		r.HandleFunc("/settings", routes.Settings)
 		r.HandleFunc("/notifications", routes.Notifications)
 		r.HandleFunc("/settings", routes.Settings)

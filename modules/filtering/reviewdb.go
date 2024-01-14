@@ -8,6 +8,7 @@ import (
 	"server-go/database/schemas"
 	"server-go/modules"
 	discord_utils "server-go/modules/discord"
+	"slices"
 )
 
 type FilterFunction func(user *schemas.URUser, review *schemas.UserReview) error
@@ -91,6 +92,22 @@ func init() {
 				err = errors.New("Because of trying to post a profane review, you have been banned from ReviewDB for 1 week")
 			}
 			return
+		},
+		func(user *schemas.URUser, review *schemas.UserReview) error {
+			// check if user is blocked from profile
+
+			profileUser := &schemas.URUser{}
+
+			err := database.DB.NewSelect().Column("blocked_users").Model(&schemas.URUser{}).Where("discord_id = ?", review.ProfileID).Scan(context.Background(), profileUser)
+
+			if err != nil {
+				return errors.New("An Error Occured")
+			}
+
+			if profileUser.BlockedUsers != nil && slices.Contains(profileUser.BlockedUsers, user.DiscordID) {
+				return errors.New("You are blocked from commenting this profile")
+			}
+			return nil
 		},
 	}
 }

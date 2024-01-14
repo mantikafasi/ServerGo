@@ -803,3 +803,17 @@ func DenyAppeal(appeal *schemas.ReviewDBAppeal, denyText string) (err error) {
 		`, denyText),
 	})
 }
+
+func BlockUser(blocker *schemas.URUser, discordID string) (err error) {
+	if len(blocker.BlockedUsers) > 50 {
+		return errors.New("You can block maximum 50 users")
+	}
+
+	_, err = database.DB.NewUpdate().Model(&schemas.URUser{}).Set("blocked_users = array_append(blocked_users, ?)", discordID).Where("id = ?", blocker.ID).Exec(context.Background())
+	return
+}
+
+func UnblockUser(blocker *schemas.URUser, discordID string) (err error) {
+	_, err = database.DB.NewUpdate().Model(&schemas.URUser{}).Set("blocked_users = array_remove(blocked_users, ?)", discordID).Where("id = ?", blocker.ID).Exec(context.Background())
+	return
+}
