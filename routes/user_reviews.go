@@ -62,10 +62,21 @@ func AddReview(w http.ResponseWriter, r *http.Request) {
 		response.Message = "This user opted out"
 	}
 
+	if r.Header.Get("Authorization") != "" {
+		data.Token = r.Header.Get("Authorization")
+	}
+
+	if data.Token == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		response.Message = "Invalid Request"
+		return
+	}
+
 	if response.Message != "" {
 		common.SendStructResponse(w, response)
 		return
 	}
+
 
 	reviewer, err := modules.GetDBUserViaTokenAndData(data.Token, data)
 
@@ -171,6 +182,10 @@ func ReportReview(w http.ResponseWriter, r *http.Request) {
 
 	response := Response{}
 
+	if r.Header.Get("Authorization") != "" {
+		data.Token = r.Header.Get("Authorization")
+	}
+
 	if data.Token == "" || data.ReviewID == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		response.Message = "Invalid Request"
@@ -244,17 +259,18 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	count := 0
 
 	if slices.Contains(common.OptedOut, fmt.Sprint(userID)) {
-		reviews = append([]schemas.UserReview{{
+		reviews = []schemas.UserReview{{
 			ID: 0,
 			Sender: schemas.Sender{
 				ID:           0,
 				Username:     "ReviewDB",
-				ProfilePhoto: "https://cdn.discordapp.com/attachments/527211215785820190/1079358371481800725/c4b7353e759983f5a3d686c7937cfab7.png?size=128",
+				ProfilePhoto: "https://cdn.discordapp.com/avatars/1134864775000629298/3f87ad315b32ee464d84f1270c8d1b37.webp?size=100",
 				DiscordID:    "287555395151593473",
 				Badges:       []schemas.UserBadge{},
 			}, Comment: "This user has opted out of ReviewDB. It means you cannot review this user.",
 			Type: 3,
-		}})
+		}}
+
 		response.Reviews = reviews
 		response.Success = true
 		common.SendStructResponse(w, response)
@@ -336,7 +352,6 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUserInfo(w http.ResponseWriter, r *http.Request) {
-	//modules.GetLastReviewID(user.DiscordID)
 	var data modules.UR_RequestData
 
 	type UserInfo struct {
