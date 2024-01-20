@@ -300,13 +300,15 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	}
 	discordToken, err := discord_utils.ExchangeCode(code, common.Config.Origin+authUrl)
 	if err != nil {
-		return "", err
+		fmt.Println(err)
+		return "", errors.New("Invalid Code")
 	}
 
 	discordUser, err := discord_utils.GetUser(discordToken.AccessToken)
 
 	if err != nil {
-		return "", err
+		fmt.Println(err)
+		return "", errors.New(common.ERROR)
 	}
 
 	if discordUser.CreatedAt().After(time.Now().Add(-time.Hour * 24 * 30)) {
@@ -354,7 +356,8 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 
 	_, err = database.DB.NewInsert().Model(user).Exec(context.Background())
 	if err != nil {
-		return "An Error occurred", err
+		fmt.Println(err)
+		return "An Error occurred", errors.New(common.ERROR)
 	}
 
 	discord_utils.SendLoggerWebhook(discord_utils.WebhookData{

@@ -80,7 +80,6 @@ func AddReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	reviewer, err := modules.GetDBUserViaTokenAndData(data.Token, data)
 
 	if err != nil {
@@ -155,7 +154,10 @@ func ReviewDBAuth(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, `{"token": "", "success": false}`)
+		common.SendStructResponse(w, ReviewDBAuthResponse{
+			Token:   "",
+			Message: err.Error(),
+		})
 		return
 	}
 
@@ -524,7 +526,7 @@ func Blocks(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		blocks,err := modules.GetBlockedUsers(user)
+		blocks, err := modules.GetBlockedUsers(user)
 
 		if err != nil {
 			fmt.Println(err)
