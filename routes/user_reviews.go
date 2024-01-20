@@ -217,6 +217,10 @@ func DeleteReview(w http.ResponseWriter, r *http.Request) {
 		Message: "",
 	}
 
+	if r.Header.Get("Authorization") != "" {
+		data.Token = r.Header.Get("Authorization")
+	}
+
 	if data.Token == "" || data.ReviewID == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		responseData.Message = "Invalid Request"
