@@ -54,12 +54,15 @@ func AddReview(w http.ResponseWriter, r *http.Request) {
 
 	if len(data.Comment) > 1000 {
 		response.Message = "Comment Too Long"
+		w.WriteHeader(http.StatusBadRequest)
 	} else if len(strings.TrimSpace(data.Comment)) == 0 {
 		response.Message = "Write Something Guh"
+		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	if slices.Contains(common.OptedOut, fmt.Sprint(data.DiscordID)) {
 		response.Message = "This user opted out"
+		w.WriteHeader(http.StatusNotAcceptable) // it probably doesnt make sense but trolley
 	}
 
 	if r.Header.Get("Authorization") != "" {
