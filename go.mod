@@ -42,6 +42,7 @@ require (
 	github.com/TwiN/go-away v1.6.11
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/diamondburned/arikawa v1.3.14
 	github.com/diamondburned/arikawa/v3 v3.3.3
 	github.com/go-chi/chi v1.5.5
 	github.com/golang/protobuf v1.5.3 // indirect

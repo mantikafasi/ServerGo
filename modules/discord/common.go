@@ -94,3 +94,24 @@ func SendWebhook(url string, data WebhookData) error {
 func SendLoggerWebhook(data WebhookData) error {
 	return SendWebhook(common.Config.LoggerWebhook, data)
 }
+
+func RefreshToken(token string) (*oauth2.Token, error) {
+	conf := &oauth2.Config{
+		Endpoint:     oauthEndpoint,
+		Scopes:       []string{"identify"},
+		ClientID:     common.Config.Discord.ClientID,
+		ClientSecret: common.Config.Discord.ClientSecret,
+	}
+
+	tok := &oauth2.Token{
+		RefreshToken: token,
+	}
+
+	newToken, err := conf.TokenSource(context.Background(), tok).Token()
+
+	if err != nil {
+		return nil, err
+	} else {
+		return newToken, nil
+	}
+}

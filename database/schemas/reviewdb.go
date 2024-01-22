@@ -16,20 +16,22 @@ const (
 type URUser struct {
 	bun.BaseModel `bun:"table:users"`
 
-	ID           int32         `bun:"id,pk,autoincrement" json:"ID"`
-	DiscordID    string        `bun:"discord_id,type:numeric" json:"discordID"`
-	Token        string        `bun:"token" json:"-"`
-	Username     string        `bun:"username" json:"username"`
-	Type         int32         `bun:"column:type" json:"-"`
-	AvatarURL    string        `bun:"avatar_url" json:"profilePhoto"`
-	ClientMods   []string      `bun:"client_mods,array" json:"clientMods"`
-	WarningCount int32         `bun:"warning_count" json:"warningCount"`
-	Badges       []UserBadge   `bun:"-" json:"badges"`
-	OptedOut     bool          `bun:"opted_out" json:"-"`
-	IpHash       string        `bun:"ip_hash" json:"-"`
-	RefreshToken string        `bun:"refresh_token" json:"-"`
-	Notification *Notification `json:"notification" bun:"rel:has-one,join:id=user_id"`
-	BlockedUsers []string       `bun:"blocked_users,array" json:"blockedUsers"`
+	ID                int32         `bun:"id,pk,autoincrement" json:"ID"`
+	DiscordID         string        `bun:"discord_id,type:numeric" json:"discordID"`
+	Token             string        `bun:"token" json:"-"`
+	Username          string        `bun:"username" json:"username"`
+	Type              int32         `bun:"column:type" json:"-"`
+	AvatarURL         string        `bun:"avatar_url" json:"profilePhoto"`
+	ClientMods        []string      `bun:"client_mods,array" json:"clientMods"`
+	WarningCount      int32         `bun:"warning_count" json:"warningCount"`
+	Badges            []UserBadge   `bun:"-" json:"badges"`
+	OptedOut          bool          `bun:"opted_out" json:"-"`
+	IpHash            string        `bun:"ip_hash" json:"-"`
+	RefreshToken      string        `bun:"refresh_token" json:"-"`
+	AccessToken       string        `bun:"access_token" json:"-"`
+	AccessTokenExpiry time.Time     `bun:"access_token_expiry" json:"-"`
+	Notification      *Notification `json:"notification" bun:"rel:has-one,join:id=user_id"`
+	BlockedUsers      []string      `bun:"blocked_users,array" json:"blockedUsers"`
 
 	BanID int32 `bun:"ban_id" json:"-"`
 
@@ -39,13 +41,13 @@ type URUser struct {
 type BaseRDBUser struct {
 	bun.BaseModel `bun:"table:users"`
 
-	ID           int32         `bun:"id,pk,autoincrement" json:"ID"`
-	DiscordID    string        `bun:"discord_id,type:numeric" json:"discordID"`
-	Username     string        `bun:"username" json:"username"`
-	Type         int32         `bun:"column:type" json:"-"`
-	AvatarURL    string        `bun:"avatar_url" json:"profilePhoto"`
-	Badges       []UserBadge   `bun:"-" json:"badges"`
-	OptedOut     bool          `bun:"opted_out" json:"-"`
+	ID        int32       `bun:"id,pk,autoincrement" json:"ID"`
+	DiscordID string      `bun:"discord_id,type:numeric" json:"discordID"`
+	Username  string      `bun:"username" json:"username"`
+	Type      int32       `bun:"column:type" json:"-"`
+	AvatarURL string      `bun:"avatar_url" json:"profilePhoto"`
+	Badges    []UserBadge `bun:"-" json:"badges"`
+	OptedOut  bool        `bun:"opted_out" json:"-"`
 }
 
 type AdminUser struct {
