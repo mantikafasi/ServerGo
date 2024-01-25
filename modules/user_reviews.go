@@ -321,11 +321,12 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	user := &schemas.URUser{
 		DiscordID:    discordUser.ID.String(),
 		Token:        token,
-		Username:     discordUser.Username + "#" + discordUser.Discriminator,
+		Username:     common.Ternary(discordUser.Discriminator == "0", discordUser.Username, discordUser.Username+"#"+discordUser.Discriminator),
 		AvatarURL:    discordUser.AvatarURL(),
 		Type:         0,
 		ClientMods:   []string{clientmod},
 		IpHash:       CalculateHash(ip),
+		AccessToken:  discordToken.AccessToken,
 		RefreshToken: discordToken.RefreshToken,
 	}
 	if discordUser.Discriminator == "0" {
@@ -346,6 +347,11 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		if !slices.Contains(dbUser.ClientMods, clientmod) {
 			dbUser.ClientMods = append(dbUser.ClientMods, clientmod)
 		}
+
+		dbUser.AccessToken = discordToken.AccessToken
+		dbUser.RefreshToken = discordToken.RefreshToken
+		dbUser.Username = user.Username
+		dbUser.AvatarURL = discordUser.AvatarURL()
 
 		_, err = database.DB.NewUpdate().Where("id = ?", dbUser.ID).Model(dbUser).Exec(context.Background())
 		if err != nil {

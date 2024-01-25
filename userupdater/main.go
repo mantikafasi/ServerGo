@@ -67,7 +67,7 @@ func main() {
 					token, err := discord_utlils.RefreshToken(user.RefreshToken)
 					if err != nil {
 
-						if err.Error() == "invalid_grant" {
+						if err.Error() == "oauth2: \"invalid_grant\"" {
 							// refresh token expired, delete it
 							user.RefreshToken = ""
 							user.AccessToken = ""
