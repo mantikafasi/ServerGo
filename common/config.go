@@ -33,6 +33,7 @@ type ConfigStr struct {
 	LoggerWebhook         string    `json:"logger_webhook"`
 	Discord               *Client   `json:"discord"`
 	Twitter               *Client   `json:"twitter"`
+	Github                *Client   `json:"github"`
 	Debug                 bool      `json:"debug"`
 	CommentAnalyzerAPIKey string    `json:"comment_analyzer_api_key"`
 	ProfaneWordList       []string  `json:"profane_word_list"`

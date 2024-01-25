@@ -17,6 +17,7 @@ import (
 	"server-go/database/schemas"
 
 	discord_utils "server-go/modules/discord"
+	"server-go/modules/github"
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/patrickmn/go-cache"
@@ -828,5 +829,33 @@ func BlockUser(blocker *schemas.URUser, discordID string) (err error) {
 
 func UnblockUser(blocker *schemas.URUser, discordID string) (err error) {
 	_, err = database.DB.NewUpdate().Model(&schemas.URUser{}).Set("blocked_users = array_remove(blocked_users, ?)", discordID).Where("id = ?", blocker.ID).Exec(context.Background())
+	return
+}
+
+func LinkGithub(githubCode string, user *schemas.URUser) (err error) {
+	token, err := github.ExchangeCode(githubCode)
+	if err != nil {
+		return
+	}
+
+	userInfo, err := github.GetUserInfo(token.AccessToken)
+
+	if err != nil {
+		return
+	}
+
+	tokenEntry := schemas.Oauth2Token{
+		UserId:       user.ID,
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+		Expiry:       token.Expiry,
+		Provider:     "github",
+		Username:     userInfo.Login,
+		Avatar:       userInfo.AvatarURL,
+		ProviderId:   userInfo.NodeID,
+	}
+
+	_, err = database.DB.NewInsert().Model(&tokenEntry).Exec(context.Background())
+
 	return
 }

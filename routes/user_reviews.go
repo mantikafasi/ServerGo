@@ -549,3 +549,20 @@ func Blocks(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(common.Ternary(err != nil, http.StatusInternalServerError, http.StatusOK))
 	}
 }
+
+
+func LinkGithub(w http.ResponseWriter, r *http.Request) {
+
+	user,err := Authorize(r)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	err = modules.LinkGithub(r.URL.Query().Get("code"), user)
+	if err != nil {
+		http.Error(w, "An error occured", http.StatusInternalServerError)
+		return
+	}
+}

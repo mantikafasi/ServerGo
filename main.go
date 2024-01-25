@@ -107,6 +107,8 @@ func main() {
 		r.HandleFunc("/reports", routes.ReportTwitterReview)
 	})
 
+	mux.HandleFunc("/api/reviewdb/oauth/github", routes.LinkGithub)
+
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "An Error occurred\n")
 	})

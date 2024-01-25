@@ -23,6 +23,7 @@ func CreateReviewDBSchemas() error {
 		(*schemas.UserBadge)(nil),
 		(*schemas.ReviewDBBanLog)(nil),
 		(*schemas.Notification)(nil),
+		(*schemas.Oauth2Token)(nil),
 	}
 
 	for _, model := range models {
