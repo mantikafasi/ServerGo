@@ -50,6 +50,12 @@ func main() {
 				user := allUsers[len(allUsers)-1]
 
 				allUsers = allUsers[:len(allUsers)-1]
+				
+				// DO NOT UPDATE WARWNING
+				if user.DiscordID == "1134864775000629298" {
+					continue
+				}
+				
 				if user.RefreshToken == "" {
 					botUsers = append(botUsers, user)
 
@@ -57,11 +63,6 @@ func main() {
 					continue
 				}
 				lock.Unlock()
-
-				// DO NOT UPDATE WARWNING
-				if user.DiscordID == "1134864775000629298" {
-					continue
-				}
 
 				if user.AccessTokenExpiry.Before(time.Now()) {
 					token, err := discord_utlils.RefreshToken(user.RefreshToken)
