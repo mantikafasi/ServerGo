@@ -51,8 +51,9 @@ func main() {
 
 				allUsers = allUsers[:len(allUsers)-1]
 				
-				// DO NOT UPDATE WARWNING
+				// DO NOT UPDATE WARNING
 				if user.DiscordID == "1134864775000629298" {
+					lock.Unlock()
 					continue
 				}
 				
@@ -73,7 +74,15 @@ func main() {
 							user.RefreshToken = ""
 							user.AccessToken = ""
 							user.AccessTokenExpiry = time.Time{}
-							database.DB.NewUpdate().Model(&user).Where("id = ?", user.ID).Exec(context.Background())
+
+							// surely not using lock wont cause any problem :trol:
+							botUsers = append(botUsers, user)
+
+							_,err = database.DB.NewUpdate().Model(&user).Where("id = ?", user.ID).Exec(context.Background())
+							if err != nil {
+								fmt.Println(err)
+							}
+
 							continue
 						}
 
