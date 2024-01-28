@@ -75,8 +75,10 @@ func main() {
 							user.AccessToken = ""
 							user.AccessTokenExpiry = time.Time{}
 
-							// surely not using lock wont cause any problem :trol:
+							// ven explode
+							lock.Lock()
 							botUsers = append(botUsers, user)
+							lock.Unlock()
 
 							_,err = database.DB.NewUpdate().Model(&user).Where("id = ?", user.ID).Exec(context.Background())
 							if err != nil {
