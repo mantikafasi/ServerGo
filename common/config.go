@@ -46,10 +46,11 @@ var ProfanityDetector *goaway.ProfanityDetector
 var BanWordDetector *goaway.ProfanityDetector
 
 type ConfigDB struct {
-	IP       string `json:"ip"`
-	User     string `json:"user"`
-	Password string `json:"password"`
-	Name     string `json:"db"`
+	IP        string `json:"ip"`
+	User      string `json:"user"`
+	Password  string `json:"password"`
+	Name      string `json:"db"`
+	UseSocket bool   `json:"use_socket"`
 }
 
 var Config *ConfigStr

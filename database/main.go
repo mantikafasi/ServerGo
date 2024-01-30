@@ -18,12 +18,27 @@ var DB *bun.DB
 
 func InitDB() {
 	config := common.Config
-	DB = bun.NewDB(sql.OpenDB(pgdriver.NewConnector(
-		pgdriver.WithAddr(config.DB.IP),
+
+	connectorOptions := []pgdriver.Option{
 		pgdriver.WithUser(config.DB.User),
 		pgdriver.WithPassword(config.DB.Password),
 		pgdriver.WithDatabase(config.DB.Name),
 		pgdriver.WithTLSConfig(nil),
+	}
+
+	if config.DB.UseSocket {
+		connectorOptions = append(connectorOptions,
+			pgdriver.WithAddr("/var/run/postgresql/.s.PGSQL.5432"),
+			pgdriver.WithNetwork("unix"),
+		)
+	} else {
+		connectorOptions = append(connectorOptions,
+			pgdriver.WithAddr(config.DB.IP),
+		)
+	}
+
+	DB = bun.NewDB(sql.OpenDB(pgdriver.NewConnector(
+		connectorOptions...,
 	)), pgdialect.New())
 
 	if config.Debug {

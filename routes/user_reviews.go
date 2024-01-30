@@ -174,6 +174,7 @@ func ReviewDBAuthWeb(w http.ResponseWriter, r *http.Request) {
 	token, err := modules.AddUserReviewsUser(r.URL.Query().Get("code"), "website", "/api/reviewdb/authweb", r.Header.Get("CF-Connecting-IP"))
 
 	if err != nil {
+		fmt.Println(err)
 		http.Redirect(w, r, common.WEBSITE+"/error ", http.StatusTemporaryRedirect)
 		return
 	}
