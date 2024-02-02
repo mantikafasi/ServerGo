@@ -9,3 +9,4 @@ artgallery
 *.json
 artgallery2/
 .idea
+artgallery/static/swagger

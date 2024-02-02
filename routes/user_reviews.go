@@ -130,8 +130,6 @@ func ReviewDBAuth(w http.ResponseWriter, r *http.Request) {
 	clientmod := r.URL.Query().Get("clientMod")
 
 	if clientmod == "" && !(r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)") {
-		w.WriteHeader(http.StatusInternalServerError)
-
 		io.WriteString(w, fmt.Sprintf(`{"token": "%s", "success": true}`, modules.GenerateToken()))
 		return
 	}
@@ -309,7 +307,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	for i, j := 0, len(reviews)-1; i < j; i, j = i+1, j-1 {
 		reviews[i], reviews[j] = reviews[j], reviews[i]
-	}
+	}	
 
 	/*
 		if (len(reviews) > 8 && offset == 0) {

@@ -9,6 +9,7 @@ import (
 	"server-go/database"
 	"server-go/database/schemas"
 	"server-go/modules"
+	"server-go/modules/bitmask"
 	discord_utils "server-go/modules/discord"
 	"slices"
 )
@@ -37,8 +38,8 @@ func init() {
 		},
 
 		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
-			if reviewer.Type != 1 && discord_utils.ContainsCustomDiscordEmoji(review.Comment) {
-				err = errors.New("You are not allowed to use custom emojis")
+			if reviewer.Type != 1 && !bitmask.CheckFlag(reviewer.Flags, bitmask.UserDonor) && discord_utils.ContainsCustomDiscordEmoji(review.Comment) {
+				err = errors.New("Only ReviewDB donors are allowed to use custom emojis")
 			}
 			return
 		},
