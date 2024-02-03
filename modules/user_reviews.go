@@ -865,3 +865,8 @@ func LinkGithub(githubCode string, user *schemas.URUser) (err error) {
 
 	return
 }
+
+func ResetToken(discordId string) (err error) {
+	_, err = database.DB.NewUpdate().Model(&schemas.URUser{}).Set("token = ?", GenerateToken()).Where("discord_id = ?", discordId).Exec(context.Background())
+	return
+}
