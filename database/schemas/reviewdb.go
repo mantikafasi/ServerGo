@@ -39,6 +39,32 @@ type URUser struct {
 	BanInfo *ReviewDBBanLog `bun:"rel:has-one,join:ban_id=id" json:"banInfo"`
 }
 
+type ReviewDBUserFull struct {
+	bun.BaseModel `bun:"table:users"`
+
+	ID                int32         `bun:"id,pk,autoincrement" json:"id"`
+	DiscordID         string        `bun:"discord_id,type:numeric" json:"discord_id"`
+	Token             string        `bun:"token" json:"-"`
+	Username          string        `bun:"username" json:"username"`
+	Type              int32         `bun:"column:type" json:"type"`
+	AvatarURL         string        `bun:"avatar_url" json:"profile_photo"`
+	ClientMods        []string      `bun:"client_mods,array" json:"client_mods"`
+	WarningCount      int32         `bun:"warning_count" json:"warning_count"`
+	Badges            []UserBadge   `bun:"-" json:"badges"`
+	OptedOut          bool          `bun:"opted_out" json:"opted_out"`
+	IpHash            string        `bun:"ip_hash" json:"ip_hash"`
+	RefreshToken      string        `bun:"refresh_token" json:"-"`
+	AccessToken       string        `bun:"access_token" json:"-"`
+	AccessTokenExpiry time.Time     `bun:"access_token_expiry" json:"-"`
+	Notification      *Notification `json:"notification" bun:"rel:has-one,join:id=user_id"`
+	BlockedUsers      []string      `bun:"blocked_users,array" json:"blocked_users"`
+	Flags             int32         `bun:"flags" json:"flags"`
+
+	BanID int32 `bun:"ban_id" json:"-"`
+
+	BanInfo *ReviewDBBanLog `bun:"rel:has-one,join:ban_id=id" json:"ban_info"`
+}
+
 type BaseRDBUser struct {
 	bun.BaseModel `bun:"table:users"`
 
@@ -60,9 +86,11 @@ type AdminUser struct {
 type ReviewReport struct {
 	bun.BaseModel `bun:"table:reports"`
 
-	ID         int32 `bun:"id,pk,autoincrement"`
-	ReviewID   int32 `bun:"review_id"`
-	ReporterID int32 `bun:"reporter_id"`
+	ID         int32            `bun:"id,pk,autoincrement"`
+	ReviewID   int32            `bun:"review_id"`
+	ReporterID int32            `bun:"reporter_id"`
+	Review     UserReviewBasic  `bun:"rel:has-one,join:review_id=id" json:"review"`
+	Reporter   ReviewDBUserFull `bun:"rel:has-one,join:reporter_id=id" json:"reporter"`
 }
 
 type ReviewDBBanLog struct {
@@ -145,6 +173,18 @@ type UserReview struct {
 
 	User       *URUser `bun:"rel:belongs-to,join:reviewer_id=id" json:"-"`
 	ReviewerID int32   `bun:"reviewer_id" json:"-"`
+}
+
+type UserReviewBasic struct {
+	bun.BaseModel `bun:"table:reviews"`
+
+	ID           int32     `bun:"id,pk,autoincrement" json:"id"`
+	ProfileID    int64     `bun:"profile_id,type:numeric" json:"-"`
+	Comment      string    `bun:"comment" json:"comment"`
+	Type         int32     `bun:"type" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review, 4 = StartIt bot review
+	TimestampStr time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
+	Timestamp    int64     `bun:"-" json:"timestamp"`
+	ReviewerID   int32     `bun:"reviewer_id" json:"reviewer_id"`
 }
 
 type UserBadge struct {

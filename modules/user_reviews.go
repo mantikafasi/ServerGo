@@ -446,9 +446,16 @@ func ReportReview(data UR_RequestData) error {
 	return nil
 }
 
-func GetReports() (reports []schemas.ReviewReport, err error) {
+func GetReports(offset int, limit int) (reports []schemas.ReviewReport, err error) {
 	reports = []schemas.ReviewReport{}
-	err = database.DB.NewSelect().Model(&reports).Scan(context.Background(), &reports)
+	err = database.DB.NewSelect().
+		Model(&reports).
+		Relation("Review").
+		Relation("Reporter").
+		Limit(limit).
+		Offset(offset).
+		Order("id DESC").
+		Scan(context.Background(), &reports)
 	return
 }
 
@@ -869,4 +876,63 @@ func LinkGithub(githubCode string, user *schemas.URUser) (err error) {
 func ResetToken(discordId string) (err error) {
 	_, err = database.DB.NewUpdate().Model(&schemas.URUser{}).Set("token = ?", GenerateToken()).Where("discord_id = ?", discordId).Exec(context.Background())
 	return
+}
+
+func GetUsersAdmin(query string, limit int, offset int, ip_hash string) (err error, users []schemas.ReviewDBUserFull) {
+
+	dbQuery := database.DB.NewSelect().
+		Model(&users).
+		Where("username LIKE ?", "%"+query+"%").
+		Limit(limit).
+		Offset(offset).
+		Relation("BanInfo", func(sq *bun.SelectQuery) *bun.SelectQuery {
+			// this does absolutely nothing but hoping that they will update bun this should work
+			// https://github.com/uptrace/bun/issues/554
+			return sq.JoinOn("join on ban_info.ban_end_date > now()").Order("ban_info.ban_end_date desc")
+		}).
+		Relation("Notification", func(sq *bun.SelectQuery) *bun.SelectQuery {
+			return sq.JoinOn("join on notification.read = false").Order("notification.id desc")
+		})
+
+	if ip_hash != "" {
+		dbQuery = dbQuery.Where("ip_hash = ?", ip_hash)
+	}
+
+	err = dbQuery.Scan(context.Background(), &users)
+
+	if &users == nil {
+		users = []schemas.ReviewDBUserFull{}
+	}
+
+	return
+}
+
+func PatchUserAdmin(user schemas.ReviewDBUserFull) error {
+	_, err := database.DB.NewUpdate().Model(&user).OmitZero().Exec(context.Background())
+	return err
+}
+
+func GetUserAdmin(id string) (user schemas.ReviewDBUserFull, err error) {
+	
+	dbQuery := database.DB.NewSelect().Model(&user)
+
+	if len(id) > 10 {
+		dbQuery = dbQuery.Where("discord_id = ?", id)
+	} else {
+		dbQuery = dbQuery.Where("id = ?", id)
+	}
+
+	err = dbQuery.Scan(context.Background(), &user)
+
+	return
+}
+
+func AddBadge(badge schemas.UserBadge) error {
+	_, err := database.DB.NewInsert().Model(&badge).Exec(context.Background())
+	return err
+}
+
+func DeleteBadge(id string) error {
+	_, err := database.DB.NewDelete().Model(&schemas.UserBadge{}).Where("id = ?", id).Exec(context.Background())
+	return err
 }

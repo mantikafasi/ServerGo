@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 )
 
 var PublicKeyString string = "a6953fb61ec1e9107fae66ff1c56437c322f561e2f1578b0f52dbcb3d9eda694"
@@ -63,4 +64,25 @@ func FormatUser(username string, id int32, discordId string) string {
 		return fmt.Sprintf("Username: %v\nDiscord ID: %v (<@%v>)", username, discordId, discordId)
 	}
 	return fmt.Sprintf("Username: %v\nDiscord ID: %v (<@%v>)\nReviewDB ID: %v", username, discordId, discordId, id)
+}
+
+func GetQueryOrDefault(r *http.Request, key string, defaultValue string) string {
+    value := r.URL.Query().Get(key)
+    if value == "" {
+        return defaultValue
+    }
+	return value
+}
+
+
+func GetIntQueryOrDefault(r *http.Request, key string, defaultValue int) int {
+    value := r.URL.Query().Get(key)
+    if value == "" {
+        return defaultValue
+    }
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		return intValue
+	}
+    return defaultValue
 }

@@ -14,10 +14,11 @@ import (
 	"server-go/modules/discord"
 	"server-go/routes"
 
+	chiprometheus "server-go/middlewares/prometheus"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/httprate"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	chiprometheus "server-go/middlewares/prometheus"
 )
 
 func main() {
@@ -98,6 +99,13 @@ func main() {
 			r.Put("/filters", routes.AddFilter)
 			r.Delete("/filters", routes.DeleteFilter)
 			r.Get("/reload", routes.ReloadConfig)
+			r.Get("/reports", routes.GetReports)
+			r.Get("/users", routes.GetUsersAdmin)
+			r.Get("/users/{id}", routes.GetUserAdmin)
+			r.Patch("/users", routes.PatchUserAdmin)
+			r.Get("/badges", routes.GetAllBadges)
+			r.Put("/badges", routes.AddBadge)
+			r.Delete("/badges", routes.DeleteBadge)
 		})
 	})
 
