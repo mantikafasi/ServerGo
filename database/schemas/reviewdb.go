@@ -33,6 +33,7 @@ type URUser struct {
 	Notification      *Notification `json:"notification" bun:"rel:has-one,join:id=user_id"`
 	BlockedUsers      []string      `bun:"blocked_users,array" json:"blockedUsers"`
 	Flags             int32         `bun:"flags" json:"flags"`
+	LastOnline        time.Time     `bun:"last_online" json:"-"`
 
 	BanID int32 `bun:"ban_id" json:"-"`
 

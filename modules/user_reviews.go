@@ -238,6 +238,9 @@ func GetDBUserViaTokenAndData(token string, data UR_RequestData) (user schemas.U
 		return schemas.URUser{}, errors.New("Invalid Token")
 	}
 
+	// update last_online field so that we can check active users
+	_, err = database.DB.NewUpdate().Model(&schemas.URUser{}).Set("last_online = ?", time.Now()).Where("id = ?", user.ID).Exec(context.Background())
+
 	// err = database.DB.NewSelect().
 	// 	Model(&user).
 	// 	Join("LEFT OUTER JOIN user_bans AS ban_info").JoinOn("ban_info.discord_id = ur_user.discord_id AND ban_info.ban_end_date > now()").
@@ -328,7 +331,9 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		IpHash:       CalculateHash(ip),
 		AccessToken:  discordToken.AccessToken,
 		RefreshToken: discordToken.RefreshToken,
+		LastOnline:   time.Now(),
 	}
+
 	if discordUser.Discriminator == "0" {
 		user.Username = discordUser.Username
 	}
@@ -913,7 +918,7 @@ func PatchUserAdmin(user schemas.ReviewDBUserFull) error {
 }
 
 func GetUserAdmin(id string) (user schemas.ReviewDBUserFull, err error) {
-	
+
 	dbQuery := database.DB.NewSelect().Model(&user)
 
 	if len(id) > 10 {
