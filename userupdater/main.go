@@ -29,7 +29,7 @@ func main() {
 	botUsers := []schemas.URUser{}
 
 	// get all users that dont have Deleted User in their username
-	err = database.DB.NewSelect().Model(&schemas.URUser{}).Where("username NOT like 'Deleted User%'").Order("id desc").Scan(context.Background(), &allUsers)
+	err = database.DB.NewSelect().Model(&schemas.URUser{}).Where("username NOT like 'Deleted User%'").Where("opted_out = false").Order("id desc").Scan(context.Background(), &allUsers)
 	if err != nil {
 		panic(err)
 	}
@@ -50,13 +50,13 @@ func main() {
 				user := allUsers[len(allUsers)-1]
 
 				allUsers = allUsers[:len(allUsers)-1]
-				
+
 				// DO NOT UPDATE WARNING
 				if user.DiscordID == "1134864775000629298" {
 					lock.Unlock()
 					continue
 				}
-				
+
 				if user.RefreshToken == "" {
 					botUsers = append(botUsers, user)
 
@@ -80,7 +80,7 @@ func main() {
 							botUsers = append(botUsers, user)
 							lock.Unlock()
 
-							_,err = database.DB.NewUpdate().Model(&user).Where("id = ?", user.ID).Exec(context.Background())
+							_, err = database.DB.NewUpdate().Model(&user).Where("id = ?", user.ID).Exec(context.Background())
 							if err != nil {
 								fmt.Println(err)
 							}
