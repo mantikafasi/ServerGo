@@ -95,6 +95,10 @@ func AddReview(w http.ResponseWriter, r *http.Request) {
 		TimestampStr: time.Now(),
 	}
 
+	if data.RepliesTo != 0 {
+		review.RepliesTo = data.RepliesTo
+	}
+
 	for _, filterFunction := range filtering.ReviewDB {
 		err = filterFunction(&reviewer, &review)
 

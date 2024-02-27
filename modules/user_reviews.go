@@ -27,6 +27,7 @@ import (
 type UR_RequestData struct {
 	DiscordID  discord.Snowflake `json:"userid"`
 	Token      string            `json:"token"`
+	RepliesTo  int32             `json:"repliesto"`
 	ReviewID   int32             `json:"reviewid"`
 	Comment    string            `json:"comment"`
 	ReviewType int               `json:"reviewtype"`
@@ -65,10 +66,14 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 	req := database.DB.NewSelect().
 		Model(&reviews).
 		Relation("User").
+		Relation("Replies").
 		Where("profile_id = ?", userID).
+		Where("replies_to IS NULL").
 		Where("\"user\".\"opted_out\" = 'f'").
 		Offset(offset).
 		Limit(51)
+	// TODO: REPLIES ARE ALWAYS NULL FIX
+	// TODO: FIGURE OUT HOW TO RELATE REPLIES INTO USERS (BUN IS TERRIBLE)
 
 	if options.IncludeReviewsById != "" {
 		req = req.OrderExpr("reviewer_id = ? desc ,\"user\".discord_id = ? desc , id desc", options.IncludeReviewsById, options.IncludeReviewsById)
@@ -160,7 +165,7 @@ func SearchReviews(query string, token string) ([]schemas.UserReview, error) {
 func AddReview(reviewer *schemas.URUser, review *schemas.UserReview) (string, error) {
 	var err error
 
-	res, err := database.DB.NewUpdate().Where("profile_id = ? AND reviewer_id = ?", review.ProfileID, reviewer.ID).OmitZero().Model(review).Exec(context.Background())
+	res, err := database.DB.NewUpdate().Where("profile_id = ? AND reviewer_id = ? AND replies_to = NULL", review.ProfileID, reviewer.ID).OmitZero().Model(review).Exec(context.Background())
 	if err != nil {
 		return common.UPDATE_FAILED, err
 	}
@@ -509,6 +514,7 @@ func DeleteReviewWithData(data UR_RequestData) (err error) {
 		LogAction("DELETE", review, user.ID)
 
 		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", data.ReviewID).Exec(context.Background())
+		_, err = database.DB.NewDelete().Model(&review).Where("replies_to = ?", data.ReviewID).Exec(context.Background())
 		return nil
 	}
 	return errors.New("You are not allowed to delete this review")
