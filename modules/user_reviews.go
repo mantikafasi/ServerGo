@@ -186,12 +186,21 @@ func SearchReviews(query string, token string) ([]schemas.UserReview, error) {
 func AddReview(reviewer *schemas.URUser, review *schemas.UserReview) (string, error) {
 	var err error
 
-	repliesTo := "NULL"
+	query := database.DB.
+		NewUpdate().
+		Model(review).
+		Where("profile_id = ?", review.ProfileID).
+		Where("reviewer_id = ?", reviewer.ID).
+		OmitZero()
+
 	if review.RepliesTo != 0 {
-		repliesTo = strconv.Itoa(int(review.RepliesTo))
+		query = query.Where("replies_to = ?", review.RepliesTo)
+	} else {
+		query = query.Where("replies_to IS NULL")
 	}
 
-	res, err := database.DB.NewUpdate().Where("profile_id = ? AND reviewer_id = ? AND replies_to = %s", review.ProfileID, reviewer.ID, repliesTo).OmitZero().Model(review).Exec(context.Background())
+	res, err := query.Exec(context.Background())
+
 	if err != nil {
 		return common.UPDATE_FAILED, err
 	}
