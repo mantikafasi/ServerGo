@@ -66,9 +66,7 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 	req := database.DB.NewSelect().
 		Model(&reviews).
 		Relation("User").
-		Relation("Replies").
 		Where("profile_id = ?", userID).
-		Where("replies_to IS NULL").
 		Where("\"user\".\"opted_out\" = 'f'").
 		Offset(offset).
 		Limit(51)
@@ -85,7 +83,19 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 		return nil, 0, err
 	}
 
+	addReply := func(review *schemas.UserReview) {
+		for i := range reviews {
+			if review.RepliesTo == reviews[i].ID {
+				if reviews[i].Replies == nil {
+					reviews[i].Replies = []schemas.UserReview{}
+				}
+				reviews[i].Replies = append(reviews[i].Replies, *review)
+			}
+		}
+	}
+
 	for i, review := range reviews {
+
 		badges := GetBadgesOfUser(review.User.DiscordID)
 
 		if review.Type == 4 {
@@ -110,6 +120,17 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 			reviews[i].Sender.Badges = badges
 		}
 		reviews[i].Timestamp = review.TimestampStr.Unix()
+
+		if review.RepliesTo != 0 {
+			addReply(&reviews[i])
+		}
+	}
+
+	for i, review := range reviews {
+		if review.RepliesTo != 0 {
+			reviews = append(reviews[:i], reviews[i+1:]...)
+			continue
+		}
 	}
 
 	return reviews, count, nil

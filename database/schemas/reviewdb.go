@@ -174,8 +174,8 @@ type UserReview struct {
 	ReviewerID   int32     `bun:"reviewer_id" json:"-"`
 	RepliesTo    int32     `bun:"replies_to" json:"-"`
 
-	User    *URUser       `bun:"rel:belongs-to,join:reviewer_id=id" json:"-"`
-	Replies []*UserReview `bun:"rel:has-many,join:id=replies_to" json:"replies"`
+	User    *URUser      `bun:"rel:belongs-to,join:reviewer_id=id" json:"-"`
+	Replies []UserReview `bun:"-" json:"replies"`
 }
 
 type UserReviewBasic struct {

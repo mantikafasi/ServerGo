@@ -2,13 +2,16 @@ package database
 
 import (
 	"context"
+	"server-go/common"
 	"server-go/database/schemas"
 )
 
 func CreateSchemas() (err error) {
-	err = CreateReviewDBSchemas()
-	err = CreateStupidityDBSchemas()
-	err = CreateTwitterReviewDBSchemas()
+	if !common.Config.Debug {
+		err = CreateReviewDBSchemas()
+		err = CreateStupidityDBSchemas()
+		err = CreateTwitterReviewDBSchemas()
+	}
 	return
 }
 
