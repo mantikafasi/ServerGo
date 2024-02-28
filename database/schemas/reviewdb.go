@@ -172,7 +172,7 @@ type UserReview struct {
 	TimestampStr time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 	Timestamp    int64     `bun:"-" json:"timestamp"`
 	ReviewerID   int32     `bun:"reviewer_id" json:"-"`
-	RepliesTo    int32     `bun:"replies_to" json:"-"`
+	RepliesTo    int32     `bun:"replies_to,nullzero" json:"-"`
 
 	User    *URUser      `bun:"rel:belongs-to,join:reviewer_id=id" json:"-"`
 	Replies []UserReview `bun:"-" json:"replies"`
