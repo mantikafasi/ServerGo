@@ -339,7 +339,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			Type:    3,
 			Sender: schemas.Sender{
 				DiscordID:    "1134864775000629298",
-				ProfilePhoto: "https://cdn.discordapp.com/attachments/1045394533384462377/1084900598035513447/646808599204593683.png?size=128",
+				ProfilePhoto: "https://cdn.discordapp.com/avatars/1134864775000629298/3f87ad315b32ee464d84f1270c8d1b37.webp?size=100",
 				Username:     "Warning",
 				Badges: []schemas.UserBadge{
 					{
