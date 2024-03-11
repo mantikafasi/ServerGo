@@ -102,7 +102,9 @@ func main() {
 					user.Username = common.Ternary(discordUser.Discriminator == "0", discordUser.Username, discordUser.Username+"#"+discordUser.Discriminator)
 					user.AvatarURL = discordUser.AvatarURL()
 				} else {
+					botUsers = append(botUsers, user)
 					fmt.Println(err)
+					continue
 				}
 
 				database.DB.NewUpdate().Model(&user).Where("id = ?", user.ID).OmitZero().Exec(context.Background())

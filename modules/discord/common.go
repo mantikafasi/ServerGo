@@ -3,6 +3,7 @@ package discord
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"regexp"
@@ -73,8 +74,14 @@ func GetUser(token string) (user *discord.User, err error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
-	if err == nil {
-		err = json.NewDecoder(resp.Body).Decode(&user)
+	
+	if resp != nil && resp.StatusCode != http.StatusOK {
+		println("Error while fetching user, status code %s", resp.StatusCode)
+		return nil, errors.New("an error occured")
+	}
+	
+	if err == nil && resp.StatusCode == http.StatusOK {
+		json.NewDecoder(resp.Body).Decode(&user)
 		resp.Body.Close()
 		return user, nil
 	}
