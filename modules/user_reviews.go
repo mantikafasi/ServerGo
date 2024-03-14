@@ -27,6 +27,7 @@ import (
 type UR_RequestData struct {
 	DiscordID  discord.Snowflake `json:"userid"`
 	Token      string            `json:"token"`
+	RepliesTo  int32             `json:"repliesto"`
 	ReviewID   int32             `json:"reviewid"`
 	Comment    string            `json:"comment"`
 	ReviewType int               `json:"reviewtype"`
@@ -69,6 +70,8 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 		Where("\"user\".\"opted_out\" = 'f'").
 		Offset(offset).
 		Limit(51)
+	// TODO: REPLIES ARE ALWAYS NULL FIX
+	// TODO: FIGURE OUT HOW TO RELATE REPLIES INTO USERS (BUN IS TERRIBLE)
 
 	if options.IncludeReviewsById != "" {
 		req = req.OrderExpr("reviewer_id = ? desc ,\"user\".discord_id = ? desc , id desc", options.IncludeReviewsById, options.IncludeReviewsById)
@@ -80,7 +83,19 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 		return nil, 0, err
 	}
 
+	addReply := func(review *schemas.UserReview) {
+		for i := range reviews {
+			if review.RepliesTo == reviews[i].ID {
+				if reviews[i].Replies == nil {
+					reviews[i].Replies = []schemas.UserReview{}
+				}
+				reviews[i].Replies = append(reviews[i].Replies, *review)
+			}
+		}
+	}
+
 	for i, review := range reviews {
+
 		badges := GetBadgesOfUser(review.User.DiscordID)
 
 		if review.Type == 4 {
@@ -105,6 +120,17 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 			reviews[i].Sender.Badges = badges
 		}
 		reviews[i].Timestamp = review.TimestampStr.Unix()
+
+		if review.RepliesTo != 0 {
+			addReply(&reviews[i])
+		}
+	}
+
+	for i, review := range reviews {
+		if review.RepliesTo != 0 {
+			reviews = append(reviews[:i], reviews[i+1:]...)
+			continue
+		}
 	}
 
 	return reviews, count, nil
@@ -160,7 +186,21 @@ func SearchReviews(query string, token string) ([]schemas.UserReview, error) {
 func AddReview(reviewer *schemas.URUser, review *schemas.UserReview) (string, error) {
 	var err error
 
-	res, err := database.DB.NewUpdate().Where("profile_id = ? AND reviewer_id = ?", review.ProfileID, reviewer.ID).OmitZero().Model(review).Exec(context.Background())
+	query := database.DB.
+		NewUpdate().
+		Model(review).
+		Where("profile_id = ?", review.ProfileID).
+		Where("reviewer_id = ?", reviewer.ID).
+		OmitZero()
+
+	if review.RepliesTo != 0 {
+		query = query.Where("replies_to = ?", review.RepliesTo)
+	} else {
+		query = query.Where("replies_to IS NULL")
+	}
+
+	res, err := query.Exec(context.Background())
+
 	if err != nil {
 		return common.UPDATE_FAILED, err
 	}
@@ -509,6 +549,7 @@ func DeleteReviewWithData(data UR_RequestData) (err error) {
 		LogAction("DELETE", review, user.ID)
 
 		_, err = database.DB.NewDelete().Model(&review).Where("id = ?", data.ReviewID).Exec(context.Background())
+		_, err = database.DB.NewDelete().Model(&review).Where("replies_to = ?", data.ReviewID).Exec(context.Background())
 		return nil
 	}
 	return errors.New("You are not allowed to delete this review")
