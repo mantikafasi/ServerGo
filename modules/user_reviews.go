@@ -126,12 +126,16 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 		}
 	}
 
-	for i, review := range reviews {
-		if review.RepliesTo != 0 {
-			reviews = append(reviews[:i], reviews[i+1:]...)
-			continue
+	n := 0
+	for _, review := range reviews {
+		if review.RepliesTo == 0 {
+			reviews[n] = review
+			n++
 		}
 	}
+	reviews = reviews[:n]
+
+
 
 	return reviews, count, nil
 }
