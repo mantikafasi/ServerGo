@@ -6,6 +6,7 @@ import (
 	"server-go/common"
 	"server-go/database"
 	"server-go/database/schemas"
+	"server-go/modules"
 	"strconv"
 
 	"github.com/diamondburned/arikawa/discord"
@@ -15,7 +16,8 @@ import (
 func main() {
 	// common.InitCache()
 	// database.InitDB()
-	GetUser("1049092894616719400")
+	//GetUser("1049092894616719400")
+	TestGoodPerson()
 	// SendNotification(1)
 }
 
@@ -45,4 +47,10 @@ func SendNotification(userId int32) {
 	if _, err := database.DB.NewInsert().Model(&notification).Exec(context.Background()); err != nil {
 		log.Println(err)
 	}
+}
+
+func TestGoodPerson() {
+	text := "banned URLs are allowed for review"
+	filtered := modules.ReplaceBadWords(text)
+	print(filtered)
 }
