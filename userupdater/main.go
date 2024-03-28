@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"server-go/common"
 	"server-go/database"
 	"server-go/database/schemas"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/diamondburned/arikawa/discord"
 	"github.com/diamondburned/arikawa/state"
+	"github.com/diamondburned/arikawa/v3/api"
+	"github.com/diamondburned/arikawa/v3/utils/httputil"
 )
 
 func main() {
@@ -20,6 +23,7 @@ func main() {
 	database.InitDB()
 
 	ArikawaState, err := state.New("Bot " + common.Config.BotToken)
+	ArikawaClient := api.NewClient("")
 
 	if err != nil {
 		panic(err)
@@ -66,6 +70,9 @@ func main() {
 				lock.Unlock()
 
 				if user.AccessTokenExpiry.Before(time.Now()) {
+
+					ArikawaState.Client.Me()
+
 					token, err := discord_utlils.RefreshToken(user.RefreshToken)
 					if err != nil {
 
@@ -97,7 +104,14 @@ func main() {
 					user.AccessTokenExpiry = token.Expiry
 				}
 
-				discordUser, err := discord_utlils.GetUser(user.AccessToken)
+				var discordUser *discord.User
+
+				err := ArikawaClient.RequestJSON(&discordUser, "GET", api.Endpoint + "users/@me", httputil.WithHeaders(
+					(http.Header{"Authorization": {"Bearer " + user.AccessToken}})),
+					httputil.JSONRequest)
+
+				// discordUser, err := discord_utlils.GetUser(user.AccessToken)
+
 				if err == nil {
 					user.Username = common.Ternary(discordUser.Discriminator == "0", discordUser.Username, discordUser.Username+"#"+discordUser.Discriminator)
 					user.AvatarURL = discordUser.AvatarURL()
