@@ -7,16 +7,37 @@ import (
 )
 
 func ReplaceBadWords(text string) string {
-	
-	for _, badVerb := range common.GoodPersonConfig.BadVerbs {
-		// TOOD check if word has spaces
-		ix := rand.Intn(len(common.GoodPersonConfig.ReplacementVerbs))
-		text = strings.Replace(text, badVerb, common.GoodPersonConfig.ReplacementVerbs[ix], -1)
-	}
 
-	for _, badNoun := range common.GoodPersonConfig.BadNouns {
-		ix := rand.Intn(len(common.GoodPersonConfig.ReplacementNouns))
-		text = strings.Replace(text, badNoun, common.GoodPersonConfig.ReplacementNouns[ix], -1)
+	words := strings.Split(text, " ")
+	newText := ""
+
+out:
+	for _, word := range words {
+		lower := " " + strings.ToLower(word)
+
+		for _, badNoun := range common.GoodPersonConfig.BadNouns {
+			ix := rand.Intn(len(common.GoodPersonConfig.ReplacementNouns))
+
+			filtered := strings.Replace(lower, " "+badNoun, " "+common.GoodPersonConfig.ReplacementNouns[ix], -1)
+
+			if strings.TrimSpace(filtered) != word {
+				newText += strings.TrimSpace(filtered) + " "
+				continue out
+			}
+		}
+
+		for _, badVerb := range common.GoodPersonConfig.BadVerbs {
+			ix := rand.Intn(len(common.GoodPersonConfig.ReplacementVerbs))
+
+			filtered := strings.Replace(lower, " "+badVerb, " "+common.GoodPersonConfig.ReplacementVerbs[ix], -1)
+
+			if strings.TrimSpace(filtered) != word {
+				newText += strings.TrimSpace(filtered) + " "
+				continue out
+			}
+		}
+
+		newText += word + " "
 	}
-	return text
+	return newText
 }
