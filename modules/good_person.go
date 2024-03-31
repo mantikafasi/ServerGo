@@ -20,7 +20,7 @@ out:
 
 			filtered := strings.Replace(lower, " "+badNoun, " "+common.GoodPersonConfig.ReplacementNouns[ix], -1)
 
-			if strings.TrimSpace(filtered) != word {
+			if strings.TrimSpace(filtered) != lower {
 				newText += strings.TrimSpace(filtered) + " "
 				continue out
 			}
@@ -31,7 +31,7 @@ out:
 
 			filtered := strings.Replace(lower, " "+badVerb, " "+common.GoodPersonConfig.ReplacementVerbs[ix], -1)
 
-			if strings.TrimSpace(filtered) != word {
+			if strings.TrimSpace(filtered) != lower {
 				newText += strings.TrimSpace(filtered) + " "
 				continue out
 			}
@@ -39,5 +39,5 @@ out:
 
 		newText += word + " "
 	}
-	return newText
+	return strings.TrimSpace(newText)
 }
