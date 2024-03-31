@@ -259,10 +259,10 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	includeReviewsBy := r.URL.Query().Get("always_include_reviews_by")
 
 	userID, _ := strconv.ParseInt(userIDString, 10, 64)
-	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
+	// flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 
-	flags := int32(flags64)
+	// flags := int32(flags64)
 
 	var reviews []schemas.UserReview
 	var err error
@@ -276,7 +276,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			Sender: schemas.Sender{
 				ID:           0,
 				Username:     "ReviewDB",
-				ProfilePhoto: "https://cdn.discordapp.com/avatars/1134864775000629298/3f87ad315b32ee464d84f1270c8d1b37.webp?size=100",
+				ProfilePhoto: "https://cdn.discordapp.com/avatars/1134864775000629298/d0ff8ba712aa04fb39553b32d2f3a5ed.webp?size=256",
 				DiscordID:    "287555395151593473",
 				Badges:       []schemas.UserBadge{},
 			}, Comment: "This user has opted out of ReviewDB. It means you cannot review this user.",
@@ -311,7 +311,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	for i, j := 0, len(reviews)-1; i < j; i, j = i+1, j-1 {
 		reviews[i], reviews[j] = reviews[j], reviews[i]
-	}	
+	}
 
 	/*
 		if (len(reviews) > 8 && offset == 0) {
@@ -331,15 +331,16 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	*/
-
-	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) && offset == 0 {
+	// && !(flags&WarningFlag == WarningFlag) && offset == 0
+	// Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.
+	if len(reviews) != 0 {
 		reviews = append([]schemas.UserReview{{
 			ID:      0,
-			Comment: "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
+			Comment: "Spamming and writing offensive reviews will result with better reviews. Please try to behave still.",
 			Type:    3,
 			Sender: schemas.Sender{
 				DiscordID:    "1134864775000629298",
-				ProfilePhoto: "https://cdn.discordapp.com/avatars/1134864775000629298/3f87ad315b32ee464d84f1270c8d1b37.webp?size=100",
+				ProfilePhoto: "https://cdn.discordapp.com/avatars/1134864775000629298/d0ff8ba712aa04fb39553b32d2f3a5ed.webp?size=256",
 				Username:     "Warning",
 				Badges: []schemas.UserBadge{
 					{
@@ -553,10 +554,9 @@ func Blocks(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func LinkGithub(w http.ResponseWriter, r *http.Request) {
 
-	user,err := Authorize(r)
+	user, err := Authorize(r)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)

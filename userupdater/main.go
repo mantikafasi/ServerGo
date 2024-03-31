@@ -39,6 +39,16 @@ func main() {
 	}
 	var lock sync.Mutex
 
+	updatedUserCount := 0
+
+	go func() {
+		for true {
+			time.Sleep(1 * time.Second)
+			fmt.Println("Updated User per second: ", updatedUserCount)
+			updatedUserCount = 0
+		}
+	}()
+
 	wg := sync.WaitGroup{}
 	wg.Add(threadCount)
 
@@ -106,13 +116,14 @@ func main() {
 
 				var discordUser *discord.User
 
-				err := ArikawaClient.RequestJSON(&discordUser, "GET", api.Endpoint + "users/@me", httputil.WithHeaders(
+				err := ArikawaClient.RequestJSON(&discordUser, "GET", api.Endpoint+"users/@me", httputil.WithHeaders(
 					(http.Header{"Authorization": {"Bearer " + user.AccessToken}})),
 					httputil.JSONRequest)
 
 				// discordUser, err := discord_utlils.GetUser(user.AccessToken)
 
 				if err == nil {
+					updatedUserCount++
 					user.Username = common.Ternary(discordUser.Discriminator == "0", discordUser.Username, discordUser.Username+"#"+discordUser.Discriminator)
 					user.AvatarURL = discordUser.AvatarURL()
 				} else {

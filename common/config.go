@@ -53,7 +53,16 @@ type ConfigDB struct {
 	UseSocket bool   `json:"use_socket"`
 }
 
+type GoodPersonConfigStr struct {
+	BadNouns         []string `json:"bad_nouns"`
+	BadVerbs         []string `json:"bad_verbs"`
+	ReplacementNouns []string `json:"replacement_nouns"`
+	ReplacementVerbs []string `json:"replacement_verbs"`
+}
+
 var Config *ConfigStr
+
+var GoodPersonConfig *GoodPersonConfigStr
 
 var OptedOut []string
 
@@ -63,8 +72,15 @@ func LoadConfig() {
 		fmt.Println(err)
 	}
 
-	err = json.NewDecoder(f).Decode(&Config)
+	_ = json.NewDecoder(f).Decode(&Config)
 	f.Close()
+
+	f, err = os.Open("good_person.json")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	_ = json.NewDecoder(f).Decode(&GoodPersonConfig)
 
 	ProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(Config.ProfaneWordList, nil, nil)
 	LightProfanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(Config.LightProfaneWordList, nil, nil)
