@@ -259,10 +259,10 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	includeReviewsBy := r.URL.Query().Get("always_include_reviews_by")
 
 	userID, _ := strconv.ParseInt(userIDString, 10, 64)
-	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
+	// flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 
-	flags := int32(flags64)
+	// flags := int32(flags64)
 
 	var reviews []schemas.UserReview
 	var err error
@@ -331,11 +331,12 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	*/
-
-	if len(reviews) != 0 && !(flags&WarningFlag == WarningFlag) && offset == 0 {
+	// && !(flags&WarningFlag == WarningFlag) && offset == 0
+	// Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.
+	if len(reviews) != 0 {
 		reviews = append([]schemas.UserReview{{
 			ID:      0,
-			Comment: "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
+			Comment: "Spamming and writing offensive reviews will result with better reviews. Please try to behave still.",
 			Type:    3,
 			Sender: schemas.Sender{
 				DiscordID:    "1134864775000629298",
