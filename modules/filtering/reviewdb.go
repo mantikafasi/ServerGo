@@ -12,6 +12,8 @@ import (
 	"server-go/modules/bitmask"
 	discord_utils "server-go/modules/discord"
 	"slices"
+
+	"github.com/diamondburned/arikawa/v3/discord"
 )
 
 type FilterFunction func(user *schemas.URUser, review *schemas.UserReview) error
@@ -113,9 +115,31 @@ func init() {
 			}
 			return nil
 		},
-		
+
 		func(user *schemas.URUser, review *schemas.UserReview) error {
 			filtered := modules.ReplaceBadWords(review.Comment)
+			if filtered != review.Comment {
+				discord_utils.SendLoggerWebhook(discord_utils.WebhookData{
+					Username: "ReviewDB GoodPerson",
+					Content:  fmt.Sprintf("GoodPerson plugin detected bad words in %s's (<@%s>) message ", user.Username, user.DiscordID),
+					Embeds: []discord.Embed{
+						{
+							Title:       "Profile",
+							Description: fmt.Sprintf("<@%d>", review.ProfileID),
+						},
+						{
+							Title:       "Original Message",
+							Description: review.Comment,
+							Color:       0x00ff00,
+						},
+						{
+							Title:       "Filtered Message",
+							Description: filtered,
+							Color:       0xff0000,
+						},
+					},
+				})
+			}
 			review.Comment = filtered
 			return nil
 		},
