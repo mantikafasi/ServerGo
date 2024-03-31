@@ -90,7 +90,7 @@ func AddReview(w http.ResponseWriter, r *http.Request) {
 	review := schemas.UserReview{
 		ProfileID:    int64(data.DiscordID),
 		ReviewerID:   reviewer.ID,
-		Comment:      data.Comment,
+		Comment:      strings.TrimSpace(data.Comment),
 		Type:         int32(data.ReviewType),
 		TimestampStr: time.Now(),
 	}
