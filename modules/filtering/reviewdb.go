@@ -80,22 +80,22 @@ func init() {
 			return
 		},
 
-		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
-			if common.LightProfanityDetector.IsProfane(review.Comment) {
-				err = errors.New("Your review contains profanity")
-			}
-			return
-		},
+		// func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
+		// 	if common.LightProfanityDetector.IsProfane(review.Comment) {
+		// 		err = errors.New("Your review contains profanity")
+		// 	}
+		// 	return
+		// },
 
-		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
-			if common.ProfanityDetector.IsProfane(review.Comment) {
-				review.ID = -1
-				modules.BanUser(reviewer.DiscordID, common.Config.AdminToken, 7, *review)
-				discord_utils.SendUserBannedWebhook(reviewer, review)
-				err = errors.New("Because of trying to post a profane review, you have been banned from ReviewDB for 1 week")
-			}
-			return
-		},
+		// func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
+		// 	if common.ProfanityDetector.IsProfane(review.Comment) {
+		// 		review.ID = -1
+		// 		modules.BanUser(reviewer.DiscordID, common.Config.AdminToken, 7, *review)
+		// 		discord_utils.SendUserBannedWebhook(reviewer, review)
+		// 		err = errors.New("Because of trying to post a profane review, you have been banned from ReviewDB for 1 week")
+		// 	}
+		// 	return
+		// },
 		func(user *schemas.URUser, review *schemas.UserReview) error {
 			// check if user is blocked from profile
 
@@ -111,6 +111,12 @@ func init() {
 			if profileUser.BlockedUsers != nil && slices.Contains(profileUser.BlockedUsers, user.DiscordID) {
 				return errors.New("You are blocked from commenting this profile")
 			}
+			return nil
+		},
+		
+		func(user *schemas.URUser, review *schemas.UserReview) error {
+			filtered := modules.ReplaceBadWords(review.Comment)
+			review.Comment = filtered
 			return nil
 		},
 	}

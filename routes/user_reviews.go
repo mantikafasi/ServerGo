@@ -276,7 +276,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			Sender: schemas.Sender{
 				ID:           0,
 				Username:     "ReviewDB",
-				ProfilePhoto: "https://cdn.discordapp.com/avatars/1134864775000629298/3f87ad315b32ee464d84f1270c8d1b37.webp?size=100",
+				ProfilePhoto: "https://cdn.discordapp.com/avatars/1134864775000629298/d0ff8ba712aa04fb39553b32d2f3a5ed.webp?size=256",
 				DiscordID:    "287555395151593473",
 				Badges:       []schemas.UserBadge{},
 			}, Comment: "This user has opted out of ReviewDB. It means you cannot review this user.",
@@ -311,7 +311,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	for i, j := 0, len(reviews)-1; i < j; i, j = i+1, j-1 {
 		reviews[i], reviews[j] = reviews[j], reviews[i]
-	}	
+	}
 
 	/*
 		if (len(reviews) > 8 && offset == 0) {
@@ -339,7 +339,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			Type:    3,
 			Sender: schemas.Sender{
 				DiscordID:    "1134864775000629298",
-				ProfilePhoto: "https://cdn.discordapp.com/avatars/1134864775000629298/3f87ad315b32ee464d84f1270c8d1b37.webp?size=100",
+				ProfilePhoto: "https://cdn.discordapp.com/avatars/1134864775000629298/d0ff8ba712aa04fb39553b32d2f3a5ed.webp?size=256",
 				Username:     "Warning",
 				Badges: []schemas.UserBadge{
 					{
@@ -553,10 +553,9 @@ func Blocks(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func LinkGithub(w http.ResponseWriter, r *http.Request) {
 
-	user,err := Authorize(r)
+	user, err := Authorize(r)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
