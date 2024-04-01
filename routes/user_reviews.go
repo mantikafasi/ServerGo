@@ -336,7 +336,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	if len(reviews) != 0 {
 		reviews = append([]schemas.UserReview{{
 			ID:      0,
-			Comment: "Spamming and writing offensive reviews will result with better reviews. Please try to behave still.",
+			Comment: "Spamming and writing offensive reviews will result with a ban. Please be respectful to other users.",
 			Type:    3,
 			Sender: schemas.Sender{
 				DiscordID:    "1134864775000629298",

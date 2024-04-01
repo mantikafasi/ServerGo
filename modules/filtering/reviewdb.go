@@ -12,8 +12,6 @@ import (
 	"server-go/modules/bitmask"
 	discord_utils "server-go/modules/discord"
 	"slices"
-
-	"github.com/diamondburned/arikawa/v3/discord"
 )
 
 type FilterFunction func(user *schemas.URUser, review *schemas.UserReview) error
@@ -82,22 +80,22 @@ func init() {
 			return
 		},
 
-		// func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
-		// 	if common.LightProfanityDetector.IsProfane(review.Comment) {
-		// 		err = errors.New("Your review contains profanity")
-		// 	}
-		// 	return
-		// },
+		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
+			if common.LightProfanityDetector.IsProfane(review.Comment) {
+				err = errors.New("Your review contains profanity")
+			}
+			return
+		},
 
-		// func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
-		// 	if common.ProfanityDetector.IsProfane(review.Comment) {
-		// 		review.ID = -1
-		// 		modules.BanUser(reviewer.DiscordID, common.Config.AdminToken, 7, *review)
-		// 		discord_utils.SendUserBannedWebhook(reviewer, review)
-		// 		err = errors.New("Because of trying to post a profane review, you have been banned from ReviewDB for 1 week")
-		// 	}
-		// 	return
-		// },
+		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
+			if common.ProfanityDetector.IsProfane(review.Comment) {
+				review.ID = -1
+				modules.BanUser(reviewer.DiscordID, common.Config.AdminToken, 7, *review)
+				discord_utils.SendUserBannedWebhook(reviewer, review)
+				err = errors.New("Because of trying to post a profane review, you have been banned from ReviewDB for 1 week")
+			}
+			return
+		},
 		func(user *schemas.URUser, review *schemas.UserReview) error {
 			// check if user is blocked from profile
 
@@ -116,32 +114,32 @@ func init() {
 			return nil
 		},
 
-		func(user *schemas.URUser, review *schemas.UserReview) error {
-			filtered := modules.ReplaceBadWords(review.Comment)
-			if filtered != review.Comment {
-				discord_utils.SendLoggerWebhook(discord_utils.WebhookData{
-					Username: "ReviewDB GoodPerson",
-					Content:  fmt.Sprintf("GoodPerson plugin detected bad words in %s's (<@%s>) message ", user.Username, user.DiscordID),
-					Embeds: []discord.Embed{
-						{
-							Title:       "Profile",
-							Description: fmt.Sprintf("<@%d>", review.ProfileID),
-						},
-						{
-							Title:       "Original Message",
-							Description: review.Comment,
-							Color:       0x00ff00,
-						},
-						{
-							Title:       "Filtered Message",
-							Description: filtered,
-							Color:       0xff0000,
-						},
-					},
-				})
-			}
-			review.Comment = filtered
-			return nil
-		},
+		// func(user *schemas.URUser, review *schemas.UserReview) error {
+		// 	filtered := modules.ReplaceBadWords(review.Comment)
+		// 	if filtered != review.Comment {
+		// 		discord_utils.SendLoggerWebhook(discord_utils.WebhookData{
+		// 			Username: "ReviewDB GoodPerson",
+		// 			Content:  fmt.Sprintf("GoodPerson plugin detected bad words in %s's (<@%s>) message ", user.Username, user.DiscordID),
+		// 			Embeds: []discord.Embed{
+		// 				{
+		// 					Title:       "Profile",
+		// 					Description: fmt.Sprintf("<@%d>", review.ProfileID),
+		// 				},
+		// 				{
+		// 					Title:       "Original Message",
+		// 					Description: review.Comment,
+		// 					Color:       0x00ff00,
+		// 				},
+		// 				{
+		// 					Title:       "Filtered Message",
+		// 					Description: filtered,
+		// 					Color:       0xff0000,
+		// 				},
+		// 			},
+		// 		})
+		// 	}
+		// 	review.Comment = filtered
+		// 	return nil
+		// },
 	}
 }
