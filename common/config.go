@@ -31,6 +31,8 @@ type ConfigStr struct {
 	AdminToken            string    `json:"admin_token"`
 	StartItBotToken       string    `json:"start_it_bot_token"`
 	LoggerWebhook         string    `json:"logger_webhook"`
+	UpdaterBotToken       string    `json:"updater_bot_token"`
+	GuildIDs              []string  `json:"guild_ids"`
 	Discord               *Client   `json:"discord"`
 	Twitter               *Client   `json:"twitter"`
 	Github                *Client   `json:"github"`
