@@ -39,17 +39,20 @@ func main() {
 	// we filter all users that are banned
 	for _, dbUser := range allUsers {
 
+		dbUserInt, _ := strconv.ParseInt(dbUser.DiscordID, 10, 64)
+		dbUserSnowflake := discord.UserID(dbUserInt)
+
 		isUserFound := false
 		for _, ban := range bans {
 
 			// this is probably horrible for performance, maybe I will write another struct that will serilize into int64
-			if ban.User.ID.String() == dbUser.DiscordID {
+			if ban.User.ID == dbUserSnowflake {
 				isUserFound = true
 				break
 			}
 
 		}
-		
+
 		if !isUserFound {
 			usersToBan = append(usersToBan, dbUser)
 		}
@@ -59,20 +62,53 @@ func main() {
 	allUsers = []schemas.URUser{}
 	bans = []discord.Ban{}
 
-	// for _, user := range usersToBan {
+	banIx := 0
+	guildIx := 0
 
-	// 	dcid, _ := strconv.ParseInt(user.DiscordID, 10, 64)
+	guildId, _ := strconv.ParseInt(common.Config.GuildIDs[guildIx], 10, 64)
 
-	// 	err := client.Ban(1222916513804062770, discord.UserID(dcid), api.BanData{
-	// 		AuditLogReason: "Register",
-	// 	})
+	increaseGuildIx := func() (error) {
+		banIx = 0
+		guildIx++
 
-	// 	if err != nil {
-	// 		panic(err)
-	// 	} else {
-	// 		println("Banned: " + user.DiscordID + " " + user.Username)
-	// 	}
-	// }
+		if guildIx >= len(common.Config.GuildIDs) {
+			return fmt.Errorf("No more guilds to ban in")
+		}
+		
+		guildId, _ = strconv.ParseInt(common.Config.GuildIDs[guildIx], 10, 64)
+		return nil
+	}
+
+
+	for _, user := range usersToBan {
+
+		dcid, _ := strconv.ParseInt(user.DiscordID, 10, 64)
+
+		err := client.Ban(discord.GuildID(guildId), discord.UserID(dcid), api.BanData{
+			AuditLogReason: "Register",
+		})
+
+		banIx++
+
+		if banIx > 1999 {
+			err = increaseGuildIx()
+		}
+
+		if err != nil {
+			if err.Error() == "Discord 400 error: Max number of bans for non-guild members have been exceeded. Try again later" {
+				err = increaseGuildIx()
+
+				if err != nil {
+					panic(err)
+				}
+				
+			} else {
+				panic(err)
+			}
+		} else {
+			println("Banned: " + user.DiscordID + " " + user.Username)
+		}
+	}
 }
 
 func getGuildBans(guildId string) ([]discord.Ban, error) {
@@ -114,7 +150,10 @@ func GetAllBans() ([]discord.Ban, error) {
 	var bannedUsers []discord.Ban
 
 	for _, guild := range common.Config.GuildIDs {
+		println("Fetching bans for guild: " + guild)
 		bans, err := getGuildBans(guild)
+		println("Fetched bans for guild: " + guild + " \nBan count in guild: " + strconv.Itoa(len(bans)))
+
 		if err != nil {
 			//	return nil, err
 			println("too bad")
@@ -123,6 +162,8 @@ func GetAllBans() ([]discord.Ban, error) {
 
 		bannedUsers = append(bannedUsers, bans...)
 	}
+
+	println("Total bans: " + strconv.Itoa(len(bannedUsers)))
 
 	return bannedUsers, nil
 }
