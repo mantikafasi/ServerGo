@@ -9,6 +9,7 @@ import (
 	"server-go/database/schemas"
 	"slices"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/api"
@@ -26,11 +27,40 @@ func main() {
 		panic(err)
 	}
 
+	// BanAllUsers(&bans)
+
+	UpdateAllUsers(&bans)
 	println("Getting All Bans Complete")
+}
+
+func UpdateAllUsers(bans *[]discord.Ban) {
+	wg := sync.WaitGroup{}
+	wg.Add(len(*bans))
+	for _, user := range *bans {
+		go func(ban discord.Ban) {
+			user := schemas.URUser{
+				DiscordID: strconv.FormatInt(int64(ban.User.ID), 10),
+				Username:  common.Ternary(ban.User.Discriminator == "0", ban.User.Username, ban.User.Username+"#"+ban.User.Discriminator),
+				AvatarURL: ban.User.AvatarURL(),
+			}
+
+			err, _ := database.DB.NewUpdate().Model(&user).Where("discord_id = ?", user.DiscordID).Exec(context.Background())
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				println("Updated user: " + ban.User.ID.String() + " " + ban.User.Username)
+			}
+			wg.Done()
+		}(user)
+	}
+	wg.Wait()
+}
+
+func BanAllUsers(bans *[]discord.Ban) {
 	var allUsers []schemas.URUser
 
 	// get all users that dont have Deleted User in their username
-	err = database.DB.NewSelect().Model(&schemas.URUser{}).Where("username NOT like 'Deleted User%'").Where("opted_out = false").Order("id desc").Scan(context.Background(), &allUsers)
+	err := database.DB.NewSelect().Model(&schemas.URUser{}).Where("username NOT like 'Deleted User%'").Where("opted_out = false").Order("id desc").Scan(context.Background(), &allUsers)
 
 	if err != nil {
 		panic(err)
@@ -39,7 +69,7 @@ func main() {
 	usersToBan := []schemas.URUser{}
 
 	// sort bans by user id so we can binary search
-	slices.SortFunc(bans, func(a, b discord.Ban) int {
+	slices.SortFunc(*bans, func(a, b discord.Ban) int {
 		if b.User.ID < a.User.ID {
 			return 1
 		} else if b.User.ID > a.User.ID {
@@ -57,7 +87,7 @@ func main() {
 		dbUserInt, _ := strconv.ParseInt(dbUser.DiscordID, 10, 64)
 		dbUserSnowflake := discord.UserID(dbUserInt)
 
-		_, found := slices.BinarySearchFunc(bans, dbUserSnowflake, func(ban discord.Ban, userId discord.UserID) int {
+		_, found := slices.BinarySearchFunc(*bans, dbUserSnowflake, func(ban discord.Ban, userId discord.UserID) int {
 			if ban.User.ID == userId {
 				return 0
 			} else if ban.User.ID < userId {
@@ -78,7 +108,7 @@ func main() {
 
 	// release memory
 	allUsers = []schemas.URUser{}
-	bans = []discord.Ban{}
+	*bans = []discord.Ban{}
 
 	banIx := 0
 	guildIx := 0
