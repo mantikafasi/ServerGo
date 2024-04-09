@@ -44,7 +44,7 @@ func UpdateAllUsers(bans *[]discord.Ban) {
 				AvatarURL: ban.User.AvatarURL(),
 			}
 
-			err, _ := database.DB.NewUpdate().Model(&user).Where("discord_id = ?", user.DiscordID).Exec(context.Background())
+			_, err := database.DB.NewUpdate().Model(&user).Where("discord_id = ?", user.DiscordID).OmitZero().Exec(context.Background())
 			if err != nil {
 				fmt.Println(err)
 			} else {
