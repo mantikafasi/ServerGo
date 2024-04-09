@@ -7,7 +7,9 @@ import (
 	"server-go/common"
 	"server-go/database"
 	"server-go/database/schemas"
+	"slices"
 	"strconv"
+	"time"
 
 	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -24,11 +26,11 @@ func main() {
 		panic(err)
 	}
 
-	print(len(bans))
+	println("Getting All Bans Complete")
 	var allUsers []schemas.URUser
 
 	// get all users that dont have Deleted User in their username
-	err = database.DB.NewSelect().Model(&schemas.URUser{}).Where("username NOT like 'Deleted User%'").Where("opted_out = false").Where("id < 119397").Order("id desc").Scan(context.Background(), &allUsers)
+	err = database.DB.NewSelect().Model(&schemas.URUser{}).Where("username NOT like 'Deleted User%'").Where("opted_out = false").Order("id desc").Scan(context.Background(), &allUsers)
 
 	if err != nil {
 		panic(err)
@@ -36,27 +38,43 @@ func main() {
 
 	usersToBan := []schemas.URUser{}
 
+	// sort bans by user id so we can binary search
+	slices.SortFunc(bans, func(a, b discord.Ban) int {
+		if b.User.ID < a.User.ID {
+			return 1
+		} else if b.User.ID > a.User.ID {
+			return -1
+		} else {
+			return 0
+		}
+	})
+
+	println("Deduplicating users")
+	dedupTime := time.Now()
 	// we filter all users that are banned
 	for _, dbUser := range allUsers {
 
 		dbUserInt, _ := strconv.ParseInt(dbUser.DiscordID, 10, 64)
 		dbUserSnowflake := discord.UserID(dbUserInt)
 
-		isUserFound := false
-		for _, ban := range bans {
-
-			// this is probably horrible for performance, maybe I will write another struct that will serilize into int64
-			if ban.User.ID == dbUserSnowflake {
-				isUserFound = true
-				break
+		_, found := slices.BinarySearchFunc(bans, dbUserSnowflake, func(ban discord.Ban, userId discord.UserID) int {
+			if ban.User.ID == userId {
+				return 0
+			} else if ban.User.ID < userId {
+				return -1
+			} else {
+				return 1
 			}
+		})
 
-		}
-
-		if !isUserFound {
+		if !found {
 			usersToBan = append(usersToBan, dbUser)
 		}
 	}
+
+	println("Deduplicated users")
+	println("Deduplication took: " + time.Since(dedupTime).String())
+	println("Users to ban: " + strconv.Itoa(len(usersToBan)))
 
 	// release memory
 	allUsers = []schemas.URUser{}
@@ -67,18 +85,17 @@ func main() {
 
 	guildId, _ := strconv.ParseInt(common.Config.GuildIDs[guildIx], 10, 64)
 
-	increaseGuildIx := func() (error) {
+	increaseGuildIx := func() error {
 		banIx = 0
 		guildIx++
 
 		if guildIx >= len(common.Config.GuildIDs) {
 			return fmt.Errorf("No more guilds to ban in")
 		}
-		
+
 		guildId, _ = strconv.ParseInt(common.Config.GuildIDs[guildIx], 10, 64)
 		return nil
 	}
-
 
 	for _, user := range usersToBan {
 
@@ -96,12 +113,15 @@ func main() {
 
 		if err != nil {
 			if err.Error() == "Discord 400 error: Max number of bans for non-guild members have been exceeded. Try again later" {
+
+				println("Switching guilds")
+
 				err = increaseGuildIx()
 
 				if err != nil {
 					panic(err)
 				}
-				
+
 			} else {
 				panic(err)
 			}
@@ -125,7 +145,6 @@ func getGuildBans(guildId string) ([]discord.Ban, error) {
 				"Authorization": {"Bot " + common.Config.UpdaterBotToken},
 			}))
 
-		println(strconv.FormatInt(after, 10))
 		println(len(response))
 
 		if err != nil {
