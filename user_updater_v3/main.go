@@ -27,7 +27,7 @@ func main() {
 		panic(err)
 	}
 
-	// BanAllUsers(&bans)
+	BanAllUsers(&bans)
 
 	UpdateAllUsers(&bans)
 	println("Getting All Bans Complete")
@@ -108,7 +108,6 @@ func BanAllUsers(bans *[]discord.Ban) {
 
 	// release memory
 	allUsers = []schemas.URUser{}
-	*bans = []discord.Ban{}
 
 	banIx := 0
 	guildIx := 0
@@ -149,11 +148,12 @@ func BanAllUsers(bans *[]discord.Ban) {
 				err = increaseGuildIx()
 
 				if err != nil {
-					panic(err)
+					return // no more guilds to ban in
 				}
 
 			} else {
-				panic(err)
+				fmt.Println(err)
+				return // bad stuff happened and idk what
 			}
 		} else {
 			println("Banned: " + user.DiscordID + " " + user.Username)
