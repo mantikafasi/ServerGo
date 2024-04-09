@@ -16,7 +16,7 @@ import (
 
 	chiprometheus "server-go/middlewares/prometheus"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

@@ -9,7 +9,7 @@ import (
 	"server-go/database/schemas"
 	"server-go/modules"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 func GetFilters(w http.ResponseWriter, r *http.Request) {

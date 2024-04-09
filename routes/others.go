@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"server-go/common"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 var HandleInteractions = func(w http.ResponseWriter, r *http.Request) {
