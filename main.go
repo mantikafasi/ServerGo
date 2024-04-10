@@ -66,6 +66,7 @@ func main() {
 	//ReviewDB
 
 	mux.Route("/api/reviewdb", func(r chi.Router) {
+		r.Get("/leaderboard", routes.GetLeaderBoard)
 		r.Route("/users/{discordid}/reviews", func(r1 chi.Router) {
 			r1.Get("/", routes.GetReviews)
 			r1.Put("/", routes.AddReview)

@@ -135,8 +135,6 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 	}
 	reviews = reviews[:n]
 
-
-
 	return reviews, count, nil
 }
 
@@ -985,4 +983,29 @@ func AddBadge(badge schemas.UserBadge) error {
 func DeleteBadge(id string) error {
 	_, err := database.DB.NewDelete().Model(&schemas.UserBadge{}).Where("id = ?", id).Exec(context.Background())
 	return err
+}
+
+type LeaderboardUser struct {
+	bun.BaseModel `bun:"table:users"`
+	DiscordID     string `bun:"discord_id"`
+	Username      string `bun:"username"`
+	Count         int    `bun:"count"`
+	AvatarURL     string `bun:"avatar_url"`
+}
+
+func GetLeaderboard() (leaderboard []LeaderboardUser, err error) {
+
+	err = database.DB.NewSelect().
+		ColumnExpr("u.discord_id").
+		ColumnExpr("u.username").
+		ColumnExpr("u.avatar_url").
+		ColumnExpr("COUNT(r.id) AS count").
+		TableExpr("reviews AS r").
+		Join("JOIN users AS u ON u.id = r.reviewer_id").
+		GroupExpr("r.reviewer_id, u.discord_id, u.username, u.avatar_url").
+		OrderExpr("count DESC").
+		Limit(50).
+		Scan(context.Background(), &leaderboard)
+
+	return
 }

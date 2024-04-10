@@ -569,3 +569,13 @@ func LinkGithub(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func GetLeaderBoard(w http.ResponseWriter, r *http.Request) {
+	leaderboard, err := modules.GetLeaderboard()
+	if err != nil {
+		http.Error(w, "An error occured", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(leaderboard)
+}
