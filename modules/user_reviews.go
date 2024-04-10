@@ -987,10 +987,10 @@ func DeleteBadge(id string) error {
 
 type LeaderboardUser struct {
 	bun.BaseModel `bun:"table:users"`
-	DiscordID     string `bun:"discord_id"`
-	Username      string `bun:"username"`
-	Count         int    `bun:"count"`
-	AvatarURL     string `bun:"avatar_url"`
+	DiscordID     string `bun:"discord_id" json:"discord_id"`
+	Username      string `bun:"username" json:"username"`
+	Count         int    `bun:"count" json:"review_count"`
+	AvatarURL     string `bun:"avatar_url" json:"avatar_url"`
 }
 
 func GetLeaderboard() (leaderboard []LeaderboardUser, err error) {
