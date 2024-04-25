@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"server-go/common"
 	"server-go/modules"
 	"strconv"
 )
@@ -18,7 +17,6 @@ var StupidityDBAuth = func(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, "receiveToken/"+token, http.StatusTemporaryRedirect)
 }
-
 
 var Admins = func(w http.ResponseWriter, r *http.Request) {
 	admins, err := modules.GetAdmins()
