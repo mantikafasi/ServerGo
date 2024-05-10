@@ -21,7 +21,7 @@ var client = api.NewClient("Bot " + common.Config.UpdaterBotToken)
 
 func main() {
 	database.InitDB()
-	bans, err := GetAllBans()
+	bans, err := GetAllBans(true)
 
 	if err != nil {
 		panic(err)
@@ -195,7 +195,7 @@ func getGuildBans(guildId string) ([]discord.Ban, error) {
 	return bans, nil
 }
 
-func GetAllBans() ([]discord.Ban, error) {
+func GetAllBans(getOnlyFirstGuild bool) ([]discord.Ban, error) {
 	var bannedUsers []discord.Ban
 
 	for _, guild := range common.Config.GuildIDs {
@@ -210,6 +210,10 @@ func GetAllBans() ([]discord.Ban, error) {
 		}
 
 		bannedUsers = append(bannedUsers, bans...)
+
+		if getOnlyFirstGuild {
+			break
+		}
 	}
 
 	println("Total bans: " + strconv.Itoa(len(bannedUsers)))
