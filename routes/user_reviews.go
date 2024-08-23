@@ -108,8 +108,8 @@ func AddReview(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if data.Token == common.Config.StartItBotToken {
-		data.ReviewType = 4 // startit bot review type
+	if data.Token == common.Config.BotIntegrationToken {
+		data.ReviewType = 4 // bot integration review type
 	}
 
 	res, err := modules.AddReview(&reviewer, &review)

@@ -29,7 +29,7 @@ type ConfigStr struct {
 	JunkReportWebhook     string    `json:"junk_report_webhook"`
 	AppealWebhook         string    `json:"appeal_webhook"`
 	AdminToken            string    `json:"admin_token"`
-	StartItBotToken       string    `json:"start_it_bot_token"`
+	BotIntegrationToken   string    `json:"bot_integration_token"`
 	LoggerWebhook         string    `json:"logger_webhook"`
 	UpdaterBotToken       string    `json:"updater_bot_token"`
 	GuildIDs              []string  `json:"guild_ids"`

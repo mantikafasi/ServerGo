@@ -6,10 +6,10 @@ import (
 	"encoding/hex"
 	"log"
 
-	discord_utils "server-go/modules/discord"
 	"server-go/common"
 	"server-go/database"
 	"server-go/database/schemas"
+	discord_utils "server-go/modules/discord"
 )
 
 type SDB_RequestData struct {
@@ -69,7 +69,7 @@ func GetDiscordIDWithToken(token string) string {
 
 func VoteStupidity(discordID int64, token string, stupidity int32, senderDiscordID string) string {
 	var senderID string
-	if token == common.Config.StartItBotToken {
+	if token == common.Config.BotIntegrationToken {
 		senderID = senderDiscordID
 	} else {
 		senderID = GetDiscordIDWithToken(token)

@@ -168,7 +168,7 @@ type UserReview struct {
 	ProfileID    int64     `bun:"profile_id,type:numeric" json:"-"`
 	Sender       Sender    `bun:"-" json:"sender"`
 	Comment      string    `bun:"comment" json:"comment"`
-	Type         int32     `bun:"type" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review, 4 = StartIt bot review
+	Type         int32     `bun:"type" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review, 4 = bot integration review
 	TimestampStr time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 	Timestamp    int64     `bun:"-" json:"timestamp"`
 	ReviewerID   int32     `bun:"reviewer_id" json:"-"`
@@ -184,7 +184,7 @@ type UserReviewBasic struct {
 	ID           int32     `bun:"id,pk,autoincrement" json:"id"`
 	ProfileID    int64     `bun:"profile_id,type:numeric" json:"-"`
 	Comment      string    `bun:"comment" json:"comment"`
-	Type         int32     `bun:"type" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review, 4 = StartIt bot review
+	Type         int32     `bun:"type" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review, 4 = bot integration review
 	TimestampStr time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 	Timestamp    int64     `bun:"-" json:"timestamp"`
 	ReviewerID   int32     `bun:"reviewer_id" json:"reviewer_id"`

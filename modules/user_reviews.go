@@ -98,15 +98,6 @@ func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) 
 
 		badges := GetBadgesOfUser(review.User.DiscordID)
 
-		if review.Type == 4 {
-			badges = append(badges, schemas.UserBadge{
-				Name:        "StartIT",
-				Icon:        "https://cdn.discordapp.com/attachments/1096421101132853369/1122886750763749488/logo-color.png?size=128",
-				Description: "This review has been made by StartIT bot",
-				RedirectURL: "https://startit.bot",
-			})
-		}
-
 		if review.User.DiscordID == "1134864775000629298" {
 			// troll
 			reviews[i].Type = 3
@@ -234,7 +225,7 @@ func GetIDWithToken(token string) (id int32) {
 
 func GetDBUserViaTokenAndData(token string, data UR_RequestData) (user schemas.URUser, err error) {
 
-	if token == common.Config.StartItBotToken {
+	if token == common.Config.BotIntegrationToken {
 		user, err := GetDBUserViaDiscordID(data.Sender.DiscordID)
 		if err != nil {
 			return schemas.URUser{}, err
@@ -751,7 +742,7 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (s
 	user.Username = username
 	user.Type = 0
 	user.WarningCount = 0
-	user.ClientMods = []string{"startitbot"}
+	user.ClientMods = []string{"botintegration"}
 	user.AvatarURL = profilePhoto
 	user.Token = GenerateToken()
 
@@ -764,7 +755,7 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (s
 	discord_utils.SendLoggerWebhook(discord_utils.WebhookData{
 		Username:  username,
 		AvatarURL: profilePhoto,
-		Content:   fmt.Sprintf("User <@%s> has been registered to ReviewDB from StartIT Bot", discordid),
+		Content:   fmt.Sprintf("User <@%s> has been registered to ReviewDB from Bot integration", discordid),
 	})
 
 	return user, nil
