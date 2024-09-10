@@ -79,6 +79,7 @@ func AppealDenyTextComponent(appealID int32) discord.ContainerComponents {
 				Placeholder: "You wrote such a dumb reason even I could think of a better one",
 				Style:       discord.TextInputParagraphStyle,
 				Required:    true,
+				Value:     "You wrote such a dumb reason even I could think of a better one"
 			},
 		},
 	}
