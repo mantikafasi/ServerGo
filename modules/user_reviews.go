@@ -54,24 +54,27 @@ type GetReviewsOptions struct {
 	IncludeReviewsById string
 }
 
-func GetReviews(userID int64, offset int) ([]schemas.UserReview, int, error) {
-	return GetReviewsWithOptions(userID, offset, GetReviewsOptions{
+func GetReviews(requester *schemas.URUser ,userID int64, offset int) ([]schemas.UserReview, int, error) {
+	return GetReviewsWithOptions(requester, userID, offset, GetReviewsOptions{
 		IncludeReviewsById: "",
 	})
 }
 
-func GetReviewsWithOptions(userID int64, offset int, options GetReviewsOptions) ([]schemas.UserReview, int, error) {
+func GetReviewsWithOptions(requester *schemas.URUser, userID int64, offset int, options GetReviewsOptions) ([]schemas.UserReview, int, error) {
 	var reviews []schemas.UserReview
 
 	req := database.DB.NewSelect().
 		Model(&reviews).
 		Relation("User").
 		Where("profile_id = ?", userID).
-		Where("\"user\".\"opted_out\" = 'f'").
 		Offset(offset).
 		Limit(51)
 	// TODO: REPLIES ARE ALWAYS NULL FIX
 	// TODO: FIGURE OUT HOW TO RELATE REPLIES INTO USERS (BUN IS TERRIBLE)
+
+	if requester == nil || !requester.IsAdmin() {
+		req = req.Where("\"user\".\"opted_out\" = 'f'");
+	}
 
 	if options.IncludeReviewsById != "" {
 		req = req.OrderExpr("reviewer_id = ? desc ,\"user\".discord_id = ? desc , id desc", options.IncludeReviewsById, options.IncludeReviewsById)

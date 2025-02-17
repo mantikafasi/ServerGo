@@ -258,6 +258,8 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	userIDString := chi.URLParam(r, "discordid")
 	includeReviewsBy := r.URL.Query().Get("always_include_reviews_by")
 
+	requester, err := Authorize(r);
+	
 	userID, _ := strconv.ParseInt(userIDString, 10, 64)
 	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
@@ -265,7 +267,6 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	flags := int32(flags64)
 
 	var reviews []schemas.UserReview
-	var err error
 
 	response := ReviewResponse{}
 	count := 0
@@ -283,6 +284,20 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			Type: 3,
 		}}
 
+		if requester != nil && requester.IsAdmin() {
+			options := modules.GetReviewsOptions{
+				IncludeReviewsById: includeReviewsBy,
+			}
+
+			var _reviews []schemas.UserReview;
+
+			_reviews, count, err = modules.GetReviewsWithOptions(requester, userID, offset, options)
+
+			if err != nil {
+				reviews = append(reviews, _reviews...)
+			}
+		}
+
 		response.Reviews = reviews
 		response.Success = true
 		common.SendStructResponse(w, response)
@@ -291,7 +306,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		options := modules.GetReviewsOptions{
 			IncludeReviewsById: includeReviewsBy,
 		}
-		reviews, count, err = modules.GetReviewsWithOptions(userID, offset, options)
+		reviews, count, err = modules.GetReviewsWithOptions(requester, userID, offset, options)
 
 		response.ReviewCount = count
 	}
