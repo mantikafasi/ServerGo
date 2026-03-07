@@ -133,7 +133,7 @@ var ClientMods []string = []string{"aliucord", "betterdiscord", "powercordv2", "
 func ReviewDBAuth(w http.ResponseWriter, r *http.Request) {
 	clientmod := r.URL.Query().Get("clientMod")
 
-	if clientmod == "" && !(r.Header.Get("User-Agent") == "Aliucord (https://github.com/Aliucord/Aliucord)") {
+	if clientmod == "" && !strings.HasSuffix(r.Header.Get("User-Agent"), "(https://github.com/Aliucord/Aliucord)") {
 		io.WriteString(w, fmt.Sprintf(`{"token": "%s", "success": true}`, modules.GenerateToken()))
 		return
 	}
