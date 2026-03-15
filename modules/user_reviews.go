@@ -52,11 +52,13 @@ type Settings struct {
 
 type GetReviewsOptions struct {
 	IncludeReviewsById string
+	Limit              int
 }
 
-func GetReviews(requester *schemas.URUser ,userID int64, offset int) ([]schemas.UserReview, int, error) {
+func GetReviews(requester *schemas.URUser, userID int64, offset int) ([]schemas.UserReview, int, error) {
 	return GetReviewsWithOptions(requester, userID, offset, GetReviewsOptions{
 		IncludeReviewsById: "",
+		Limit:              51,
 	})
 }
 
@@ -68,12 +70,12 @@ func GetReviewsWithOptions(requester *schemas.URUser, userID int64, offset int, 
 		Relation("User").
 		Where("profile_id = ?", userID).
 		Offset(offset).
-		Limit(51)
+		Limit(options.Limit)
 	// TODO: REPLIES ARE ALWAYS NULL FIX
 	// TODO: FIGURE OUT HOW TO RELATE REPLIES INTO USERS (BUN IS TERRIBLE)
 
 	if requester == nil || !requester.IsAdmin() {
-		req = req.Where("\"user\".\"opted_out\" = 'f'");
+		req = req.Where("\"user\".\"opted_out\" = 'f'")
 	}
 
 	if options.IncludeReviewsById != "" {

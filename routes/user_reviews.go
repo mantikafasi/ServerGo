@@ -36,6 +36,7 @@ type ReviewResponse struct {
 	HasNextPage bool                 `json:"hasNextPage"`
 	ReviewCount int                  `json:"reviewCount"`
 	Reviews     []schemas.UserReview `json:"reviews"`
+	OptedOut    bool                 `json:"hasOptedOut"`
 }
 
 func AddReview(w http.ResponseWriter, r *http.Request) {
@@ -257,7 +258,26 @@ const (
 func GetReviews(w http.ResponseWriter, r *http.Request) {
 	userIDString := chi.URLParam(r, "discordid")
 	includeReviewsBy := r.URL.Query().Get("always_include_reviews_by")
+	limitString := r.URL.Query().Get("limit")
 
+	var err error
+
+	limit := 51
+
+	if limitString != "" {
+		limit, err = strconv.Atoi(limitString)
+		
+		if err != nil || limit <= 0 || limit > 50 {
+			w.WriteHeader(http.StatusBadRequest)
+			common.SendStructResponse(w, ReviewResponse{
+				Response: Response{
+					Success: false,
+					Message: "Invalid limit parameter",
+				},
+			})
+			return
+		}
+	}
 	requester, err := Authorize(r);
 	
 	userID, _ := strconv.ParseInt(userIDString, 10, 64)
@@ -272,6 +292,8 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	count := 0
 
 	if slices.Contains(common.OptedOut, fmt.Sprint(userID)) {
+		response.OptedOut = true
+		
 		reviews = []schemas.UserReview{{
 			ID: 0,
 			Sender: schemas.Sender{
@@ -287,6 +309,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		if requester != nil && requester.IsAdmin() {
 			options := modules.GetReviewsOptions{
 				IncludeReviewsById: includeReviewsBy,
+				Limit: limit,
 			}
 
 			var _reviews []schemas.UserReview;
@@ -305,6 +328,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	} else {
 		options := modules.GetReviewsOptions{
 			IncludeReviewsById: includeReviewsBy,
+			Limit: limit,
 		}
 		reviews, count, err = modules.GetReviewsWithOptions(requester, userID, offset, options)
 
