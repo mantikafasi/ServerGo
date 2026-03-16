@@ -56,11 +56,21 @@ func UpdateAllUsers(bans *[]discord.Ban) {
 	wg.Wait()
 }
 
+type BulkBanParams struct {
+	UserIds              []discord.Snowflake `json:"user_ids"`
+	DeleteMessageSeconds *int64              `json:"delete_message_seconds,omitempty"`
+}
+
+type BulkBanResponse struct {
+	BannedUsers []discord.Snowflake `json:"banned_users"`
+	FailedUsers []discord.Snowflake `json:"failed_users"`
+}
+
 func BanAllUsers(bans *[]discord.Ban) {
 	var allUsers []schemas.URUser
 
 	// get all users that dont have Deleted User in their username
-	err := database.DB.NewSelect().Model(&schemas.URUser{}).Where("username NOT like 'Deleted User%'").Where("opted_out = false").Order("id desc").Scan(context.Background(), &allUsers)
+	err := database.DB.NewSelect().Model(&schemas.URUser{}).Where("username NOT like 'Deleted User%'").WhereOr("username NOT like 'deleted_user%'").Where("opted_out = false").Order("id desc").Scan(context.Background(), &allUsers)
 
 	if err != nil {
 		panic(err)
@@ -126,35 +136,50 @@ func BanAllUsers(bans *[]discord.Ban) {
 		return nil
 	}
 
-	for _, user := range usersToBan {
+	for i := 0; i < len(usersToBan); i += 200 {
+		end := i + 200
+		if end > len(usersToBan) {
+			end = len(usersToBan)
+		}
 
-		dcid, _ := strconv.ParseInt(user.DiscordID, 10, 64)
+		var userIds []discord.Snowflake
+		for _, user := range usersToBan[i:end] {
+			dcid, _ := strconv.ParseInt(user.DiscordID, 10, 64)
+			userIds = append(userIds, discord.Snowflake(dcid))
+		}
 
-		err := client.Ban(discord.GuildID(guildId), discord.UserID(dcid), api.BanData{
-			AuditLogReason: "Register",
-		})
+		bulkBanParams := BulkBanParams{
+			UserIds: userIds,
+		}
 
-		banIx++
+		bulkBanResponse := BulkBanResponse{}
 
-		if banIx > 1999 {
+		err := client.RequestJSON(
+			&bulkBanResponse, "POST",
+			api.EndpointGuilds+strconv.FormatInt(guildId, 10)+"/bulk-ban",
+			httputil.WithJSONBody(bulkBanParams),
+		)
+
+		if err != nil {
+			fmt.Println("Error banning users:", err)
+			println("Switching guilds")
+
 			err = increaseGuildIx()
+			if err != nil {
+				return // no more guilds to ban in
+			}
+			i -= 200 // retry this chunk
+			continue
 		}
 
-		if err != nil {
+		banIx += len(userIds)
 
-		println("Switching guilds")
-
-		err = increaseGuildIx()
-
-		if err != nil {
-			return // no more guilds to ban in
+		if banIx >= 2001 {
+			err = increaseGuildIx()
+			if err != nil {
+				return
+			}
 		}
-
-		} else {
-			fmt.Println(err)
-			return // bad stuff happened and idk what
-		}
-
 	}
 }
 
