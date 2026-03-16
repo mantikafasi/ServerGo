@@ -172,6 +172,11 @@ func BanAllUsers(bans *[]discord.Ban) {
 			continue
 		}
 
+		fmt.Printf("Successfully banned %d users, failed to ban %d users\n", len(bulkBanResponse.BannedUsers), len(bulkBanResponse.FailedUsers))
+		if len(bulkBanResponse.FailedUsers) > 0 {
+			fmt.Printf("Failed users: %v\n", bulkBanResponse.FailedUsers)
+		}
+
 		banIx += len(userIds)
 
 		if banIx >= 2001 {
