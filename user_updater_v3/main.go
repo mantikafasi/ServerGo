@@ -141,23 +141,20 @@ func BanAllUsers(bans *[]discord.Ban) {
 		}
 
 		if err != nil {
-			if err.Error() == "Discord 400 error: Max number of bans for non-guild members have been exceeded. Try again later" {
 
-				println("Switching guilds")
+		println("Switching guilds")
 
-				err = increaseGuildIx()
+		err = increaseGuildIx()
 
-				if err != nil {
-					return // no more guilds to ban in
-				}
-
-			} else {
-				fmt.Println(err)
-				return // bad stuff happened and idk what
-			}
-		} else {
-			println("Banned: " + user.DiscordID + " " + user.Username)
+		if err != nil {
+			return // no more guilds to ban in
 		}
+
+		} else {
+			fmt.Println(err)
+			return // bad stuff happened and idk what
+		}
+
 	}
 }
 
