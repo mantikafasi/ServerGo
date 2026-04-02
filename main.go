@@ -72,6 +72,11 @@ func main() {
 			r1.Put("/", routes.AddReview)
 			r1.Delete("/", routes.DeleteReview)
 		})
+		r.Get("/users/{discordid}/rating", routes.GetUserRating)
+		r.Route("/reviews/{reviewid}", func(rv chi.Router) {
+			rv.Use(routes.ReviewMiddleware)
+			rv.Post("/vote", routes.VoteReview)
+		})
 		r.HandleFunc("/users", routes.GetUserInfo)
 		r.HandleFunc("/reports", routes.ReportReview)
 		r.HandleFunc("/badges", routes.GetAllBadges)

@@ -1005,3 +1005,91 @@ func GetLeaderboard() (leaderboard []LeaderboardUser, err error) {
 
 	return
 }
+
+// VoteReview records an upvote (isUpvote=true) or downvote (isUpvote=false) for a review.
+// The score column on the reviews table is updated atomically (+1 for upvote, -1 for downvote).
+// Toggling from one vote direction to the other adds ±2 to the score.
+// A user cannot vote on their own review and cannot vote the same direction twice.
+func VoteReview(voter *schemas.URUser, reviewID int32, isUpvote bool) error {
+	review, err := GetReview(reviewID)
+	if err != nil {
+		return errors.New("invalid review ID")
+	}
+
+	if review.ReviewerID == voter.ID {
+		return errors.New("you cannot vote on your own review")
+	}
+
+	// Check for an existing vote by this user on this review.
+	existingVote := &schemas.ReviewVote{}
+	err = database.DB.NewSelect().
+		Model(existingVote).
+		Where("review_id = ? AND voter_id = ?", reviewID, voter.ID).
+		Limit(1).
+		Scan(context.Background())
+
+	if err != nil && err.Error() != "sql: no rows in result set" {
+		return err
+	}
+
+	voteExists := err == nil
+
+	if voteExists {
+		if existingVote.IsUpvote == isUpvote {
+			return errors.New("you have already voted in this direction")
+		}
+		// Toggle: flip the vote direction and adjust score by ±2.
+		_, err = database.DB.NewUpdate().
+			Model(existingVote).
+			Set("is_upvote = ?", isUpvote).
+			Where("id = ?", existingVote.ID).
+			Exec(context.Background())
+		if err != nil {
+			return err
+		}
+
+		delta := 2
+		if !isUpvote {
+			delta = -2
+		}
+		_, err = database.DB.NewUpdate().
+			TableExpr("reviews").
+			Set("score = score + ?", delta).
+			Where("id = ?", reviewID).
+			Exec(context.Background())
+		return err
+	}
+
+	// New vote: insert and adjust score by ±1.
+	newVote := &schemas.ReviewVote{
+		ReviewID: reviewID,
+		VoterID:  voter.ID,
+		IsUpvote: isUpvote,
+	}
+	_, err = database.DB.NewInsert().Model(newVote).Exec(context.Background())
+	if err != nil {
+		return err
+	}
+
+	delta := 1
+	if !isUpvote {
+		delta = -1
+	}
+	_, err = database.DB.NewUpdate().
+		TableExpr("reviews").
+		Set("score = score + ?", delta).
+		Where("id = ?", reviewID).
+		Exec(context.Background())
+	return err
+}
+
+// GetUserRating returns the net vote score (sum of all review scores) for a given Discord user.
+func GetUserRating(discordID string) (int, error) {
+	var rating int
+	err := database.DB.NewSelect().
+		TableExpr("reviews").
+		ColumnExpr("COALESCE(SUM(score), 0)").
+		Where("profile_id = ?", discordID).
+		Scan(context.Background(), &rating)
+	return rating, err
+}

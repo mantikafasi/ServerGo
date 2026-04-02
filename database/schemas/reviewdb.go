@@ -173,9 +173,20 @@ type UserReview struct {
 	Timestamp    int64     `bun:"-" json:"timestamp"`
 	ReviewerID   int32     `bun:"reviewer_id" json:"-"`
 	RepliesTo    int32     `bun:"replies_to,nullzero" json:"-"`
+	Score        int       `bun:"score,default:0" json:"score"`
 
 	User    *URUser      `bun:"rel:belongs-to,join:reviewer_id=id" json:"-"`
 	Replies []UserReview `bun:"-" json:"replies"`
+}
+
+
+type ReviewVote struct {
+	bun.BaseModel `bun:"table:review_votes"`
+
+	ID       int32 `bun:"id,pk,autoincrement"`
+	ReviewID int32 `bun:"review_id,unique:vote_unique"`
+	VoterID  int32 `bun:"voter_id,unique:vote_unique"`
+	IsUpvote bool  `bun:"is_upvote"`
 }
 
 type UserReviewBasic struct {

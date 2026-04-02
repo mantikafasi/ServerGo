@@ -33,10 +33,11 @@ type ReviewDBAuthResponse struct {
 
 type ReviewResponse struct {
 	Response
-	HasNextPage bool                 `json:"hasNextPage"`
-	ReviewCount int                  `json:"reviewCount"`
-	Reviews     []schemas.UserReview `json:"reviews"`
-	OptedOut    bool                 `json:"hasOptedOut"`
+	HasNextPage   bool                 `json:"hasNextPage"`
+	ReviewCount   int                  `json:"reviewCount"`
+	Reviews       []schemas.UserReview `json:"reviews"`
+	OptedOut      bool                 `json:"hasOptedOut"`
+	AverageRating float64              `json:"averageRating"`
 }
 
 func AddReview(w http.ResponseWriter, r *http.Request) {
@@ -398,6 +399,10 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		reviews = []schemas.UserReview{}
 	}
 
+	// if avgRating, err := modules.GetUserAverageRating(fmt.Sprint(userID)); err == nil {
+	// 	response.AverageRating = avgRating
+	// }
+
 	response.Reviews = reviews
 	response.Success = true
 	common.SendStructResponse(w, response)
@@ -618,3 +623,50 @@ func GetLeaderBoard(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(leaderboard)
 }
+
+func VoteReview(w http.ResponseWriter, r *http.Request) {
+	user, err := Authorize(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		common.SendStructResponse(w, Response{Message: "Unauthorized"})
+		return
+	}
+
+	reviewIDStr := chi.URLParam(r, "reviewid")
+	reviewID64, err := strconv.ParseInt(reviewIDStr, 10, 32)
+	if err != nil || reviewID64 == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		common.SendStructResponse(w, Response{Message: "Invalid review ID"})
+		return
+	}
+
+	var body struct {
+		IsUpvote bool `json:"isUpvote"`
+	}
+	json.NewDecoder(r.Body).Decode(&body)
+
+	err = modules.VoteReview(user, int32(reviewID64), body.IsUpvote)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		common.SendStructResponse(w, Response{Message: err.Error()})
+		return
+	}
+
+	common.SendStructResponse(w, Response{Success: true, Message: "Vote recorded"})
+}
+
+func GetUserRating(w http.ResponseWriter, r *http.Request) {
+	discordID := chi.URLParam(r, "discordid")
+
+	rating, err := modules.GetUserRating(discordID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		common.SendStructResponse(w, Response{Message: err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(struct {
+		Rating int `json:"rating"`
+	}{Rating: rating})
+}
+
