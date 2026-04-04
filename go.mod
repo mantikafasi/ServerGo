@@ -8,6 +8,7 @@ require (
 	github.com/mileusna/useragent v1.3.5
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_golang v1.23.2
+	github.com/sashabaranov/go-openai v1.41.2
 	github.com/uptrace/bun v1.2.18
 	github.com/uptrace/bun/dialect/pgdialect v1.2.18
 	github.com/uptrace/bun/driver/pgdriver v1.2.18
