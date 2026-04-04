@@ -213,6 +213,13 @@ func Interactions(data InteractionsData) (string, error) {
 				response.Data.Content = option.NewNullableString("Appeal action already taken")
 				return InteractionResponse(&response), nil
 			}
+
+			// Safety check for modal submission data
+			if len(data.Data.Components) == 0 || len(data.Data.Components[0].Components) == 0 {
+				response.Data.Content = option.NewNullableString("Invalid modal submission data")
+				return InteractionResponse(&response), nil
+			}
+
 			denyReason := data.Data.Components[0].Components[0].Value
 			err = modules.DenyAppeal(&appeal, denyReason)
 			if err != nil {
