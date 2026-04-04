@@ -7,8 +7,7 @@ import (
 	"net/url"
 	"server-go/common"
 	"server-go/database/schemas"
-	commentanaylzer "server-go/modules/commentanalyzer"
-	"slices"
+	"server-go/modules/moderation"
 	"strconv"
 
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -63,13 +62,19 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 
 	var commentSuffix string
 
-	analyzation,err := commentanaylzer.AnalyzeComment(common.Ternary(translatedContent != "" && sourceLang != "en" && !slices.Contains(commentanaylzer.SupportedLanguages, sourceLang), translatedContent, review.Comment))
+	// Use translated content if available and not in a supported language
+	contentToModerate := review.Comment
+	if translatedContent != "" && sourceLang != "en" {
+		contentToModerate = translatedContent
+	}
+
+	moderationResult, err := moderation.ModerateContent(contentToModerate)
 	if err == nil {
-		if len(analyzation.AttributeScores) == 0 {
+		if !moderationResult.Flagged && len(moderationResult.Scores) == 0 {
 			commentSuffix = ""
 		} else {
-			name,score := commentanaylzer.GetHighestScore(analyzation);
-			commentSuffix = fmt.Sprintf(" (%s - %d%%)", name, int(score * 100))
+			name, score := moderation.GetHighestScore(moderationResult)
+			commentSuffix = fmt.Sprintf(" (%s - %d%%)", name, int(score*100))
 		}
 	} else {
 		println(err.Error())
