@@ -827,7 +827,7 @@ func AppealBan(appeal schemas.ReviewDBAppeal, user *schemas.URUser) (err error) 
 }
 
 func GetAppeal(id int32) (appeal schemas.ReviewDBAppeal, err error) {
-	database.DB.NewSelect().Model(&appeal).Where("id = ?", id).Scan(context.Background(), &appeal)
+	err = database.DB.NewSelect().Model(&appeal).Where("id = ?", id).Scan(context.Background(), &appeal)
 	return
 }
 
@@ -838,7 +838,11 @@ func AcceptAppeal(appeal *schemas.ReviewDBAppeal, userId int32) (err error) {
 		return
 	}
 
-	_, err = database.DB.NewUpdate().Model(appeal).Set("action_taken=true").Exec(context.Background())
+	_, err = database.DB.NewUpdate().Model(appeal).Set("action_taken = true").WherePK().Exec(context.Background())
+
+	if err != nil {
+		return
+	}
 
 	err = SendNotification(&schemas.Notification{
 		UserID:  userId,
@@ -851,7 +855,11 @@ func AcceptAppeal(appeal *schemas.ReviewDBAppeal, userId int32) (err error) {
 
 func DenyAppeal(appeal *schemas.ReviewDBAppeal, denyText string) (err error) {
 
-	database.DB.NewUpdate().Model(appeal).Set("action_taken=true").Exec(context.Background())
+	_, err = database.DB.NewUpdate().Model(appeal).Set("action_taken = true").WherePK().Exec(context.Background())
+
+	if err != nil {
+		return
+	}
 
 	return SendNotification(&schemas.Notification{
 		UserID: appeal.UserID,

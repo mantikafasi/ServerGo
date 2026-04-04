@@ -22,11 +22,11 @@ type InteractionsData struct {
 		ID         string                           `json:"custom_id"`
 		Values     []string                         `json:"values"`
 		Components []discord_utils.WebhookComponent `json:"components"`
-	}
+	} `json:"data"`
 	Message struct {
 		Content string `json:"content"`
 		ID      string `json:"id"`
-	}
+	} `json:"message"`
 
 	Member struct {
 		User struct {
@@ -75,11 +75,12 @@ func AppealDenyTextComponent(appealID int32) discord.ContainerComponents {
 	return discord.ContainerComponents{
 		&discord.ActionRowComponent{
 			&discord.TextInputComponent{
+				CustomID:    discord.ComponentID(fmt.Sprintf("deny_reason:%d", appealID)),
 				Label:       "Deny Reason",
 				Placeholder: "You wrote such a dumb reason even I could think of a better one",
 				Style:       discord.TextInputParagraphStyle,
 				Required:    true,
-				Value:     "You wrote such a dumb reason even I could think of a better one",
+				Value:       "You wrote such a dumb reason even I could think of a better one",
 			},
 		},
 	}
@@ -213,6 +214,12 @@ func Interactions(data InteractionsData) (string, error) {
 				response.Data.Content = option.NewNullableString("Appeal action already taken")
 				return InteractionResponse(&response), nil
 			}
+
+			if len(data.Data.Components) == 0 || len(data.Data.Components[0].Components) == 0 {
+				response.Data.Content = option.NewNullableString("Invalid modal submission")
+				return InteractionResponse(&response), nil
+			}
+
 			denyReason := data.Data.Components[0].Components[0].Value
 			err = modules.DenyAppeal(&appeal, denyReason)
 			if err != nil {

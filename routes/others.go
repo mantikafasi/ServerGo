@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"server-go/common"
@@ -22,10 +23,16 @@ var HandleInteractions = func(w http.ResponseWriter, r *http.Request) {
 	}
 	var data InteractionsData
 
-	json.Unmarshal(message[len(timestamp):], &data)
+	err := json.Unmarshal(message[len(timestamp):], &data)
+	if err != nil {
+		fmt.Printf("Error unmarshaling interaction: %s\n", err)
+		w.WriteHeader(400)
+		return
+	}
+
 	response, err := Interactions(data)
 	if err != nil {
-		println(err.Error())
+		fmt.Printf("Error handling interaction: %s\n", err)
 		w.WriteHeader(500)
 		return
 	}
