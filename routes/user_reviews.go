@@ -40,6 +40,16 @@ type ReviewResponse struct {
 	AverageRating float64              `json:"averageRating"`
 }
 
+type ReviewVotesResponse struct {
+	Response
+	Votes []ReviewVoteResponse `json:"votes"`
+}
+
+type ReviewVoteResponse struct {
+	ReviewID int32 `json:"reviewID"`
+	IsUpvote bool  `json:"isUpvote"`
+}
+
 func AddReview(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Response
@@ -267,7 +277,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	if limitString != "" {
 		limit, err = strconv.Atoi(limitString)
-		
+
 		if err != nil || limit <= 0 || limit > 50 {
 			w.WriteHeader(http.StatusBadRequest)
 			common.SendStructResponse(w, ReviewResponse{
@@ -279,8 +289,8 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	requester, err := Authorize(r);
-	
+	requester, err := Authorize(r)
+
 	userID, _ := strconv.ParseInt(userIDString, 10, 64)
 	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
@@ -294,7 +304,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	if slices.Contains(common.OptedOut, fmt.Sprint(userID)) {
 		response.OptedOut = true
-		
+
 		reviews = []schemas.UserReview{{
 			ID: 0,
 			Sender: schemas.Sender{
@@ -310,10 +320,10 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		if requester != nil && requester.IsAdmin() {
 			options := modules.GetReviewsOptions{
 				IncludeReviewsById: includeReviewsBy,
-				Limit: limit,
+				Limit:              limit,
 			}
 
-			var _reviews []schemas.UserReview;
+			var _reviews []schemas.UserReview
 
 			_reviews, count, err = modules.GetReviewsWithOptions(requester, userID, offset, options)
 
@@ -329,7 +339,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	} else {
 		options := modules.GetReviewsOptions{
 			IncludeReviewsById: includeReviewsBy,
-			Limit: limit,
+			Limit:              limit,
 		}
 		reviews, count, err = modules.GetReviewsWithOptions(requester, userID, offset, options)
 
@@ -655,6 +665,42 @@ func VoteReview(w http.ResponseWriter, r *http.Request) {
 	common.SendStructResponse(w, Response{Success: true, Message: "Vote recorded"})
 }
 
+func GetReviewVotes(w http.ResponseWriter, r *http.Request) {
+	user, err := Authorize(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		common.SendStructResponse(w, Response{Message: "Unauthorized"})
+		return
+	}
+
+	userID, err := strconv.ParseInt(chi.URLParam(r, "discordid"), 10, 64)
+	if err != nil || userID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		common.SendStructResponse(w, Response{Message: "Invalid user ID"})
+		return
+	}
+
+	votes, err := modules.GetReviewVotesOnUser(user, userID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		common.SendStructResponse(w, Response{Message: err.Error()})
+		return
+	}
+
+	response := ReviewVotesResponse{
+		Response: Response{Success: true},
+		Votes:    []ReviewVoteResponse{},
+	}
+	for _, vote := range votes {
+		response.Votes = append(response.Votes, ReviewVoteResponse{
+			ReviewID: vote.ReviewID,
+			IsUpvote: vote.IsUpvote,
+		})
+	}
+
+	common.SendStructResponse(w, response)
+}
+
 func GetUserRating(w http.ResponseWriter, r *http.Request) {
 	discordID := chi.URLParam(r, "discordid")
 
@@ -669,4 +715,3 @@ func GetUserRating(w http.ResponseWriter, r *http.Request) {
 		Rating int `json:"rating"`
 	}{Rating: rating})
 }
-

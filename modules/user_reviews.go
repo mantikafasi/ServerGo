@@ -1083,6 +1083,18 @@ func VoteReview(voter *schemas.URUser, reviewID int32, isUpvote bool) error {
 	return err
 }
 
+func GetReviewVotesOnUser(voter *schemas.URUser, profileID int64) ([]schemas.ReviewVote, error) {
+	votes := []schemas.ReviewVote{}
+	err := database.DB.NewSelect().
+		Model(&votes).
+		Join("JOIN reviews AS r ON r.id = review_vote.review_id").
+		Where("r.profile_id = ?", profileID).
+		Where("review_vote.voter_id = ?", voter.ID).
+		OrderExpr("review_vote.review_id DESC").
+		Scan(context.Background())
+	return votes, err
+}
+
 // GetUserRating returns the net vote score (sum of all review scores) for a given Discord user.
 func GetUserRating(discordID string) (int, error) {
 	var rating int

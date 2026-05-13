@@ -69,6 +69,7 @@ func main() {
 		r.Get("/leaderboard", routes.GetLeaderBoard)
 		r.Route("/users/{discordid}/reviews", func(r1 chi.Router) {
 			r1.Get("/", routes.GetReviews)
+			r1.Get("/votes", routes.GetReviewVotes)
 			r1.Put("/", routes.AddReview)
 			r1.Delete("/", routes.DeleteReview)
 		})
