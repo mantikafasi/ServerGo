@@ -9,6 +9,7 @@ import (
 	"server-go/common"
 	"server-go/database/schemas"
 	"server-go/modules"
+	discord_utils "server-go/modules/discord"
 	"server-go/modules/filtering"
 	"strconv"
 	"strings"
@@ -714,4 +715,67 @@ func GetUserRating(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(struct {
 		Rating int `json:"rating"`
 	}{Rating: rating})
+}
+
+func GetUserInfoByID(w http.ResponseWriter, r *http.Request) {
+	discordID := chi.URLParam(r, "discordid")
+	if discordID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	type UserInfo struct {
+		DiscordID    string              `json:"discordID"`
+		Username     string              `json:"username"`
+		ProfilePhoto string              `json:"profilePhoto"`
+		Badges       []schemas.UserBadge `json:"badges"`
+		Type         int32               `json:"type"`
+		OptedOut     bool                `json:"optedOut"`
+	}
+
+	user, err := modules.GetDBUserViaDiscordID(discordID)
+	if err == nil && user != nil {
+		badges := modules.GetBadgesOfUser(user.DiscordID)
+		response := UserInfo{
+			DiscordID:    user.DiscordID,
+			Username:     user.Username,
+			ProfilePhoto: user.AvatarURL,
+			Badges:       badges,
+			Type:         user.Type,
+			OptedOut:     user.OptedOut,
+		}
+		if slices.Contains(common.OptedOut, discordID) {
+			response.OptedOut = true
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	userID, err := strconv.ParseInt(discordID, 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	discordUser, err := discord_utils.ArikawaState.User(discord.UserID(userID))
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	avatarURL := discordUser.AvatarURL()
+	if avatarURL == "" {
+		avatarURL = "https://cdn.discordapp.com/embed/avatars/0.png"
+	}
+
+	response := UserInfo{
+		DiscordID:    discordUser.ID.String(),
+		Username:     common.Ternary(discordUser.Discriminator == "0", discordUser.Username, discordUser.Username+"#"+discordUser.Discriminator),
+		ProfilePhoto: avatarURL,
+		Badges:       []schemas.UserBadge{},
+		Type:         0,
+		OptedOut:     slices.Contains(common.OptedOut, discordID),
+	}
+
+	json.NewEncoder(w).Encode(response)
 }

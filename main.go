@@ -73,6 +73,7 @@ func main() {
 			r1.Put("/", routes.AddReview)
 			r1.Delete("/", routes.DeleteReview)
 		})
+		r.Get("/users/{discordid}", routes.GetUserInfoByID)
 		r.Get("/users/{discordid}/rating", routes.GetUserRating)
 		r.Route("/reviews/{reviewid}", func(rv chi.Router) {
 			rv.Use(routes.ReviewMiddleware)
