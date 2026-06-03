@@ -29,7 +29,7 @@ type WebhookComponent struct {
 	Label      string                  `json:"label"`
 	Value      string                  `json:"value"`
 	CustomID   string                  `json:"custom_id"`
-	Emoji      discord.ComponentEmoji  `json:"emoji,omitempty"`
+	Emoji      discord.ComponentEmoji  `json:"emoji"`
 	Options    []discord.CommandOption `json:"options,omitempty"`
 	Components []WebhookComponent      `json:"components"`
 }
@@ -74,12 +74,12 @@ func GetUser(token string) (user *discord.User, err error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
-	
+
 	if resp != nil && resp.StatusCode != http.StatusOK {
 		println("Error while fetching user, status code %s", resp.StatusCode)
 		return nil, errors.New("an error occured")
 	}
-	
+
 	if err == nil && resp.StatusCode == http.StatusOK {
 		json.NewDecoder(resp.Body).Decode(&user)
 		resp.Body.Close()

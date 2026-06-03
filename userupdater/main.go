@@ -49,7 +49,7 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(threadCount)
 
-	for i := 0; i < threadCount; i++ {
+	for range threadCount {
 		go func() {
 			for true {
 				lock.Lock()

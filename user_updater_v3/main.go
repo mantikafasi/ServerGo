@@ -137,10 +137,7 @@ func BanAllUsers(bans *[]discord.Ban) {
 	}
 
 	for i := 0; i < len(usersToBan); i += 200 {
-		end := i + 200
-		if end > len(usersToBan) {
-			end = len(usersToBan)
-		}
+		end := min(i+200, len(usersToBan))
 
 		var userIds []discord.Snowflake
 		for _, user := range usersToBan[i:end] {

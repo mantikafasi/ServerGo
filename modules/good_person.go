@@ -9,7 +9,7 @@ import (
 func ReplaceBadWords(text string) string {
 
 	words := strings.Split(text, " ")
-	newText := ""
+	var newText strings.Builder
 
 out:
 	for _, word := range words {
@@ -21,7 +21,7 @@ out:
 			filtered := strings.Replace(lower, " "+badNoun, " "+common.GoodPersonConfig.ReplacementNouns[ix], -1)
 
 			if filtered != lower {
-				newText += strings.TrimSpace(filtered) + " "
+				newText.WriteString(strings.TrimSpace(filtered) + " ")
 				continue out
 			}
 		}
@@ -32,12 +32,12 @@ out:
 			filtered := strings.Replace(lower, " "+badVerb, " "+common.GoodPersonConfig.ReplacementVerbs[ix], -1)
 
 			if filtered != lower {
-				newText += strings.TrimSpace(filtered) + " "
+				newText.WriteString(strings.TrimSpace(filtered) + " ")
 				continue out
 			}
 		}
 
-		newText += word + " "
+		newText.WriteString(word + " ")
 	}
-	return strings.TrimSpace(newText)
+	return strings.TrimSpace(newText.String())
 }
