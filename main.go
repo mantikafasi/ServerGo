@@ -78,6 +78,7 @@ func main() {
 		r.Route("/reviews/{reviewid}", func(rv chi.Router) {
 			rv.Use(routes.ReviewMiddleware)
 			rv.Post("/vote", routes.VoteReview)
+			rv.Delete("/vote", routes.DeleteReviewVote)
 		})
 		r.HandleFunc("/users", routes.GetUserInfo)
 		r.HandleFunc("/reports", routes.ReportReview)

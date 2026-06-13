@@ -1083,6 +1083,50 @@ func VoteReview(voter *schemas.URUser, reviewID int32, isUpvote bool) error {
 	return err
 }
 
+// DeleteReviewVote removes the voter's vote from a review and adjusts the review score.
+func DeleteReviewVote(voter *schemas.URUser, reviewID int32) error {
+	review, err := GetReview(reviewID)
+	if err != nil {
+		return errors.New("invalid review ID")
+	}
+
+	if review.ReviewerID == voter.ID {
+		return errors.New("you cannot vote on your own review")
+	}
+
+	existingVote := &schemas.ReviewVote{}
+	err = database.DB.NewSelect().
+		Model(existingVote).
+		Where("review_id = ? AND voter_id = ?", reviewID, voter.ID).
+		Limit(1).
+		Scan(context.Background())
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return errors.New("you have not voted on this review")
+		}
+		return err
+	}
+
+	_, err = database.DB.NewDelete().
+		Model(existingVote).
+		Where("id = ?", existingVote.ID).
+		Exec(context.Background())
+	if err != nil {
+		return err
+	}
+
+	delta := -1
+	if !existingVote.IsUpvote {
+		delta = 1
+	}
+	_, err = database.DB.NewUpdate().
+		TableExpr("reviews").
+		Set("score = score + ?", delta).
+		Where("id = ?", reviewID).
+		Exec(context.Background())
+	return err
+}
+
 func GetReviewVotesOnUser(voter *schemas.URUser, profileID int64) ([]schemas.ReviewVote, error) {
 	votes := []schemas.ReviewVote{}
 	err := database.DB.NewSelect().

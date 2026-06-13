@@ -666,6 +666,32 @@ func VoteReview(w http.ResponseWriter, r *http.Request) {
 	common.SendStructResponse(w, Response{Success: true, Message: "Vote recorded"})
 }
 
+func DeleteReviewVote(w http.ResponseWriter, r *http.Request) {
+	user, err := Authorize(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		common.SendStructResponse(w, Response{Message: "Unauthorized"})
+		return
+	}
+
+	reviewIDStr := chi.URLParam(r, "reviewid")
+	reviewID64, err := strconv.ParseInt(reviewIDStr, 10, 32)
+	if err != nil || reviewID64 == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		common.SendStructResponse(w, Response{Message: "Invalid review ID"})
+		return
+	}
+
+	err = modules.DeleteReviewVote(user, int32(reviewID64))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		common.SendStructResponse(w, Response{Message: err.Error()})
+		return
+	}
+
+	common.SendStructResponse(w, Response{Success: true, Message: "Vote removed"})
+}
+
 func GetReviewVotes(w http.ResponseWriter, r *http.Request) {
 	user, err := Authorize(r)
 	if err != nil {
