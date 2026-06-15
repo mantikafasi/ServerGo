@@ -16,7 +16,7 @@ func CreateSchemas() (err error) {
 }
 
 func CreateReviewDBSchemas() error {
-	models := []interface{}{
+	models := []any{
 		(*schemas.URUser)(nil),
 		(*schemas.ReviewReport)(nil),
 		(*schemas.ReviewDBBanLog)(nil),

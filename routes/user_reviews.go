@@ -9,6 +9,7 @@ import (
 	"server-go/common"
 	"server-go/database/schemas"
 	"server-go/modules"
+	discord_utils "server-go/modules/discord"
 	"server-go/modules/filtering"
 	"strconv"
 	"strings"
@@ -38,6 +39,16 @@ type ReviewResponse struct {
 	Reviews       []schemas.UserReview `json:"reviews"`
 	OptedOut      bool                 `json:"hasOptedOut"`
 	AverageRating float64              `json:"averageRating"`
+}
+
+type ReviewVotesResponse struct {
+	Response
+	Votes []ReviewVoteResponse `json:"votes"`
+}
+
+type ReviewVoteResponse struct {
+	ReviewID int32 `json:"reviewID"`
+	IsUpvote bool  `json:"isUpvote"`
 }
 
 func AddReview(w http.ResponseWriter, r *http.Request) {
@@ -267,7 +278,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	if limitString != "" {
 		limit, err = strconv.Atoi(limitString)
-		
+
 		if err != nil || limit <= 0 || limit > 50 {
 			w.WriteHeader(http.StatusBadRequest)
 			common.SendStructResponse(w, ReviewResponse{
@@ -279,8 +290,8 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	requester, err := Authorize(r);
-	
+	requester, err := Authorize(r)
+
 	userID, _ := strconv.ParseInt(userIDString, 10, 64)
 	flags64, _ := strconv.ParseInt(r.URL.Query().Get("flags"), 10, 32)
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
@@ -294,7 +305,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	if slices.Contains(common.OptedOut, fmt.Sprint(userID)) {
 		response.OptedOut = true
-		
+
 		reviews = []schemas.UserReview{{
 			ID: 0,
 			Sender: schemas.Sender{
@@ -310,10 +321,10 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		if requester != nil && requester.IsAdmin() {
 			options := modules.GetReviewsOptions{
 				IncludeReviewsById: includeReviewsBy,
-				Limit: limit,
+				Limit:              limit,
 			}
 
-			var _reviews []schemas.UserReview;
+			var _reviews []schemas.UserReview
 
 			_reviews, count, err = modules.GetReviewsWithOptions(requester, userID, offset, options)
 
@@ -329,7 +340,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	} else {
 		options := modules.GetReviewsOptions{
 			IncludeReviewsById: includeReviewsBy,
-			Limit: limit,
+			Limit:              limit,
 		}
 		reviews, count, err = modules.GetReviewsWithOptions(requester, userID, offset, options)
 
@@ -655,6 +666,68 @@ func VoteReview(w http.ResponseWriter, r *http.Request) {
 	common.SendStructResponse(w, Response{Success: true, Message: "Vote recorded"})
 }
 
+func DeleteReviewVote(w http.ResponseWriter, r *http.Request) {
+	user, err := Authorize(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		common.SendStructResponse(w, Response{Message: "Unauthorized"})
+		return
+	}
+
+	reviewIDStr := chi.URLParam(r, "reviewid")
+	reviewID64, err := strconv.ParseInt(reviewIDStr, 10, 32)
+	if err != nil || reviewID64 == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		common.SendStructResponse(w, Response{Message: "Invalid review ID"})
+		return
+	}
+
+	err = modules.DeleteReviewVote(user, int32(reviewID64))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		common.SendStructResponse(w, Response{Message: err.Error()})
+		return
+	}
+
+	common.SendStructResponse(w, Response{Success: true, Message: "Vote removed"})
+}
+
+func GetReviewVotes(w http.ResponseWriter, r *http.Request) {
+	user, err := Authorize(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		common.SendStructResponse(w, Response{Message: "Unauthorized"})
+		return
+	}
+
+	userID, err := strconv.ParseInt(chi.URLParam(r, "discordid"), 10, 64)
+	if err != nil || userID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		common.SendStructResponse(w, Response{Message: "Invalid user ID"})
+		return
+	}
+
+	votes, err := modules.GetReviewVotesOnUser(user, userID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		common.SendStructResponse(w, Response{Message: err.Error()})
+		return
+	}
+
+	response := ReviewVotesResponse{
+		Response: Response{Success: true},
+		Votes:    []ReviewVoteResponse{},
+	}
+	for _, vote := range votes {
+		response.Votes = append(response.Votes, ReviewVoteResponse{
+			ReviewID: vote.ReviewID,
+			IsUpvote: vote.IsUpvote,
+		})
+	}
+
+	common.SendStructResponse(w, response)
+}
+
 func GetUserRating(w http.ResponseWriter, r *http.Request) {
 	discordID := chi.URLParam(r, "discordid")
 
@@ -670,3 +743,65 @@ func GetUserRating(w http.ResponseWriter, r *http.Request) {
 	}{Rating: rating})
 }
 
+func GetUserInfoByID(w http.ResponseWriter, r *http.Request) {
+	discordID := chi.URLParam(r, "discordid")
+	if discordID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	type UserInfo struct {
+		DiscordID    string              `json:"discordID"`
+		Username     string              `json:"username"`
+		ProfilePhoto string              `json:"profilePhoto"`
+		Badges       []schemas.UserBadge `json:"badges"`
+		Type         int32               `json:"type"`
+		OptedOut     bool                `json:"optedOut"`
+	}
+
+	user, err := modules.GetDBUserViaDiscordID(discordID)
+	if err == nil && user != nil {
+		badges := modules.GetBadgesOfUser(user.DiscordID)
+		response := UserInfo{
+			DiscordID:    user.DiscordID,
+			Username:     user.Username,
+			ProfilePhoto: user.AvatarURL,
+			Badges:       badges,
+			Type:         user.Type,
+			OptedOut:     user.OptedOut,
+		}
+		if slices.Contains(common.OptedOut, discordID) {
+			response.OptedOut = true
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	userID, err := strconv.ParseInt(discordID, 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	discordUser, err := discord_utils.ArikawaState.User(discord.UserID(userID))
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	avatarURL := discordUser.AvatarURL()
+	if avatarURL == "" {
+		avatarURL = "https://cdn.discordapp.com/embed/avatars/0.png"
+	}
+
+	response := UserInfo{
+		DiscordID:    discordUser.ID.String(),
+		Username:     common.Ternary(discordUser.Discriminator == "0", discordUser.Username, discordUser.Username+"#"+discordUser.Discriminator),
+		ProfilePhoto: avatarURL,
+		Badges:       []schemas.UserBadge{},
+		Type:         0,
+		OptedOut:     slices.Contains(common.OptedOut, discordID),
+	}
+
+	json.NewEncoder(w).Encode(response)
+}

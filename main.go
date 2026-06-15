@@ -69,13 +69,16 @@ func main() {
 		r.Get("/leaderboard", routes.GetLeaderBoard)
 		r.Route("/users/{discordid}/reviews", func(r1 chi.Router) {
 			r1.Get("/", routes.GetReviews)
+			r1.Get("/votes", routes.GetReviewVotes)
 			r1.Put("/", routes.AddReview)
 			r1.Delete("/", routes.DeleteReview)
 		})
+		r.Get("/users/{discordid}", routes.GetUserInfoByID)
 		r.Get("/users/{discordid}/rating", routes.GetUserRating)
 		r.Route("/reviews/{reviewid}", func(rv chi.Router) {
 			rv.Use(routes.ReviewMiddleware)
 			rv.Post("/vote", routes.VoteReview)
+			rv.Delete("/vote", routes.DeleteReviewVote)
 		})
 		r.HandleFunc("/users", routes.GetUserInfo)
 		r.HandleFunc("/reports", routes.ReportReview)

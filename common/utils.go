@@ -18,7 +18,7 @@ func VerifySignature(signatureString string, message []byte) bool {
 	return ed25519.Verify(publicKey, message, signature)
 }
 
-func SendStructResponse(w http.ResponseWriter, response interface{}) {
+func SendStructResponse(w http.ResponseWriter, response any) {
 	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -67,22 +67,21 @@ func FormatUser(username string, id int32, discordId string) string {
 }
 
 func GetQueryOrDefault(r *http.Request, key string, defaultValue string) string {
-    value := r.URL.Query().Get(key)
-    if value == "" {
-        return defaultValue
-    }
+	value := r.URL.Query().Get(key)
+	if value == "" {
+		return defaultValue
+	}
 	return value
 }
 
-
 func GetIntQueryOrDefault(r *http.Request, key string, defaultValue int) int {
-    value := r.URL.Query().Get(key)
-    if value == "" {
-        return defaultValue
-    }
+	value := r.URL.Query().Get(key)
+	if value == "" {
+		return defaultValue
+	}
 	intValue, err := strconv.Atoi(value)
 	if err != nil {
 		return intValue
 	}
-    return defaultValue
+	return defaultValue
 }
