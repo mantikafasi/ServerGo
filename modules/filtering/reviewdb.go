@@ -31,7 +31,11 @@ func init() {
 
 		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
 			if common.BanWordDetector.IsProfane(review.Comment) {
-				database.DB.NewUpdate().Model(&schemas.URUser{}).Set("type", -1).Exec(context.Background())
+				database.DB.NewUpdate().
+					Model(&schemas.URUser{}).
+					Set("type = ?", -1).
+					Where("id = ?", reviewer.ID).
+					Exec(context.Background())
 				err = errors.New("Your have been banned from reviewdb")
 			}
 			return

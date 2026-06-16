@@ -36,7 +36,7 @@ func AddStupidityDBUser(code string) (string, error) {
 	}
 	token := GenerateToken()
 
-	var user = &schemas.UserInfo{DiscordID: discordUser.ID.String(), Token: token}
+	var user = &schemas.UserInfo{DiscordID: discordUser.ID.String(), Token: CalculateHash(token)}
 
 	res, err := database.DB.NewUpdate().Where("discord_id = ?", discordUser.ID).Model(user).Exec(context.Background())
 	if err != nil {
@@ -58,13 +58,20 @@ func AddStupidityDBUser(code string) (string, error) {
 	return token, nil
 }
 
-func GetDiscordIDWithToken(token string) string {
-	var user *schemas.UserInfo
-	err := database.DB.NewSelect().Where("token = ?", CalculateHash(token)).Model(user).Scan(context.Background())
-	if err != nil {
-		return "0"
+func GetDiscordIDWithToken(token string) (string, bool) {
+	if token == "" {
+		return "", false
 	}
-	return user.DiscordID
+
+	var user schemas.UserInfo
+	err := database.DB.NewSelect().
+		Model(&user).
+		Where("token = ? OR token = ?", CalculateHash(token), token).
+		Scan(context.Background())
+	if err != nil {
+		return "", false
+	}
+	return user.DiscordID, true
 }
 
 func VoteStupidity(discordID int64, token string, stupidity int32, senderDiscordID string) string {
@@ -72,7 +79,11 @@ func VoteStupidity(discordID int64, token string, stupidity int32, senderDiscord
 	if token == common.Config.BotIntegrationToken {
 		senderID = senderDiscordID
 	} else {
-		senderID = GetDiscordIDWithToken(token)
+		var ok bool
+		senderID, ok = GetDiscordIDWithToken(token)
+		if !ok {
+			return "Unauthorized"
+		}
 	}
 
 	stupit := &schemas.StupitStat{ReviewedDiscordID: discordID, StupidityValue: stupidity, ReviewerDiscordID: senderID}

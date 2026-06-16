@@ -202,7 +202,7 @@ func AddTwitterUser(code string, ip string) (*schemas.TwitterUser, error) {
 		AvatarURL: twitterUser.Data.AvatarURL,
 		Content:   fmt.Sprintf("User %s (%s) has been registered to ReviewDB Twitter", twitterUser.Data.Username, twitterUser.Data.ID),
 	})
-	return dbUser, nil
+	return user, nil
 }
 
 func AddReview(user *schemas.TwitterUser, data schemas.TwitterRequestData) (response string, err error) {

@@ -17,12 +17,12 @@ func AdminMiddleware(handler http.Handler) http.Handler {
 
 		var token = r.Header.Get("Authorization")
 
-		if token == common.Config.AdminToken {
-			handler.ServeHTTP(w, r)
-			return
-		}
 		if token == "" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		if common.Config.AdminToken != "" && token == common.Config.AdminToken {
+			handler.ServeHTTP(w, r)
 			return
 		}
 		user, err := modules.GetDBUserViaToken(token)
