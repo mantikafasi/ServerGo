@@ -426,6 +426,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 		schemas.URUser
 		LastReviewID int32 `json:"lastReviewID"`
 		UserType     int   `json:"type"`
+		Reputation   int   `json:"reputation"`
 	}
 
 	token := r.Header.Get("Authorization")
@@ -438,12 +439,12 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := modules.GetDBUserViaToken(data.Token)
-	response := UserInfo{user, modules.GetLastReviewID(user.DiscordID), int(user.Type)}
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
+	response := UserInfo{user, modules.GetLastReviewID(user.DiscordID), int(user.Type), user.Reputation}
 	response.Badges = modules.GetBadgesOfUser(user.DiscordID)
 
 	json.NewEncoder(w).Encode(response)
@@ -635,6 +636,16 @@ func GetLeaderBoard(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(leaderboard)
 }
 
+func GetReputationLeaderboard(w http.ResponseWriter, r *http.Request) {
+	leaderboard, err := modules.GetReputationLeaderboard()
+	if err != nil {
+		http.Error(w, "An error occured", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(leaderboard)
+}
+
 func VoteReview(w http.ResponseWriter, r *http.Request) {
 	user, err := Authorize(r)
 	if err != nil {
@@ -743,6 +754,24 @@ func GetUserRating(w http.ResponseWriter, r *http.Request) {
 	}{Rating: rating})
 }
 
+func GetUserReputation(w http.ResponseWriter, r *http.Request) {
+	discordID := chi.URLParam(r, "discordid")
+	if discordID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		common.SendStructResponse(w, Response{Message: "Invalid user ID"})
+		return
+	}
+
+	reputation, err := modules.GetUserReputation(discordID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		common.SendStructResponse(w, Response{Message: err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(reputation)
+}
+
 func GetUserInfoByID(w http.ResponseWriter, r *http.Request) {
 	discordID := chi.URLParam(r, "discordid")
 	if discordID == "" {
@@ -757,6 +786,7 @@ func GetUserInfoByID(w http.ResponseWriter, r *http.Request) {
 		Badges       []schemas.UserBadge `json:"badges"`
 		Type         int32               `json:"type"`
 		OptedOut     bool                `json:"optedOut"`
+		Reputation   int                 `json:"reputation"`
 	}
 
 	user, err := modules.GetDBUserViaDiscordID(discordID)
@@ -769,6 +799,7 @@ func GetUserInfoByID(w http.ResponseWriter, r *http.Request) {
 			Badges:       badges,
 			Type:         user.Type,
 			OptedOut:     user.OptedOut,
+			Reputation:   user.Reputation,
 		}
 		if slices.Contains(common.OptedOut, discordID) {
 			response.OptedOut = true
@@ -801,6 +832,7 @@ func GetUserInfoByID(w http.ResponseWriter, r *http.Request) {
 		Badges:       []schemas.UserBadge{},
 		Type:         0,
 		OptedOut:     slices.Contains(common.OptedOut, discordID),
+		Reputation:   0,
 	}
 
 	json.NewEncoder(w).Encode(response)

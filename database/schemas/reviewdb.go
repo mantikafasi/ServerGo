@@ -34,6 +34,7 @@ type URUser struct {
 	BlockedUsers      []string      `bun:"blocked_users,array" json:"blockedUsers"`
 	Flags             int32         `bun:"flags" json:"flags"`
 	LastOnline        time.Time     `bun:"last_online" json:"-"`
+	Reputation        int           `bun:"reputation,default:0" json:"reputation"`
 
 	BanID int32 `bun:"ban_id" json:"-"`
 
@@ -60,6 +61,7 @@ type ReviewDBUserFull struct {
 	Notification      *Notification `json:"notification" bun:"rel:has-one,join:id=user_id"`
 	BlockedUsers      []string      `bun:"blocked_users,array" json:"blocked_users"`
 	Flags             int32         `bun:"flags" json:"flags"`
+	Reputation        int           `bun:"reputation,default:0" json:"reputation"`
 
 	BanID int32 `bun:"ban_id" json:"-"`
 
@@ -69,13 +71,14 @@ type ReviewDBUserFull struct {
 type BaseRDBUser struct {
 	bun.BaseModel `bun:"table:users"`
 
-	ID        int32       `bun:"id,pk,autoincrement" json:"ID"`
-	DiscordID string      `bun:"discord_id,type:numeric" json:"discordID"`
-	Username  string      `bun:"username" json:"username"`
-	Type      int32       `bun:"column:type" json:"-"`
-	AvatarURL string      `bun:"avatar_url" json:"profilePhoto"`
-	Badges    []UserBadge `bun:"-" json:"badges"`
-	OptedOut  bool        `bun:"opted_out" json:"-"`
+	ID         int32       `bun:"id,pk,autoincrement" json:"ID"`
+	DiscordID  string      `bun:"discord_id,type:numeric" json:"discordID"`
+	Username   string      `bun:"username" json:"username"`
+	Type       int32       `bun:"column:type" json:"-"`
+	AvatarURL  string      `bun:"avatar_url" json:"profilePhoto"`
+	Badges     []UserBadge `bun:"-" json:"badges"`
+	OptedOut   bool        `bun:"opted_out" json:"-"`
+	Reputation int         `bun:"reputation,default:0" json:"reputation"`
 }
 
 type AdminUser struct {
@@ -174,11 +177,11 @@ type UserReview struct {
 	ReviewerID   int32     `bun:"reviewer_id" json:"-"`
 	RepliesTo    int32     `bun:"replies_to,nullzero" json:"-"`
 	Score        int       `bun:"score,default:0" json:"score"`
+	Reputation   *int      `bun:"-" json:"reputation,omitempty"`
 
 	User    *URUser      `bun:"rel:belongs-to,join:reviewer_id=id" json:"-"`
 	Replies []UserReview `bun:"-" json:"replies"`
 }
-
 
 type ReviewVote struct {
 	bun.BaseModel `bun:"table:review_votes"`

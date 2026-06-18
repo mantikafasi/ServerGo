@@ -2,6 +2,7 @@ package modules
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -115,6 +116,7 @@ func GetReviewsWithOptions(requester *schemas.URUser, userID int64, offset int, 
 			reviews[i].Sender.ID = review.User.ID
 			reviews[i].Sender.Badges = badges
 		}
+		reviews[i].Reputation = &review.User.Reputation
 		reviews[i].Timestamp = review.TimestampStr.Unix()
 
 		if review.RepliesTo != 0 {
@@ -989,6 +991,16 @@ type LeaderboardUser struct {
 	AvatarURL     string `bun:"avatar_url" json:"avatar_url"`
 }
 
+type ReputationStats struct {
+	DiscordID   string `bun:"discord_id" json:"discordID"`
+	Username    string `bun:"username" json:"username,omitempty"`
+	AvatarURL   string `bun:"avatar_url" json:"avatarURL,omitempty"`
+	Reputation  int    `bun:"reputation" json:"reputation"`
+	Upvotes     int    `bun:"upvotes" json:"upvotes,omitempty"`
+	Downvotes   int    `bun:"downvotes" json:"downvotes,omitempty"`
+	ReviewCount int    `bun:"review_count" json:"reviewCount"`
+}
+
 func GetLeaderboard() (leaderboard []LeaderboardUser, err error) {
 
 	err = database.DB.NewSelect().
@@ -1004,6 +1016,65 @@ func GetLeaderboard() (leaderboard []LeaderboardUser, err error) {
 		Scan(context.Background(), &leaderboard)
 
 	return
+}
+
+func GetUserReputation(discordID string) (ReputationStats, error) {
+	stats := ReputationStats{DiscordID: discordID}
+	err := database.DB.NewSelect().
+		TableExpr("users AS u").
+		ColumnExpr("u.discord_id").
+		ColumnExpr("u.username").
+		ColumnExpr("u.avatar_url").
+		ColumnExpr("u.reputation").
+		ColumnExpr("COALESCE(COUNT(DISTINCT r.id), 0) AS review_count").
+		Join("LEFT JOIN reviews AS r ON r.reviewer_id = u.id").
+		Where("u.discord_id = ?", discordID).
+		GroupExpr("u.id, u.discord_id, u.username, u.avatar_url, u.reputation").
+		Limit(1).
+		Scan(context.Background(), &stats)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ReputationStats{DiscordID: discordID}, nil
+	}
+	return stats, err
+}
+
+func GetReputationLeaderboard() (leaderboard []ReputationStats, err error) {
+	leaderboard = []ReputationStats{}
+	err = database.DB.NewSelect().
+		TableExpr("users AS u").
+		ColumnExpr("u.discord_id").
+		ColumnExpr("u.username").
+		ColumnExpr("u.avatar_url").
+		ColumnExpr("u.reputation").
+		ColumnExpr("COUNT(DISTINCT r.id) AS review_count").
+		Join("LEFT JOIN reviews AS r ON r.reviewer_id = u.id").
+		GroupExpr("u.id, u.discord_id, u.username, u.avatar_url, u.reputation").
+		OrderExpr("u.reputation DESC, review_count DESC").
+		Limit(50).
+		Scan(context.Background(), &leaderboard)
+	return
+}
+
+func updateUserReputation(userID int32, delta int) error {
+	_, err := database.DB.NewUpdate().
+		TableExpr("users").
+		Set("reputation = reputation + ?", delta).
+		Where("id = ?", userID).
+		Exec(context.Background())
+	return err
+}
+
+func updateReviewScoreAndUserReputation(reviewID int32, reviewerID int32, delta int) error {
+	_, err := database.DB.NewUpdate().
+		TableExpr("reviews").
+		Set("score = score + ?", delta).
+		Where("id = ?", reviewID).
+		Exec(context.Background())
+	if err != nil {
+		return err
+	}
+
+	return updateUserReputation(reviewerID, delta)
 }
 
 // VoteReview records an upvote (isUpvote=true) or downvote (isUpvote=false) for a review.
@@ -1052,12 +1123,7 @@ func VoteReview(voter *schemas.URUser, reviewID int32, isUpvote bool) error {
 		if !isUpvote {
 			delta = -2
 		}
-		_, err = database.DB.NewUpdate().
-			TableExpr("reviews").
-			Set("score = score + ?", delta).
-			Where("id = ?", reviewID).
-			Exec(context.Background())
-		return err
+		return updateReviewScoreAndUserReputation(reviewID, review.ReviewerID, delta)
 	}
 
 	// New vote: insert and adjust score by ±1.
@@ -1075,12 +1141,7 @@ func VoteReview(voter *schemas.URUser, reviewID int32, isUpvote bool) error {
 	if !isUpvote {
 		delta = -1
 	}
-	_, err = database.DB.NewUpdate().
-		TableExpr("reviews").
-		Set("score = score + ?", delta).
-		Where("id = ?", reviewID).
-		Exec(context.Background())
-	return err
+	return updateReviewScoreAndUserReputation(reviewID, review.ReviewerID, delta)
 }
 
 // DeleteReviewVote removes the voter's vote from a review and adjusts the review score.
@@ -1119,12 +1180,7 @@ func DeleteReviewVote(voter *schemas.URUser, reviewID int32) error {
 	if !existingVote.IsUpvote {
 		delta = 1
 	}
-	_, err = database.DB.NewUpdate().
-		TableExpr("reviews").
-		Set("score = score + ?", delta).
-		Where("id = ?", reviewID).
-		Exec(context.Background())
-	return err
+	return updateReviewScoreAndUserReputation(reviewID, review.ReviewerID, delta)
 }
 
 func GetReviewVotesOnUser(voter *schemas.URUser, profileID int64) ([]schemas.ReviewVote, error) {

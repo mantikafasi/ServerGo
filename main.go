@@ -25,6 +25,10 @@ func main() {
 
 	common.InitCache()
 	database.InitDB()
+	if err := database.UpdateDB(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	optedOutUsers, err := modules.GetOptedOutUsers()
 	if err != nil {
@@ -67,6 +71,7 @@ func main() {
 
 	mux.Route("/api/reviewdb", func(r chi.Router) {
 		r.Get("/leaderboard", routes.GetLeaderBoard)
+		r.Get("/reputation/leaderboard", routes.GetReputationLeaderboard)
 		r.Route("/users/{discordid}/reviews", func(r1 chi.Router) {
 			r1.Get("/", routes.GetReviews)
 			r1.Get("/votes", routes.GetReviewVotes)
@@ -75,6 +80,7 @@ func main() {
 		})
 		r.Get("/users/{discordid}", routes.GetUserInfoByID)
 		r.Get("/users/{discordid}/rating", routes.GetUserRating)
+		r.Get("/users/{discordid}/reputation", routes.GetUserReputation)
 		r.Route("/reviews/{reviewid}", func(rv chi.Router) {
 			rv.Use(routes.ReviewMiddleware)
 			rv.Post("/vote", routes.VoteReview)
