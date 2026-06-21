@@ -87,6 +87,14 @@ type AdminUser struct {
 	ProfilePhoto  string `bun:"avatar_url"`
 }
 
+type ManualOptOut struct {
+	bun.BaseModel `bun:"table:manual_opt_outs"`
+
+	DiscordID string    `bun:"discord_id,pk,type:numeric" json:"discordID"`
+	Reason    string    `bun:"reason,nullzero" json:"reason,omitempty"`
+	CreatedAt time.Time `bun:"created_at,default:current_timestamp" json:"createdAt"`
+}
+
 type ReviewReport struct {
 	bun.BaseModel `bun:"table:reports"`
 

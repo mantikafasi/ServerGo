@@ -34,6 +34,28 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+	case "add-manual-opt-out":
+		if len(os.Args) < 3 {
+			fmt.Println("missing discord id")
+			os.Exit(1)
+		}
+		reason := ""
+		if len(os.Args) > 3 {
+			reason = os.Args[3]
+		}
+		if err := addManualOptOut(os.Args[2], reason); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	case "remove-manual-opt-out":
+		if len(os.Args) < 3 {
+			fmt.Println("missing discord id")
+			os.Exit(1)
+		}
+		if err := removeManualOptOut(os.Args[2]); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	default:
 		printUsage()
 		os.Exit(1)
@@ -45,6 +67,8 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  backfill-reputation [batch-size]  Recalculate users.reputation from review_votes")
+	fmt.Println("  add-manual-opt-out <discord-id> [reason]")
+	fmt.Println("  remove-manual-opt-out <discord-id>")
 }
 
 func parseBatchSize(args []string) (int, error) {
@@ -104,4 +128,24 @@ func backfillReputation(batchSize int) error {
 		lastID = userIDs[len(userIDs)-1]
 		fmt.Printf("updated %d users, last id %d\n", totalUpdated, lastID)
 	}
+}
+
+func addManualOptOut(discordID string, reason string) error {
+	_, err := database.DB.NewInsert().
+		Model(&schemas.ManualOptOut{
+			DiscordID: discordID,
+			Reason:    reason,
+		}).
+		On("CONFLICT (discord_id) DO UPDATE").
+		Set("reason = EXCLUDED.reason").
+		Exec(context.Background())
+	return err
+}
+
+func removeManualOptOut(discordID string) error {
+	_, err := database.DB.NewDelete().
+		Model((*schemas.ManualOptOut)(nil)).
+		Where("discord_id = ?", discordID).
+		Exec(context.Background())
+	return err
 }

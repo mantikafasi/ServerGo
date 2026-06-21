@@ -28,6 +28,7 @@ func CreateReviewDBSchemas() error {
 		(*schemas.Notification)(nil),
 		(*schemas.Oauth2Token)(nil),
 		(*schemas.ReviewVote)(nil),
+		(*schemas.ManualOptOut)(nil),
 	}
 
 	for _, model := range models {

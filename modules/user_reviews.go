@@ -402,6 +402,9 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		if err != nil {
 			return "", err
 		}
+		if err = DeleteManualOptOut(dbUser.DiscordID); err != nil {
+			return "", err
+		}
 
 		return dbUser.Token, nil
 	}
@@ -410,6 +413,9 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	if err != nil {
 		fmt.Println(err)
 		return "An Error occurred", errors.New(common.ERROR)
+	}
+	if err = DeleteManualOptOut(user.DiscordID); err != nil {
+		return "", err
 	}
 
 	discord_utils.SendLoggerWebhook(discord_utils.WebhookData{
@@ -758,6 +764,9 @@ func CreateUserViaBot(discordid string, username string, profilePhoto string) (s
 		println(err.Error())
 		return schemas.URUser{}, errors.New("An Error Occured") //todo maybe convert this to pointer so we can return nil
 	}
+	if err = DeleteManualOptOut(user.DiscordID); err != nil {
+		return schemas.URUser{}, err
+	}
 
 	discord_utils.SendLoggerWebhook(discord_utils.WebhookData{
 		Username:  username,
@@ -799,12 +808,33 @@ func GetOptedOutUsers() (users []string, err error) {
 	userlist := []schemas.URUser{}
 
 	err = database.DB.NewSelect().Model(&schemas.URUser{}).Where("opted_out = true").Scan(context.Background(), &userlist)
+	if err != nil {
+		return
+	}
 
 	for _, user := range userlist {
 		users = append(users, user.DiscordID)
 	}
 
+	manualOptOuts := []schemas.ManualOptOut{}
+	err = database.DB.NewSelect().Model(&manualOptOuts).Scan(context.Background(), &manualOptOuts)
+	if err != nil {
+		return
+	}
+
+	for _, optOut := range manualOptOuts {
+		users = append(users, optOut.DiscordID)
+	}
+
 	return
+}
+
+func DeleteManualOptOut(discordID string) error {
+	_, err := database.DB.NewDelete().
+		Model((*schemas.ManualOptOut)(nil)).
+		Where("discord_id = ?", discordID).
+		Exec(context.Background())
+	return err
 }
 
 func GetReportCountInLastHour(userID int32) (int, error) {
