@@ -42,7 +42,7 @@ func main() {
 	prometheusMiddleware := chiprometheus.NewPatternMiddleware("reviewdb")
 
 	mux.Use(routes.CorsMiddleware)
-	mux.Use(httprate.LimitByRealIP(4, 1*time.Second))
+	mux.Use(httprate.LimitByRealIP(8, 1*time.Second))
 	mux.Use(prometheusMiddleware)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
