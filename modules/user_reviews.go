@@ -587,7 +587,7 @@ func GetAllBadges() (badges []schemas.UserBadge, err error) {
 
 	users := []schemas.URUser{}
 
-	database.DB.NewSelect().Distinct().Model(&users).Column("discord_id", "type").Where("type = ? or type = ?", 1, -1).Scan(context.Background(), &users)
+	database.DB.NewSelect().Distinct().Model(&users).Column("discord_id", "type").Where("type = 1").Scan(context.Background(), &users)
 
 	for _, user := range users {
 		if user.Type == 1 {
@@ -612,6 +612,41 @@ func GetAllBadges() (badges []schemas.UserBadge, err error) {
 
 	common.Cache.Set("badges", badges, cache.DefaultExpiration)
 	return
+}
+
+func GetBadgesMap() (map[string][]schemas.UserBadge, error) {
+	cachedBadgesMap, found := common.Cache.Get("badgesMap")
+	if found {
+		return cachedBadgesMap.(map[string][]schemas.UserBadge), nil
+	}
+
+	badges := []schemas.UserBadge{}
+	if err := database.DB.NewSelect().Model(&badges).Scan(context.Background(), &badges); err != nil {
+		return nil, err
+	}
+
+	users := []schemas.URUser{}
+	if err := database.DB.NewSelect().Distinct().Model(&users).Column("discord_id", "type").Where("type = ?", 1).Scan(context.Background(), &users); err != nil {
+		return nil, err
+	}
+
+	for _, user := range users {
+		badges = append(badges, schemas.UserBadge{
+			TargetDiscordID: user.DiscordID,
+			Name:            "Admin",
+			Icon:            "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
+			RedirectURL:     "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+			Description:     "This user is an admin of ReviewDB.",
+		})
+	}
+
+	badgesMap := make(map[string][]schemas.UserBadge)
+	for _, badge := range badges {
+		badgesMap[badge.TargetDiscordID] = append(badgesMap[badge.TargetDiscordID], badge)
+	}
+
+	common.Cache.Set("badgesMap", badgesMap, cache.DefaultExpiration)
+	return badgesMap, nil
 }
 
 func GetVencordBadges() error {
@@ -1005,11 +1040,15 @@ func GetUserAdmin(id string) (user schemas.ReviewDBUserFull, err error) {
 
 func AddBadge(badge schemas.UserBadge) error {
 	_, err := database.DB.NewInsert().Model(&badge).Exec(context.Background())
+	common.Cache.Delete("badges")
+	common.Cache.Delete("badgesMap")
 	return err
 }
 
 func DeleteBadge(id string) error {
 	_, err := database.DB.NewDelete().Model(&schemas.UserBadge{}).Where("id = ?", id).Exec(context.Background())
+	common.Cache.Delete("badges")
+	common.Cache.Delete("badgesMap")
 	return err
 }
 

@@ -89,6 +89,7 @@ func main() {
 		r.HandleFunc("/users", routes.GetUserInfo)
 		r.HandleFunc("/reports", routes.ReportReview)
 		r.HandleFunc("/badges", routes.GetAllBadges)
+		r.Get("/badges/map", routes.GetBadgesMap)
 		r.HandleFunc("/reviews", routes.SearchReview)
 		r.HandleFunc("/blocks", routes.Blocks)
 		r.HandleFunc("/settings", routes.Settings)

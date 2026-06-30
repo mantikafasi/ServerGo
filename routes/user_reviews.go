@@ -468,6 +468,16 @@ func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(badges)
 }
 
+func GetBadgesMap(w http.ResponseWriter, r *http.Request) {
+	badges, err := modules.GetBadgesMap()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	common.SendStructResponse(w, badges)
+}
+
 func SearchReview(w http.ResponseWriter, r *http.Request) {
 	type SearchRequestData struct {
 		Query string `json:"query"`
