@@ -80,9 +80,9 @@ func GetReviewsWithOptions(requester *schemas.URUser, userID int64, offset int, 
 	}
 
 	if options.IncludeReviewsById != "" {
-		req = req.OrderExpr("reviewer_id = ? desc ,\"user\".discord_id = ? desc , id asc", options.IncludeReviewsById, options.IncludeReviewsById)
+		req = req.OrderExpr("reviewer_id = ? desc ,\"user\".discord_id = ? desc , id desc", options.IncludeReviewsById, options.IncludeReviewsById)
 	} else {
-		req = req.OrderExpr("id asc")
+		req = req.OrderExpr("id desc")
 	}
 	count, err := req.ScanAndCount(context.Background(), &reviews)
 	if err != nil {
