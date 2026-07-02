@@ -441,7 +441,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := UserInfo{user, modules.GetLastReviewID(user.DiscordID), int(user.Type), user.Reputation}
-	response.Badges = modules.GetBadgesOfUser(user.DiscordID)
+	response.Badges = modules.GetBadgesForUser(&user)
 
 	json.NewEncoder(w).Encode(response)
 }
@@ -797,12 +797,11 @@ func GetUserInfoByID(w http.ResponseWriter, r *http.Request) {
 
 	user, err := modules.GetDBUserViaDiscordID(discordID)
 	if err == nil && user != nil {
-		badges := modules.GetBadgesOfUser(user.DiscordID)
 		response := UserInfo{
 			DiscordID:    user.DiscordID,
 			Username:     user.Username,
 			ProfilePhoto: user.AvatarURL,
-			Badges:       badges,
+			Badges:       modules.GetBadgesForUser(user),
 			Type:         user.Type,
 			OptedOut:     user.OptedOut,
 			Reputation:   user.Reputation,

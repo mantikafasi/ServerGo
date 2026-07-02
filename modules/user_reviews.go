@@ -100,23 +100,21 @@ func GetReviewsWithOptions(requester *schemas.URUser, userID int64, offset int, 
 		}
 	}
 
+	badgesMap, _ := GetBadgesMap()
 	for i, review := range reviews {
-
-		badges := GetBadgesOfUser(review.User.DiscordID)
-
-		if review.User.DiscordID == "1134864775000629298" {
-			// troll
-			reviews[i].Type = 3
-		}
-
 		if review.User != nil {
+			if review.User.DiscordID == "1134864775000629298" {
+				// troll
+				reviews[i].Type = 3
+			}
+
 			reviews[i].Sender.DiscordID = review.User.DiscordID
 			reviews[i].Sender.ProfilePhoto = review.User.AvatarURL
 			reviews[i].Sender.Username = review.User.Username
 			reviews[i].Sender.ID = review.User.ID
-			reviews[i].Sender.Badges = badges
+			reviews[i].Sender.Badges = getBadgesForUser(review.User, badgesMap)
+			reviews[i].Reputation = &review.User.Reputation
 		}
-		reviews[i].Reputation = &review.User.Reputation
 		reviews[i].Timestamp = review.TimestampStr.Unix()
 
 		if review.RepliesTo != 0 {
@@ -167,15 +165,14 @@ func SearchReviews(query string, token string) ([]schemas.UserReview, error) {
 		return nil, err
 	}
 
+	badgesMap, _ := GetBadgesMap()
 	for i, review := range reviews {
-		badges := GetBadgesOfUser(review.User.DiscordID)
-
 		if review.User != nil {
 			reviews[i].Sender.DiscordID = review.User.DiscordID
 			reviews[i].Sender.ProfilePhoto = review.User.AvatarURL
 			reviews[i].Sender.Username = review.User.Username
 			reviews[i].Sender.ID = review.User.ID
-			reviews[i].Sender.Badges = badges
+			reviews[i].Sender.Badges = getBadgesForUser(review.User, badgesMap)
 		}
 		reviews[i].Timestamp = review.TimestampStr.Unix()
 	}
@@ -434,15 +431,14 @@ func GetReview(id int32) (rep schemas.UserReview, err error) {
 		return rep, err
 	}
 
-	badges := GetBadgesOfUser(rep.User.DiscordID)
-
 	if rep.User != nil {
+		badgesMap, _ := GetBadgesMap()
 		rep.Sender = schemas.Sender{}
 		rep.Sender.DiscordID = rep.User.DiscordID
 		rep.Sender.ProfilePhoto = rep.User.AvatarURL
 		rep.Sender.Username = rep.User.Username
 		rep.Sender.ID = rep.User.ID
-		rep.Sender.Badges = badges
+		rep.Sender.Badges = getBadgesForUser(rep.User, badgesMap)
 	}
 	rep.Timestamp = rep.TimestampStr.Unix()
 
@@ -562,16 +558,39 @@ func DeleteReviewWithData(data UR_RequestData) (err error) {
 }
 
 func GetBadgesOfUser(discordid string) []schemas.UserBadge {
-	userBadges := []schemas.UserBadge{}
+	var user schemas.URUser
+	err := database.DB.NewSelect().Model(&user).Column("discord_id", "type").Where("discord_id = ?", discordid).Limit(1).Scan(context.Background())
+	if err != nil {
+		return getBadgesFromMap(discordid)
+	}
 
-	badges, _ := GetAllBadges()
-	for _, badge := range badges {
+	return GetBadgesForUser(&user)
+}
 
-		if badge.TargetDiscordID == discordid {
-			userBadges = append(userBadges, badge)
-		}
+func GetBadgesForUser(user *schemas.URUser) []schemas.UserBadge {
+	badgesMap, _ := GetBadgesMap()
+	return getBadgesForUser(user, badgesMap)
+}
+
+func getBadgesForUser(user *schemas.URUser, badgesMap map[string][]schemas.UserBadge) []schemas.UserBadge {
+	if user == nil {
+		return []schemas.UserBadge{}
+	}
+
+	userBadges := append([]schemas.UserBadge{}, badgesMap[user.DiscordID]...)
+	if user.Type == schemas.UserTypeBanned {
+		userBadges = append(userBadges, bannedUserBadge(user.DiscordID))
 	}
 	return userBadges
+}
+
+func getBadgesFromMap(discordid string) []schemas.UserBadge {
+	badgesMap, err := GetBadgesMap()
+	if err != nil {
+		return []schemas.UserBadge{}
+	}
+
+	return append([]schemas.UserBadge{}, badgesMap[discordid]...)
 }
 
 func GetAllBadges() (badges []schemas.UserBadge, err error) {
@@ -591,21 +610,9 @@ func GetAllBadges() (badges []schemas.UserBadge, err error) {
 
 	for _, user := range users {
 		if user.Type == 1 {
-			badges = append(badges, schemas.UserBadge{
-				TargetDiscordID: user.DiscordID,
-				Name:            "Admin",
-				Icon:            "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
-				RedirectURL:     "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-				Description:     "This user is an admin of ReviewDB.",
-			})
+			badges = append(badges, adminUserBadge(user.DiscordID))
 		} else {
-			badges = append(badges, schemas.UserBadge{
-				TargetDiscordID: user.DiscordID,
-				Name:            "Banned",
-				Icon:            "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",
-				RedirectURL:     "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-				Description:     "This user is banned from ReviewDB.",
-			})
+			badges = append(badges, bannedUserBadge(user.DiscordID))
 		}
 
 	}
@@ -631,13 +638,7 @@ func GetBadgesMap() (map[string][]schemas.UserBadge, error) {
 	}
 
 	for _, user := range users {
-		badges = append(badges, schemas.UserBadge{
-			TargetDiscordID: user.DiscordID,
-			Name:            "Admin",
-			Icon:            "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
-			RedirectURL:     "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-			Description:     "This user is an admin of ReviewDB.",
-		})
+		badges = append(badges, adminUserBadge(user.DiscordID))
 	}
 
 	badgesMap := make(map[string][]schemas.UserBadge)
@@ -647,6 +648,26 @@ func GetBadgesMap() (map[string][]schemas.UserBadge, error) {
 
 	common.Cache.Set("badgesMap", badgesMap, cache.DefaultExpiration)
 	return badgesMap, nil
+}
+
+func adminUserBadge(discordid string) schemas.UserBadge {
+	return schemas.UserBadge{
+		TargetDiscordID: discordid,
+		Name:            "Admin",
+		Icon:            "https://cdn.discordapp.com/emojis/1040004306100826122.gif?size=128",
+		RedirectURL:     "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+		Description:     "This user is an admin of ReviewDB.",
+	}
+}
+
+func bannedUserBadge(discordid string) schemas.UserBadge {
+	return schemas.UserBadge{
+		TargetDiscordID: discordid,
+		Name:            "Banned",
+		Icon:            "https://cdn.discordapp.com/emojis/399233923898540053.gif?size=128",
+		RedirectURL:     "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+		Description:     "This user is banned from ReviewDB.",
+	}
 }
 
 func GetVencordBadges() error {
