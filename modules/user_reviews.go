@@ -78,8 +78,8 @@ func GetReviewsByReviewerAdmin(reviewerID int32, offset int, limit int) ([]schem
 	query := database.DB.NewSelect().
 		Model(&reviews).
 		Relation("User").
-		Where("reviews.reviewer_id = ?", reviewerID).
-		OrderExpr("reviews.id DESC").
+		Where("reviewer_id = ?", reviewerID).
+		Order("id DESC").
 		Offset(offset).
 		Limit(limit)
 

@@ -185,6 +185,36 @@ func GetUserReviewsAdmin(w http.ResponseWriter, r *http.Request) {
 	}{Reviews: reviews, ReviewCount: count})
 }
 
+func BanUserAdmin(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Days     int32 `json:"days"`
+		ReviewID int32 `json:"reviewID"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil || (data.Days != 1 && data.Days != 3 && data.Days != 7 && data.Days != 30) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user, err := modules.GetUserAdmin(chi.URLParam(r, "id"))
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	review := schemas.UserReview{}
+	if data.ReviewID != 0 {
+		review, err = modules.GetReview(data.ReviewID)
+		if err != nil || review.Sender.DiscordID != user.DiscordID {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+	if err := modules.BanUser(user.DiscordID, r.Header.Get("Authorization"), data.Days, review); err != nil {
+		common.SendStructResponse(w, Response{Success: false, Message: err.Error()})
+		return
+	}
+	common.SendStructResponse(w, Response{Success: true, Message: "Review author banned"})
+}
+
 func AddBadge(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		TargetDiscordID string `json:"targetDiscordID"`
