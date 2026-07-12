@@ -102,6 +102,22 @@ func GetReports(w http.ResponseWriter, r *http.Request) {
 	common.SendStructResponse(w, reports)
 }
 
+func DismissReports(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		ReportIDs []int32 `json:"reportIDs"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil || len(data.ReportIDs) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := modules.DismissReports(data.ReportIDs); err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	common.SendStructResponse(w, Response{Success: true, Message: "Reports dismissed"})
+}
+
 func ReloadConfig(w http.ResponseWriter, r *http.Request) {
 	common.LoadConfig()
 }

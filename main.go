@@ -117,6 +117,7 @@ func main() {
 			r.Delete("/filters", routes.DeleteFilter)
 			r.Get("/reload", routes.ReloadConfig)
 			r.Get("/reports", routes.GetReports)
+			r.Delete("/reports", routes.DismissReports)
 			r.Get("/users", routes.GetUsersAdmin)
 			r.Get("/users/{id}", routes.GetUserAdmin)
 			r.Get("/users/{id}/reviews", routes.GetUserReviewsAdmin)

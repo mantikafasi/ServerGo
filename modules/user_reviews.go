@@ -646,6 +646,19 @@ func GetReports(offset int, limit int) (reports []schemas.ReviewReport, err erro
 	return
 }
 
+// DismissReports removes report records after a moderator has reviewed them.
+// It deliberately leaves the referenced reviews untouched.
+func DismissReports(reportIDs []int32) error {
+	if len(reportIDs) == 0 {
+		return errors.New("at least one report ID is required")
+	}
+	_, err := database.DB.NewDelete().
+		Model((*schemas.ReviewReport)(nil)).
+		Where("id IN (?)", bun.In(reportIDs)).
+		Exec(context.Background())
+	return err
+}
+
 // checks if user is admin **or** moderator
 func IsUserAdminDC(discordid int64) bool {
 	count, _ := database.DB.NewSelect().Model(&schemas.URUser{}).Where("discord_id = ? and (type = 1 or type = 2)", discordid).Count(context.Background())
