@@ -191,6 +191,18 @@ type UserReview struct {
 	Replies []UserReview `bun:"-" json:"replies"`
 }
 
+// UserCacheEntry stores cached leaderboard data for a reviewed user.
+type UserCacheEntry struct {
+	bun.BaseModel `bun:"table:user_cache"`
+
+	Rank        int       `bun:"rank,pk"`
+	DiscordID   string    `bun:"discord_id,type:numeric"`
+	Username    string    `bun:"username"`
+	AvatarURL   string    `bun:"avatar_url"`
+	ReviewCount int       `bun:"review_count"`
+	RefreshedAt time.Time `bun:"refreshed_at"`
+}
+
 type ReviewVote struct {
 	bun.BaseModel `bun:"table:review_votes"`
 

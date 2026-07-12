@@ -29,6 +29,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	modules.StartUserCacheRefresher()
 
 	optedOutUsers, err := modules.GetOptedOutUsers()
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -1081,6 +1082,8 @@ type LeaderboardUser struct {
 	AvatarURL     string `bun:"avatar_url" json:"avatar_url"`
 }
 
+var userCacheRefreshMu sync.Mutex
+
 type ReputationStats struct {
 	DiscordID   string `bun:"discord_id" json:"discordID"`
 	Username    string `bun:"username" json:"username,omitempty"`
@@ -1092,8 +1095,40 @@ type ReputationStats struct {
 }
 
 func GetLeaderboard() (leaderboard []LeaderboardUser, err error) {
+	leaderboard = []LeaderboardUser{}
+	err = database.DB.NewSelect().
+		Model((*schemas.UserCacheEntry)(nil)).
+		ColumnExpr("discord_id::text AS discord_id").
+		Column("username", "avatar_url").
+		ColumnExpr("review_count AS count").
+		OrderExpr("rank ASC").
+		Scan(context.Background(), &leaderboard)
+	if err != nil || len(leaderboard) != 0 {
+		return leaderboard, err
+	}
+
+	if err = RefreshUserCache(); err != nil {
+		return nil, err
+	}
 
 	err = database.DB.NewSelect().
+		Model((*schemas.UserCacheEntry)(nil)).
+		ColumnExpr("discord_id::text AS discord_id").
+		Column("username", "avatar_url").
+		ColumnExpr("review_count AS count").
+		OrderExpr("rank ASC").
+		Scan(context.Background(), &leaderboard)
+	return leaderboard, err
+}
+
+// RefreshUserCache rebuilds the cached leaderboard data for reviewed users atomically.
+func RefreshUserCache() error {
+	userCacheRefreshMu.Lock()
+	defer userCacheRefreshMu.Unlock()
+
+	var leaderboard []LeaderboardUser
+
+	err := database.DB.NewSelect().
 		ColumnExpr("r.profile_id::text AS discord_id").
 		ColumnExpr("COALESCE(u.username, 'Unknown User') AS username").
 		ColumnExpr("COALESCE(u.avatar_url, 'https://cdn.discordapp.com/embed/avatars/0.png') AS avatar_url").
@@ -1106,8 +1141,50 @@ func GetLeaderboard() (leaderboard []LeaderboardUser, err error) {
 		OrderExpr("count DESC, r.profile_id ASC").
 		Limit(50).
 		Scan(context.Background(), &leaderboard)
+	if err != nil {
+		return err
+	}
 
-	return
+	entries := make([]schemas.UserCacheEntry, len(leaderboard))
+	refreshedAt := time.Now().UTC()
+	for i, user := range leaderboard {
+		entries[i] = schemas.UserCacheEntry{
+			Rank:        i + 1,
+			DiscordID:   user.DiscordID,
+			Username:    user.Username,
+			AvatarURL:   user.AvatarURL,
+			ReviewCount: user.Count,
+			RefreshedAt: refreshedAt,
+		}
+	}
+
+	tx, err := database.DB.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err = tx.NewDelete().Model((*schemas.UserCacheEntry)(nil)).Where("TRUE").Exec(context.Background()); err != nil {
+		return err
+	}
+	if len(entries) != 0 {
+		if _, err = tx.NewInsert().Model(&entries).Exec(context.Background()); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// StartUserCacheRefresher refreshes cached reviewed users at startup and every 24 hours.
+func StartUserCacheRefresher() {
+	go func() {
+		_ = RefreshUserCache()
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			_ = RefreshUserCache()
+		}
+	}()
 }
 
 func GetUserReputation(discordID string) (ReputationStats, error) {

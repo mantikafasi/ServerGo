@@ -28,6 +28,7 @@ func CreateReviewDBSchemas() error {
 		(*schemas.Notification)(nil),
 		(*schemas.Oauth2Token)(nil),
 		(*schemas.ReviewVote)(nil),
+		(*schemas.UserCacheEntry)(nil),
 		(*schemas.ManualOptOut)(nil),
 	}
 
