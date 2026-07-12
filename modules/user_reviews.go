@@ -1094,14 +1094,16 @@ type ReputationStats struct {
 func GetLeaderboard() (leaderboard []LeaderboardUser, err error) {
 
 	err = database.DB.NewSelect().
-		ColumnExpr("u.discord_id").
-		ColumnExpr("u.username").
-		ColumnExpr("u.avatar_url").
+		ColumnExpr("r.profile_id::text AS discord_id").
+		ColumnExpr("COALESCE(u.username, 'Unknown User') AS username").
+		ColumnExpr("COALESCE(u.avatar_url, 'https://cdn.discordapp.com/embed/avatars/0.png') AS avatar_url").
 		ColumnExpr("COUNT(r.id) AS count").
 		TableExpr("reviews AS r").
-		Join("JOIN users AS u ON u.id = r.reviewer_id").
-		GroupExpr("r.reviewer_id, u.discord_id, u.username, u.avatar_url").
-		OrderExpr("count DESC").
+		Join("LEFT JOIN users AS u ON u.discord_id = r.profile_id").
+		// Type 0 is a user review; other types are server and integration reviews.
+		Where("r.type = 0").
+		GroupExpr("r.profile_id, u.username, u.avatar_url").
+		OrderExpr("count DESC, r.profile_id ASC").
 		Limit(50).
 		Scan(context.Background(), &leaderboard)
 
