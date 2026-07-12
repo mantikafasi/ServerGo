@@ -69,6 +69,42 @@ func GetReviews(requester *schemas.URUser, userID int64, offset int) ([]schemas.
 	})
 }
 
+// GetReviewsByReviewerAdmin returns every review authored by a user, including
+// replies and reviews on opted-out profiles. It is intended solely for the
+// protected moderation API.
+func GetReviewsByReviewerAdmin(reviewerID int32, offset int, limit int) ([]schemas.UserReview, int, error) {
+	reviews := []schemas.UserReview{}
+
+	query := database.DB.NewSelect().
+		Model(&reviews).
+		Relation("User").
+		Where("reviews.reviewer_id = ?", reviewerID).
+		OrderExpr("reviews.id DESC").
+		Offset(offset).
+		Limit(limit)
+
+	count, err := query.ScanAndCount(context.Background(), &reviews)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	badgesMap, _ := GetBadgesMap()
+	for i, review := range reviews {
+		if review.User == nil {
+			continue
+		}
+		reviews[i].Sender.DiscordID = review.User.DiscordID
+		reviews[i].Sender.ProfilePhoto = review.User.AvatarURL
+		reviews[i].Sender.Username = review.User.Username
+		reviews[i].Sender.ID = review.User.ID
+		reviews[i].Sender.Badges = getBadgesForUser(review.User, badgesMap)
+		reviews[i].Reputation = &review.User.Reputation
+		reviews[i].Timestamp = review.TimestampStr.Unix()
+	}
+
+	return reviews, count, nil
+}
+
 func GetReviewsWithOptions(requester *schemas.URUser, userID int64, offset int, options GetReviewsOptions) ([]schemas.UserReview, int, error) {
 	var reviews []schemas.UserReview
 
@@ -587,12 +623,21 @@ func GetReports(offset int, limit int) (reports []schemas.ReviewReport, err erro
 	reports = []schemas.ReviewReport{}
 	err = database.DB.NewSelect().
 		Model(&reports).
-		Relation("Review").
 		Relation("Reporter").
 		Limit(limit).
 		Offset(offset).
-		Order("id DESC").
+		Order("reports.timestamp DESC, reports.id DESC").
 		Scan(context.Background(), &reports)
+	if err != nil {
+		return reports, err
+	}
+	for i := range reports {
+		review, reviewErr := GetReview(reports[i].ReviewID)
+		if reviewErr != nil {
+			return reports, reviewErr
+		}
+		reports[i].Review = review
+	}
 	return
 }
 

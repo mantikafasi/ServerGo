@@ -142,7 +142,7 @@ func GetUserAdmin(w http.ResponseWriter, r *http.Request) {
 
 	user, err := modules.GetUserAdmin(id)
 	if err != nil {
-		if err == sql.ErrNoRows{ 
+		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -153,9 +153,56 @@ func GetUserAdmin(w http.ResponseWriter, r *http.Request) {
 	common.SendStructResponse(w, user)
 }
 
+func GetUserReviewsAdmin(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	user, err := modules.GetUserAdmin(id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	limit := common.GetIntQueryOrDefault(r, "limit", 50)
+	offset := common.GetIntQueryOrDefault(r, "offset", 0)
+	if limit < 1 || limit > 100 || offset < 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	reviews, count, err := modules.GetReviewsByReviewerAdmin(user.ID, offset, limit)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	common.SendStructResponse(w, struct {
+		Reviews     []schemas.UserReview `json:"reviews"`
+		ReviewCount int                  `json:"reviewCount"`
+	}{Reviews: reviews, ReviewCount: count})
+}
+
 func AddBadge(w http.ResponseWriter, r *http.Request) {
-	var badge schemas.UserBadge
-	json.NewDecoder(r.Body).Decode(&badge)
+	var data struct {
+		TargetDiscordID string `json:"targetDiscordID"`
+		Name            string `json:"name"`
+		Icon            string `json:"icon"`
+		RedirectURL     string `json:"redirectURL"`
+		Type            int32  `json:"type"`
+		Description     string `json:"description"`
+	}
+	json.NewDecoder(r.Body).Decode(&data)
+	badge := schemas.UserBadge{
+		TargetDiscordID: data.TargetDiscordID,
+		Name:            data.Name,
+		Icon:            data.Icon,
+		RedirectURL:     data.RedirectURL,
+		Type:            data.Type,
+		Description:     data.Description,
+	}
 
 	err := modules.AddBadge(badge)
 	if err != nil {

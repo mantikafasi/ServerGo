@@ -449,7 +449,9 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 	type UserBadge struct {
 		schemas.UserBadge
-		DiscordID string `json:"discordID"`
+		ID              int32  `json:"id"`
+		DiscordID       string `json:"discordID"`
+		TargetDiscordID string `json:"targetDiscordID"`
 	}
 
 	legacyBadges, err := modules.GetAllBadges()
@@ -459,7 +461,12 @@ func GetAllBadges(w http.ResponseWriter, r *http.Request) {
 	}
 	badges := make([]UserBadge, len(legacyBadges))
 	for i, b := range legacyBadges {
-		badges[i] = UserBadge{schemas.UserBadge(b), b.TargetDiscordID}
+		badges[i] = UserBadge{
+			UserBadge:       schemas.UserBadge(b),
+			ID:              b.ID,
+			DiscordID:       b.TargetDiscordID,
+			TargetDiscordID: b.TargetDiscordID,
+		}
 	}
 	json.NewEncoder(w).Encode(badges)
 }

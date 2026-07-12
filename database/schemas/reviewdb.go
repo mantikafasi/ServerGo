@@ -99,10 +99,11 @@ type ManualOptOut struct {
 type ReviewReport struct {
 	bun.BaseModel `bun:"table:reports"`
 
-	ID         int32            `bun:"id,pk,autoincrement"`
-	ReviewID   int32            `bun:"review_id"`
-	ReporterID int32            `bun:"reporter_id"`
-	Review     UserReviewBasic  `bun:"rel:has-one,join:review_id=id" json:"review"`
+	ID         int32            `bun:"id,pk,autoincrement" json:"id"`
+	ReviewID   int32            `bun:"review_id" json:"reviewID"`
+	ReporterID int32            `bun:"reporter_id" json:"reporterID"`
+	Timestamp  time.Time        `bun:"timestamp,default:current_timestamp" json:"timestamp"`
+	Review     UserReview       `bun:"-" json:"review"`
 	Reporter   ReviewDBUserFull `bun:"rel:has-one,join:reporter_id=id" json:"reporter"`
 }
 

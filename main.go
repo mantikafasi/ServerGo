@@ -119,6 +119,7 @@ func main() {
 			r.Get("/reports", routes.GetReports)
 			r.Get("/users", routes.GetUsersAdmin)
 			r.Get("/users/{id}", routes.GetUserAdmin)
+			r.Get("/users/{id}/reviews", routes.GetUserReviewsAdmin)
 			r.Patch("/users", routes.PatchUserAdmin)
 			r.Get("/badges", routes.GetAllBadges)
 			r.Put("/badges", routes.AddBadge)
