@@ -188,6 +188,7 @@ type UserReview struct {
 	RepliesTo    int32     `bun:"replies_to,nullzero" json:"-"`
 	Score        int       `bun:"score,default:0" json:"score"`
 	Reputation   *int      `bun:"-" json:"reputation,omitempty"`
+	Missing      bool      `bun:"-" json:"missing,omitempty"`
 
 	User    *URUser      `bun:"rel:belongs-to,join:reviewer_id=id" json:"-"`
 	Replies []UserReview `bun:"-" json:"replies"`

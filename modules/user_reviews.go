@@ -626,7 +626,8 @@ func GetReports(offset int, limit int) (reports []schemas.ReviewReport, err erro
 		Relation("Reporter").
 		Limit(limit).
 		Offset(offset).
-		Order("reports.timestamp DESC, reports.id DESC").
+		Order("timestamp DESC").
+		Order("id DESC").
 		Scan(context.Background(), &reports)
 	if err != nil {
 		return reports, err
@@ -634,6 +635,10 @@ func GetReports(offset int, limit int) (reports []schemas.ReviewReport, err erro
 	for i := range reports {
 		review, reviewErr := GetReview(reports[i].ReviewID)
 		if reviewErr != nil {
+			if errors.Is(reviewErr, sql.ErrNoRows) {
+				reports[i].Review = schemas.UserReview{ID: reports[i].ReviewID, Comment: "[This review was deleted]", Missing: true}
+				continue
+			}
 			return reports, reviewErr
 		}
 		reports[i].Review = review
