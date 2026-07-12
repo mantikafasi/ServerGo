@@ -54,6 +54,7 @@ type Settings struct {
 type GetReviewsOptions struct {
 	IncludeReviewsById string
 	Limit              int
+	ReviewType         *int32
 }
 
 func GetReviews(requester *schemas.URUser, userID int64, offset int) ([]schemas.UserReview, int, error) {
@@ -77,6 +78,10 @@ func GetReviewsWithOptions(requester *schemas.URUser, userID int64, offset int, 
 
 	if requester == nil || !requester.IsAdmin() {
 		req = req.Where("\"user\".\"opted_out\" = 'f'")
+	}
+
+	if options.ReviewType != nil {
+		req = req.Where("user_review.type = ?", *options.ReviewType)
 	}
 
 	if options.IncludeReviewsById != "" {
@@ -132,6 +137,29 @@ func GetReviewsWithOptions(requester *schemas.URUser, userID int64, offset int, 
 	reviews = reviews[:n]
 
 	return reviews, count, nil
+}
+
+func GetGithubRepositoryReviews(requester *schemas.URUser, owner string, repo string, offset int, options GetReviewsOptions) (*github.Repository, []schemas.UserReview, int, error) {
+	repository, err := github.GetRepository(owner, repo)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	reviewType := schemas.ReviewTypeGithubRepository
+	options.ReviewType = &reviewType
+	reviews, count, err := GetReviewsWithOptions(requester, schemas.GithubRepositoryProfileID(repository.ID), offset, options)
+	return repository, reviews, count, err
+}
+
+func GetGithubRepositoryRating(repositoryID int64) (int, error) {
+	var rating int
+	err := database.DB.NewSelect().
+		TableExpr("reviews").
+		ColumnExpr("COALESCE(SUM(score), 0)").
+		Where("profile_id = ?", schemas.GithubRepositoryProfileID(repositoryID)).
+		Where("type = ?", schemas.ReviewTypeGithubRepository).
+		Scan(context.Background(), &rating)
+	return rating, err
 }
 
 func GetDBUserViaDiscordID(discordID string) (*schemas.URUser, error) {
@@ -684,15 +712,21 @@ func GetReviewCount() (count int, err error) {
 }
 
 func GetLastReviewID(userID string) int32 {
-	review := schemas.UserReview{}
+	var reviewID int32
 
-	err := database.DB.NewSelect().Model(&schemas.UserReview{}).Where("profile_id = ?", userID).Order("id DESC").Limit(1).Scan(context.Background(), &review)
+	err := database.DB.NewSelect().
+		Model((*schemas.UserReview)(nil)).
+		Column("id").
+		Where("profile_id = ?", userID).
+		Order("id DESC").
+		Limit(1).
+		Scan(context.Background(), &reviewID)
 
 	if err != nil {
 		return 0
 	}
 
-	return review.ID
+	return reviewID
 }
 
 func BanUser(userToBan string, adminToken string, banDuration int32, review schemas.UserReview) error {
@@ -954,7 +988,7 @@ func DenyAppeal(appeal *schemas.ReviewDBAppeal, denyText string) (err error) {
 }
 
 func GetBlockedUsers(blocker *schemas.URUser) (users []schemas.BaseRDBUser, err error) {
-	if blocker.BlockedUsers == nil {
+	if len(blocker.BlockedUsers) == 0 {
 		return []schemas.BaseRDBUser{}, nil
 	}
 
@@ -964,7 +998,11 @@ func GetBlockedUsers(blocker *schemas.URUser) (users []schemas.BaseRDBUser, err 
 }
 
 func BlockUser(blocker *schemas.URUser, discordID string) (err error) {
-	if len(blocker.BlockedUsers) > 50 {
+	if slices.Contains(blocker.BlockedUsers, discordID) {
+		return nil
+	}
+
+	if len(blocker.BlockedUsers) >= 50 {
 		return errors.New("You can block maximum 50 users")
 	}
 
@@ -973,6 +1011,10 @@ func BlockUser(blocker *schemas.URUser, discordID string) (err error) {
 }
 
 func UnblockUser(blocker *schemas.URUser, discordID string) (err error) {
+	if !slices.Contains(blocker.BlockedUsers, discordID) {
+		return nil
+	}
+
 	_, err = database.DB.NewUpdate().Model(&schemas.URUser{}).Set("blocked_users = array_remove(blocked_users, ?)", discordID).Where("id = ?", blocker.ID).Exec(context.Background())
 	return
 }
@@ -1094,14 +1136,15 @@ type ReputationStats struct {
 func GetLeaderboard() (leaderboard []LeaderboardUser, err error) {
 
 	err = database.DB.NewSelect().
-		ColumnExpr("u.discord_id").
-		ColumnExpr("u.username").
-		ColumnExpr("u.avatar_url").
+		ColumnExpr("r.profile_id::text AS discord_id").
+		ColumnExpr("COALESCE(u.username, 'Unknown User') AS username").
+		ColumnExpr("COALESCE(u.avatar_url, 'https://cdn.discordapp.com/embed/avatars/0.png') AS avatar_url").
 		ColumnExpr("COUNT(r.id) AS count").
 		TableExpr("reviews AS r").
-		Join("JOIN users AS u ON u.id = r.reviewer_id").
-		GroupExpr("r.reviewer_id, u.discord_id, u.username, u.avatar_url").
-		OrderExpr("count DESC").
+		Join("LEFT JOIN users AS u ON u.discord_id = r.profile_id::text").
+		Where("r.type = ?", schemas.ReviewTypeUser).
+		GroupExpr("r.profile_id, u.username, u.avatar_url").
+		OrderExpr("count DESC, r.profile_id ASC").
 		Limit(50).
 		Scan(context.Background(), &leaderboard)
 
@@ -1167,12 +1210,23 @@ func updateReviewScoreAndUserReputation(reviewID int32, reviewerID int32, delta 
 	return updateUserReputation(reviewerID, delta)
 }
 
+func getReviewVoteTarget(reviewID int32) (schemas.UserReview, error) {
+	var review schemas.UserReview
+	err := database.DB.NewSelect().
+		Model(&review).
+		Column("id", "reviewer_id").
+		Where("id = ?", reviewID).
+		Limit(1).
+		Scan(context.Background())
+	return review, err
+}
+
 // VoteReview records an upvote (isUpvote=true) or downvote (isUpvote=false) for a review.
 // The score column on the reviews table is updated atomically (+1 for upvote, -1 for downvote).
 // Toggling from one vote direction to the other adds ±2 to the score.
 // A user cannot vote on their own review and cannot vote the same direction twice.
 func VoteReview(voter *schemas.URUser, reviewID int32, isUpvote bool) error {
-	review, err := GetReview(reviewID)
+	review, err := getReviewVoteTarget(reviewID)
 	if err != nil {
 		return errors.New("invalid review ID")
 	}
@@ -1236,7 +1290,7 @@ func VoteReview(voter *schemas.URUser, reviewID int32, isUpvote bool) error {
 
 // DeleteReviewVote removes the voter's vote from a review and adjusts the review score.
 func DeleteReviewVote(voter *schemas.URUser, reviewID int32) error {
-	review, err := GetReview(reviewID)
+	review, err := getReviewVoteTarget(reviewID)
 	if err != nil {
 		return errors.New("invalid review ID")
 	}

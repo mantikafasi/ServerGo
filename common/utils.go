@@ -81,7 +81,7 @@ func GetIntQueryOrDefault(r *http.Request, key string, defaultValue int) int {
 	}
 	intValue, err := strconv.Atoi(value)
 	if err != nil {
-		return intValue
+		return defaultValue
 	}
-	return defaultValue
+	return intValue
 }

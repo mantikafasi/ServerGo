@@ -13,6 +13,33 @@ const (
 	UserTypeModerator = 2
 )
 
+const (
+	ReviewTypeUser int32 = iota
+	ReviewTypeServer
+	ReviewTypeSupport
+	ReviewTypeSystem
+	ReviewTypeBotIntegration
+	ReviewTypeGithubRepository
+)
+
+func GithubRepositoryProfileID(repositoryID int64) int64 {
+	if repositoryID < 0 {
+		return repositoryID
+	}
+	return -repositoryID
+}
+
+func GithubRepositoryIDFromProfileID(profileID int64) int64 {
+	if profileID < 0 {
+		return -profileID
+	}
+	return profileID
+}
+
+func IsGithubRepositoryProfileID(profileID int64) bool {
+	return profileID < 0
+}
+
 type URUser struct {
 	bun.BaseModel `bun:"table:users"`
 
@@ -179,7 +206,7 @@ type UserReview struct {
 	ProfileID    int64     `bun:"profile_id,type:numeric" json:"-"`
 	Sender       Sender    `bun:"-" json:"sender"`
 	Comment      string    `bun:"comment" json:"comment"`
-	Type         int32     `bun:"type" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review, 4 = bot integration review
+	Type         int32     `bun:"type" json:"type"` // See ReviewType* constants.
 	TimestampStr time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 	Timestamp    int64     `bun:"-" json:"timestamp"`
 	ReviewerID   int32     `bun:"reviewer_id" json:"-"`
@@ -206,7 +233,7 @@ type UserReviewBasic struct {
 	ID           int32     `bun:"id,pk,autoincrement" json:"id"`
 	ProfileID    int64     `bun:"profile_id,type:numeric" json:"-"`
 	Comment      string    `bun:"comment" json:"comment"`
-	Type         int32     `bun:"type" json:"type"` // 0 = user review , 1 = server review , 2 = support review, 3 = system review, 4 = bot integration review
+	Type         int32     `bun:"type" json:"type"` // See ReviewType* constants.
 	TimestampStr time.Time `bun:"timestamp,default:current_timestamp" json:"-"`
 	Timestamp    int64     `bun:"-" json:"timestamp"`
 	ReviewerID   int32     `bun:"reviewer_id" json:"reviewer_id"`

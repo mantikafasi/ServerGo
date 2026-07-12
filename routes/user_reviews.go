@@ -11,6 +11,7 @@ import (
 	"server-go/modules"
 	discord_utils "server-go/modules/discord"
 	"server-go/modules/filtering"
+	github_module "server-go/modules/github"
 	"strconv"
 	"strings"
 	"time"
@@ -44,6 +45,11 @@ type ReviewResponse struct {
 type ReviewVotesResponse struct {
 	Response
 	Votes []ReviewVoteResponse `json:"votes"`
+}
+
+type GithubRepositoryReviewResponse struct {
+	ReviewResponse
+	Repository any `json:"repository,omitempty"`
 }
 
 type ReviewVoteResponse struct {
@@ -274,7 +280,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
-	limit := 51
+	limit := 50
 
 	if limitString != "" {
 		limit, err = strconv.Atoi(limitString)
@@ -321,16 +327,22 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		if requester != nil && requester.IsAdmin() {
 			options := modules.GetReviewsOptions{
 				IncludeReviewsById: includeReviewsBy,
-				Limit:              limit,
+				Limit:              limit + 1,
 			}
 
 			var _reviews []schemas.UserReview
 
 			_reviews, count, err = modules.GetReviewsWithOptions(requester, userID, offset, options)
 
-			if err != nil {
+			if err == nil {
 				reviews = append(reviews, _reviews...)
+				response.ReviewCount = count
 			}
+		}
+
+		if len(reviews) > limit {
+			response.HasNextPage = true
+			reviews = reviews[:limit]
 		}
 
 		response.Reviews = reviews
@@ -340,7 +352,7 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 	} else {
 		options := modules.GetReviewsOptions{
 			IncludeReviewsById: includeReviewsBy,
-			Limit:              limit,
+			Limit:              limit + 1,
 		}
 		reviews, count, err = modules.GetReviewsWithOptions(requester, userID, offset, options)
 
@@ -355,9 +367,9 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(reviews) == 51 {
+	if len(reviews) > limit {
 		response.HasNextPage = true
-		reviews = reviews[:len(reviews)-1]
+		reviews = reviews[:limit]
 	}
 
 	/*
@@ -412,6 +424,156 @@ func GetReviews(w http.ResponseWriter, r *http.Request) {
 
 	response.Reviews = reviews
 	response.Success = true
+	common.SendStructResponse(w, response)
+}
+
+func GetGithubRepoReviews(w http.ResponseWriter, r *http.Request) {
+	includeReviewsBy := r.URL.Query().Get("always_include_reviews_by")
+	limitString := r.URL.Query().Get("limit")
+
+	var err error
+	limit := 50
+	if limitString != "" {
+		limit, err = strconv.Atoi(limitString)
+		if err != nil || limit <= 0 || limit > 50 {
+			w.WriteHeader(http.StatusBadRequest)
+			common.SendStructResponse(w, GithubRepositoryReviewResponse{
+				ReviewResponse: ReviewResponse{
+					Response: Response{
+						Success: false,
+						Message: "Invalid limit parameter",
+					},
+				},
+			})
+			return
+		}
+	}
+
+	requester, _ := Authorize(r)
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	options := modules.GetReviewsOptions{
+		IncludeReviewsById: includeReviewsBy,
+		Limit:              limit + 1,
+	}
+
+	repository, reviews, count, err := modules.GetGithubRepositoryReviews(
+		requester,
+		chi.URLParam(r, "owner"),
+		chi.URLParam(r, "repo"),
+		offset,
+		options,
+	)
+
+	response := GithubRepositoryReviewResponse{
+		ReviewResponse: ReviewResponse{
+			ReviewCount: count,
+		},
+		Repository: repository,
+	}
+
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		response.Success = false
+		response.Message = err.Error()
+		common.SendStructResponse(w, response)
+		return
+	}
+
+	if len(reviews) > limit {
+		response.HasNextPage = true
+		reviews = reviews[:limit]
+	}
+
+	if reviews == nil {
+		reviews = []schemas.UserReview{}
+	}
+
+	response.Reviews = reviews
+	response.Success = true
+	common.SendStructResponse(w, response)
+}
+
+func AddGithubRepoReview(w http.ResponseWriter, r *http.Request) {
+	response := struct {
+		Response
+		Updated    bool `json:"updated"`
+		Repository any  `json:"repository,omitempty"`
+	}{}
+
+	var data modules.UR_RequestData
+	json.NewDecoder(r.Body).Decode(&data)
+
+	if r.Header.Get("Authorization") != "" {
+		data.Token = r.Header.Get("Authorization")
+	}
+
+	if len(data.Comment) > 1000 {
+		response.Message = "Comment Too Long"
+		w.WriteHeader(http.StatusBadRequest)
+	} else if len(strings.TrimSpace(data.Comment)) == 0 {
+		response.Message = "Write Something Guh"
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	if data.Token == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		response.Message = "Invalid Request"
+		common.SendStructResponse(w, response)
+		return
+	}
+
+	if response.Message != "" {
+		common.SendStructResponse(w, response)
+		return
+	}
+
+	reviewer, err := modules.GetDBUserViaTokenAndData(data.Token, data)
+	if err != nil {
+		Error(w, err)
+		return
+	}
+
+	repository, err := github_module.GetRepository(chi.URLParam(r, "owner"), chi.URLParam(r, "repo"))
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		response.Message = err.Error()
+		common.SendStructResponse(w, response)
+		return
+	}
+
+	review := schemas.UserReview{
+		ProfileID:    schemas.GithubRepositoryProfileID(repository.ID),
+		ReviewerID:   reviewer.ID,
+		Comment:      strings.TrimSpace(data.Comment),
+		Type:         schemas.ReviewTypeGithubRepository,
+		TimestampStr: time.Now(),
+	}
+
+	if data.RepliesTo != 0 {
+		review.RepliesTo = data.RepliesTo
+	}
+
+	for _, filterFunction := range filtering.ReviewDB {
+		err = filterFunction(&reviewer, &review)
+		if err != nil {
+			Error(w, err)
+			return
+		}
+	}
+
+	res, err := modules.AddReview(&reviewer, &review)
+	if err != nil {
+		Error(w, err)
+		println(err.Error())
+		return
+	}
+
+	response.Success = true
+	response.Message = res
+	response.Repository = repository
+	if res == common.UPDATED {
+		response.Updated = true
+	}
 	common.SendStructResponse(w, response)
 }
 
@@ -509,18 +671,12 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var settings modules.Settings
-
-	json.NewDecoder(r.Body).Decode(&settings)
-
 	user, err := modules.GetDBUserViaToken(token)
-
-	settings.DiscordID = user.DiscordID
-
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
 	switch r.Method {
 	case "GET":
 		settings, err := modules.GetSettings(user.DiscordID)
@@ -532,20 +688,25 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(settings)
 
 	case "PATCH":
+		var settings modules.Settings
+		json.NewDecoder(r.Body).Decode(&settings)
+		settings.DiscordID = user.DiscordID
+
 		err := modules.SetSettings(settings)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Printf("err: %v\n", err)
 			return
 		}
+
+		optedOutUsers, err := modules.GetOptedOutUsers()
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			common.OptedOut = optedOutUsers
+		}
 		w.WriteHeader(200)
 	}
-
-	optedOutUsers, err := modules.GetOptedOutUsers()
-	if err != nil {
-		fmt.Println(err)
-	}
-	common.OptedOut = optedOutUsers
 }
 
 func AppealReview(w http.ResponseWriter, r *http.Request) {
@@ -733,7 +894,7 @@ func GetReviewVotes(w http.ResponseWriter, r *http.Request) {
 
 	response := ReviewVotesResponse{
 		Response: Response{Success: true},
-		Votes:    []ReviewVoteResponse{},
+		Votes:    make([]ReviewVoteResponse, 0, len(votes)),
 	}
 	for _, vote := range votes {
 		response.Votes = append(response.Votes, ReviewVoteResponse{
@@ -743,6 +904,66 @@ func GetReviewVotes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	common.SendStructResponse(w, response)
+}
+
+func GetGithubRepoReviewVotes(w http.ResponseWriter, r *http.Request) {
+	user, err := Authorize(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		common.SendStructResponse(w, Response{Message: "Unauthorized"})
+		return
+	}
+
+	repository, err := github_module.GetRepository(chi.URLParam(r, "owner"), chi.URLParam(r, "repo"))
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		common.SendStructResponse(w, Response{Message: err.Error()})
+		return
+	}
+
+	votes, err := modules.GetReviewVotesOnUser(user, schemas.GithubRepositoryProfileID(repository.ID))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		common.SendStructResponse(w, Response{Message: err.Error()})
+		return
+	}
+
+	response := ReviewVotesResponse{
+		Response: Response{Success: true},
+		Votes:    make([]ReviewVoteResponse, 0, len(votes)),
+	}
+	for _, vote := range votes {
+		response.Votes = append(response.Votes, ReviewVoteResponse{
+			ReviewID: vote.ReviewID,
+			IsUpvote: vote.IsUpvote,
+		})
+	}
+
+	common.SendStructResponse(w, response)
+}
+
+func GetGithubRepoRating(w http.ResponseWriter, r *http.Request) {
+	repository, err := github_module.GetRepository(chi.URLParam(r, "owner"), chi.URLParam(r, "repo"))
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		common.SendStructResponse(w, Response{Message: err.Error()})
+		return
+	}
+
+	rating, err := modules.GetGithubRepositoryRating(repository.ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		common.SendStructResponse(w, Response{Message: err.Error()})
+		return
+	}
+
+	common.SendStructResponse(w, struct {
+		Repository any `json:"repository"`
+		Rating     int `json:"rating"`
+	}{
+		Repository: repository,
+		Rating:     rating,
+	})
 }
 
 func GetUserRating(w http.ResponseWriter, r *http.Request) {

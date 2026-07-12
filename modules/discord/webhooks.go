@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"server-go/common"
 	"server-go/database/schemas"
+	github_module "server-go/modules/github"
 	"server-go/modules/moderation"
 	"strconv"
 
@@ -29,8 +30,8 @@ func SendUserBannedWebhook(reviewer *schemas.URUser, review *schemas.UserReview)
 						Value: strconv.Itoa(int(reviewer.ID)),
 					},
 					{
-						Name:  "Reviewed Profile",
-						Value: "<@" + strconv.FormatInt(int64(review.ProfileID), 10) + ">",
+						Name:  "Reviewed Target",
+						Value: reviewTargetValue(review),
 					},
 				},
 			},
@@ -38,12 +39,27 @@ func SendUserBannedWebhook(reviewer *schemas.URUser, review *schemas.UserReview)
 	})
 }
 
-func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, reportedUser *schemas.URUser) error {
+func reviewTargetValue(review *schemas.UserReview) string {
+	if review.Type == schemas.ReviewTypeGithubRepository || schemas.IsGithubRepositoryProfileID(review.ProfileID) {
+		repositoryID := schemas.GithubRepositoryIDFromProfileID(review.ProfileID)
+		repository, err := github_module.GetRepositoryByID(repositoryID)
+		if err == nil && repository.FullName != "" {
+			if repository.HTMLURL != "" {
+				return fmt.Sprintf("[%s](%s)\nGitHub Repository ID: %d", repository.FullName, repository.HTMLURL, repositoryID)
+			}
+			return fmt.Sprintf("%s\nGitHub Repository ID: %d", repository.FullName, repositoryID)
+		}
+		return fmt.Sprintf("GitHub Repository ID: %d", repositoryID)
+	}
 
 	reviewedUsername := "?"
 	if reviewedUser, err := ArikawaState.User(discord.UserID(review.ProfileID)); err == nil {
 		reviewedUsername = reviewedUser.Tag()
 	}
+	return common.FormatUser(reviewedUsername, 0, strconv.FormatInt(review.ProfileID, 10))
+}
+
+func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, reportedUser *schemas.URUser) error {
 
 	sourceLang := ""
 	translatedContent := ""
@@ -80,7 +96,6 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 		println(err.Error())
 		commentSuffix = fmt.Sprintf(" (Rating: Error)")
 	}
-
 
 	webhookData := WebhookData{
 		Username: "ReviewDB",
@@ -132,7 +147,7 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 					},
 					{
 						Name:  "**Content**",
-						Value: fmt.Sprint(review.Comment,commentSuffix),
+						Value: fmt.Sprint(review.Comment, commentSuffix),
 					},
 					{
 						Name:  "**Translated Content" + sourceLang + "**",
@@ -143,8 +158,8 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 						Value: common.FormatUser(reportedUser.Username, reportedUser.ID, reportedUser.DiscordID),
 					},
 					{
-						Name:  "**Reviewed User**",
-						Value: common.FormatUser(reviewedUsername, 0, strconv.FormatInt(review.ProfileID, 10)),
+						Name:  "**Reviewed Target**",
+						Value: reviewTargetValue(review),
 					},
 					{
 						Name:  "**Reporter**",
@@ -168,22 +183,21 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 			Type:     2,
 			Label:    "Ban Reporter",
 			Style:    4,
-			CustomID: fmt.Sprintf("ban_select:" + reporter.DiscordID + ":" + "0"),
+			CustomID: "ban_select:" + reporter.DiscordID + ":0",
 			Emoji: discord.ComponentEmoji{
 				Name:     "banned",
 				ID:       590237837299941382,
 				Animated: true,
 			},
 		})
-	}	
-
+	}
 
 	if commentSuffix != "" {
 		err = SendWebhook(common.Config.ReportWebhook, webhookData)
 	} else {
 		err = SendWebhook(common.Config.JunkReportWebhook, webhookData)
 	}
-	
+
 	return err
 }
 

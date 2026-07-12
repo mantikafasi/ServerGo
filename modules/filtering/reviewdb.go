@@ -23,7 +23,9 @@ func init() {
 	ReviewDB = []FilterFunction{
 
 		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
-			if !(review.Type == 0 || review.Type == 1) && reviewer.Type != 1 {
+			if !(review.Type == schemas.ReviewTypeUser ||
+				review.Type == schemas.ReviewTypeServer ||
+				review.Type == schemas.ReviewTypeGithubRepository) && reviewer.Type != schemas.UserTypeAdmin {
 				err = errors.New(common.INVALID_REVIEW_TYPE)
 			}
 			return
@@ -102,6 +104,9 @@ func init() {
 		},
 		func(user *schemas.URUser, review *schemas.UserReview) error {
 			// check if user is blocked from profile
+			if review.Type == schemas.ReviewTypeGithubRepository || schemas.IsGithubRepositoryProfileID(review.ProfileID) {
+				return nil
+			}
 
 			profileUser := &schemas.URUser{}
 

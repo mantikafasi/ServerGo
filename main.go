@@ -78,6 +78,13 @@ func main() {
 			r1.Put("/", routes.AddReview)
 			r1.Delete("/", routes.DeleteReview)
 		})
+		r.Route("/github/repos/{owner}/{repo}/reviews", func(r1 chi.Router) {
+			r1.Get("/", routes.GetGithubRepoReviews)
+			r1.Get("/votes", routes.GetGithubRepoReviewVotes)
+			r1.Put("/", routes.AddGithubRepoReview)
+			r1.Delete("/", routes.DeleteReview)
+		})
+		r.Get("/github/repos/{owner}/{repo}/rating", routes.GetGithubRepoRating)
 		r.Get("/users/{discordid}", routes.GetUserInfoByID)
 		r.Get("/users/{discordid}/rating", routes.GetUserRating)
 		r.Get("/users/{discordid}/reputation", routes.GetUserReputation)
@@ -94,7 +101,6 @@ func main() {
 		r.HandleFunc("/blocks", routes.Blocks)
 		r.HandleFunc("/settings", routes.Settings)
 		r.HandleFunc("/notifications", routes.Notifications)
-		r.HandleFunc("/settings", routes.Settings)
 		r.Put("/appeals", routes.AppealReview)
 	})
 

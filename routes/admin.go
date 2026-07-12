@@ -89,8 +89,8 @@ func DeleteFilter(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetReports(w http.ResponseWriter, r *http.Request) {
-	limit := common.GetIntQueryOrDefault(r, "limit", 50)
-	offset := common.GetIntQueryOrDefault(r, "offset", 0)
+	limit := boundedQueryInt(r, "limit", 50, 1, 200)
+	offset := boundedQueryInt(r, "offset", 0, 0, 0)
 
 	reports, err := modules.GetReports(offset, limit)
 	if err != nil {
@@ -107,8 +107,8 @@ func ReloadConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUsersAdmin(w http.ResponseWriter, r *http.Request) {
-	limit := common.GetIntQueryOrDefault(r, "limit", 50)
-	offset := common.GetIntQueryOrDefault(r, "offset", 0)
+	limit := boundedQueryInt(r, "limit", 50, 1, 200)
+	offset := boundedQueryInt(r, "offset", 0, 0, 0)
 	query := r.URL.Query().Get("query")
 	ip_hash := common.GetQueryOrDefault(r, "ip_hash", "")
 
@@ -121,6 +121,17 @@ func GetUsersAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	common.SendStructResponse(w, users)
+}
+
+func boundedQueryInt(r *http.Request, key string, defaultValue int, min int, max int) int {
+	value := common.GetIntQueryOrDefault(r, key, defaultValue)
+	if value < min {
+		return defaultValue
+	}
+	if max > 0 && value > max {
+		return max
+	}
+	return value
 }
 
 func PatchUserAdmin(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +153,7 @@ func GetUserAdmin(w http.ResponseWriter, r *http.Request) {
 
 	user, err := modules.GetUserAdmin(id)
 	if err != nil {
-		if err == sql.ErrNoRows{ 
+		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
