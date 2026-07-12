@@ -45,6 +45,11 @@ type ReportData struct {
 	Token    string `json:"token"`
 }
 
+const (
+	registrationBurstThreshold = 5
+	registrationBurstWindow    = 10 * time.Minute
+)
+
 type Settings struct {
 	bun.BaseModel `bun:"table:users"`
 
@@ -358,6 +363,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	}
 
 	token := GenerateToken()
+	createdAt := time.Now()
 
 	user := &schemas.URUser{
 		DiscordID:    discordUser.ID.String(),
@@ -370,6 +376,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 		AccessToken:  discordToken.AccessToken,
 		RefreshToken: discordToken.RefreshToken,
 		LastOnline:   time.Now(),
+		CreatedAt:    &createdAt,
 	}
 
 	if discordUser.Discriminator == "0" {
@@ -415,6 +422,7 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	if err = DeleteManualOptOut(user.DiscordID); err != nil {
 		return "", err
 	}
+	go alertRegistrationBurst(user.IpHash)
 
 	discord_utils.SendLoggerWebhook(discord_utils.WebhookData{
 		Username:  discordUser.Username + "#" + discordUser.Discriminator,
@@ -423,6 +431,87 @@ func AddUserReviewsUser(code string, clientmod string, authUrl string, ip string
 	})
 
 	return token, nil
+}
+
+func alertRegistrationBurst(ipHash string) {
+	var users []schemas.URUser
+	err := database.DB.NewSelect().
+		Model(&users).
+		Column("id", "discord_id", "username").
+		Where("ip_hash = ?", ipHash).
+		Where("created_at >= ?", time.Now().Add(-registrationBurstWindow)).
+		OrderExpr("created_at DESC").
+		Scan(context.Background())
+	if err != nil || len(users) < registrationBurstThreshold {
+		return
+	}
+
+	cacheKey := "registration-burst:" + ipHash
+	if err := common.Cache.Add(cacheKey, true, registrationBurstWindow); err != nil {
+		return
+	}
+	if err := discord_utils.SendRegistrationBurstWebhook(ipHash, users); err != nil {
+		common.Cache.Delete(cacheKey)
+		fmt.Println(err)
+	}
+}
+
+// BanUsersAndDeleteReviewsByIPHash permanently bans standard users at an IP hash
+// and deletes every review written by those accounts. Staff accounts are excluded.
+func BanUsersAndDeleteReviewsByIPHash(ipHash string) (usersBanned int, reviewsDeleted int, err error) {
+	if len(ipHash) != 64 {
+		return 0, 0, errors.New("invalid IP hash")
+	}
+
+	tx, err := database.DB.BeginTx(context.Background(), nil)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer tx.Rollback()
+
+	var userIDs []int32
+	err = tx.NewSelect().
+		Model((*schemas.URUser)(nil)).
+		Column("id").
+		Where("ip_hash = ?", ipHash).
+		Where("type IN (?, ?)", schemas.UserTypeUser, schemas.UserTypeBanned).
+		Scan(context.Background(), &userIDs)
+	if err != nil {
+		return 0, 0, err
+	}
+	if len(userIDs) == 0 {
+		return 0, 0, tx.Commit()
+	}
+
+	deleteResult, err := tx.NewDelete().
+		Model((*schemas.UserReview)(nil)).
+		Where("reviewer_id IN (?)", bun.In(userIDs)).
+		Exec(context.Background())
+	if err != nil {
+		return 0, 0, err
+	}
+
+	banResult, err := tx.NewUpdate().
+		Model((*schemas.URUser)(nil)).
+		Set("type = ?", schemas.UserTypeBanned).
+		Where("id IN (?)", bun.In(userIDs)).
+		Exec(context.Background())
+	if err != nil {
+		return 0, 0, err
+	}
+
+	deleted, err := deleteResult.RowsAffected()
+	if err != nil {
+		return 0, 0, err
+	}
+	banned, err := banResult.RowsAffected()
+	if err != nil {
+		return 0, 0, err
+	}
+	if err = tx.Commit(); err != nil {
+		return 0, 0, err
+	}
+	return int(banned), int(deleted), nil
 }
 
 func GetReview(id int32) (rep schemas.UserReview, err error) {

@@ -34,6 +34,7 @@ type URUser struct {
 	BlockedUsers      []string      `bun:"blocked_users,array" json:"blockedUsers"`
 	Flags             int32         `bun:"flags" json:"flags"`
 	LastOnline        time.Time     `bun:"last_online" json:"-"`
+	CreatedAt         *time.Time    `bun:"created_at,nullzero" json:"-"`
 	Reputation        int           `bun:"reputation,default:0" json:"reputation"`
 
 	BanID int32 `bun:"ban_id" json:"-"`

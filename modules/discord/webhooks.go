@@ -38,6 +38,41 @@ func SendUserBannedWebhook(reviewer *schemas.URUser, review *schemas.UserReview)
 	})
 }
 
+// SendRegistrationBurstWebhook alerts moderators about a cluster of newly registered accounts.
+func SendRegistrationBurstWebhook(ipHash string, users []schemas.URUser) error {
+	registeredUsers := ""
+	for i, user := range users {
+		if i == 10 {
+			registeredUsers += "…and more"
+			break
+		}
+		registeredUsers += fmt.Sprintf("<@%s> (`%s`)\n", user.DiscordID, user.Username)
+	}
+
+	return SendWebhook(common.Config.ReportWebhook, WebhookData{
+		Username: "ReviewDB",
+		Content:  "Suspicious registration burst detected",
+		Embeds: []discord.Embed{{
+			Title: "Multiple registrations from one IP hash",
+			Fields: []discord.EmbedField{
+				{Name: "Registrations", Value: strconv.Itoa(len(users)) + " in the last 10 minutes"},
+				{Name: "Accounts", Value: registeredUsers},
+				{Name: "IP hash", Value: "`" + ipHash + "`"},
+			},
+		}},
+		Components: []WebhookComponent{{
+			Type: 1,
+			Components: []WebhookComponent{{
+				Type:     2,
+				Label:    "Review bulk ban",
+				Style:    4,
+				CustomID: "ip_bulk_review:" + ipHash,
+				Emoji:    discord.ComponentEmoji{Name: "⚠️"},
+			}},
+		}},
+	})
+}
+
 func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, reportedUser *schemas.URUser) error {
 
 	reviewedUsername := "?"
@@ -80,7 +115,6 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 		println(err.Error())
 		commentSuffix = fmt.Sprintf(" (Rating: Error)")
 	}
-
 
 	webhookData := WebhookData{
 		Username: "ReviewDB",
@@ -132,7 +166,7 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 					},
 					{
 						Name:  "**Content**",
-						Value: fmt.Sprint(review.Comment,commentSuffix),
+						Value: fmt.Sprint(review.Comment, commentSuffix),
 					},
 					{
 						Name:  "**Translated Content" + sourceLang + "**",
@@ -175,15 +209,14 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 				Animated: true,
 			},
 		})
-	}	
-
+	}
 
 	if commentSuffix != "" {
 		err = SendWebhook(common.Config.ReportWebhook, webhookData)
 	} else {
 		err = SendWebhook(common.Config.JunkReportWebhook, webhookData)
 	}
-	
+
 	return err
 }
 

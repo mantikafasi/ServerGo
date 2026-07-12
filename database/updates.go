@@ -10,6 +10,16 @@ func UpdateDB() error {
 		return err
 	}
 
+	_, err = DB.NewRaw(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at timestamptz`).Exec(context.Background())
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.NewRaw(`CREATE INDEX IF NOT EXISTS users_ip_hash_created_at_idx ON users (ip_hash, created_at DESC)`).Exec(context.Background())
+	if err != nil {
+		return err
+	}
+
 	_, err = DB.NewRaw(`
 		CREATE TABLE IF NOT EXISTS manual_opt_outs (
 			discord_id numeric PRIMARY KEY,

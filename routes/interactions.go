@@ -70,6 +70,18 @@ func BanTimeSelectComponentWithID(userid string, componentID string) discord.Con
 	}
 }
 
+func ConfirmIPBulkBanComponent(ipHash string) discord.ContainerComponents {
+	return discord.ContainerComponents{
+		&discord.ActionRowComponent{
+			&discord.ButtonComponent{
+				CustomID: discord.ComponentID("ip_bulk_confirm:" + ipHash),
+				Label:    "Confirm permanent bans and review deletion",
+				Style:    discord.DangerButtonStyle(),
+			},
+		},
+	}
+}
+
 func AppealDenyTextComponent(appealID int32) discord.ContainerComponents {
 
 	return discord.ContainerComponents{
@@ -102,6 +114,9 @@ func Interactions(data InteractionsData) (string, error) {
 	action := strings.Split(data.Data.ID, ":")
 
 	if (data.Type == 3 || data.Type == 5) && modules.IsUserAdminDC(userid) {
+		if len(action) < 2 {
+			return "", errors.New("invalid interaction action")
+		}
 
 		response.Data.Embeds = &[]discord.Embed{{
 			Footer: &discord.EmbedFooter{
@@ -176,6 +191,21 @@ func Interactions(data InteractionsData) (string, error) {
 			response.Type = 7 // update message
 
 			response.Data.Components = &discord.ContainerComponents{} // remove components
+
+		} else if action[0] == "ip_bulk_review" {
+			component := ConfirmIPBulkBanComponent(action[1])
+			response.Data.Content = option.NewNullableString("This permanently bans standard users registered from this IP hash and deletes all reviews they wrote. Confirm to continue.")
+			response.Data.Components = &component
+
+		} else if action[0] == "ip_bulk_confirm" {
+			usersBanned, reviewsDeleted, err := modules.BanUsersAndDeleteReviewsByIPHash(action[1])
+			if err != nil {
+				response.Data.Content = option.NewNullableString(err.Error())
+			} else {
+				response.Data.Content = option.NewNullableString(fmt.Sprintf("Permanently banned %d user(s) and deleted %d review(s) from this IP hash.", usersBanned, reviewsDeleted))
+			}
+			response.Type = 7
+			response.Data.Components = &discord.ContainerComponents{}
 
 		} else if action[0] == "accept_appeal" {
 			appeal, err := modules.GetAppeal(int32(firstVariable))
