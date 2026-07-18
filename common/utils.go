@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 var PublicKeyString string = "a6953fb61ec1e9107fae66ff1c56437c322f561e2f1578b0f52dbcb3d9eda694"
@@ -32,9 +34,44 @@ func Ternary[T any](b bool, ifTrue, ifFalse T) T {
 }
 
 var urlRegex *regexp.Regexp = regexp.MustCompile(`[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+var reviewURLRegex *regexp.Regexp = regexp.MustCompile(`https://[^\s<]+`)
 
 func ContainsURL(s string) bool {
 	return urlRegex.MatchString(s)
+}
+
+func ContainsOnlyAllowedReviewGIFURLs(s string) bool {
+	urls := reviewURLRegex.FindAllString(s, -1)
+	if len(urls) == 0 {
+		return false
+	}
+
+	for _, rawURL := range urls {
+		if !isAllowedReviewGIFURL(rawURL) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func isGIFProvider(hostname string) bool {
+	return hostname == "tenor.com" || strings.HasSuffix(hostname, ".tenor.com") || hostname == "tenor.co" || strings.HasSuffix(hostname, ".tenor.co") || hostname == "giphy.com" || strings.HasSuffix(hostname, ".giphy.com") || hostname == "klipy.com" || strings.HasSuffix(hostname, ".klipy.com") || hostname == "klipy.co" || strings.HasSuffix(hostname, ".klipy.co")
+}
+
+func isAllowedReviewGIFURL(rawURL string) bool {
+	parsed, err := url.ParseRequestURI(rawURL)
+	if err != nil || parsed.Scheme != "https" || !isGIFProvider(strings.ToLower(parsed.Hostname())) {
+		return false
+	}
+
+	path := strings.ToLower(parsed.Path)
+	return isDirectReviewGIFPath(path)
+}
+
+func isDirectReviewGIFPath(path string) bool {
+	path = strings.ToLower(path)
+	return strings.HasSuffix(path, ".gif") || strings.HasSuffix(path, ".webp") || strings.HasSuffix(path, ".mp4") || strings.HasSuffix(path, "/mp4")
 }
 
 const (

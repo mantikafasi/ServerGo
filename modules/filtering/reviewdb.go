@@ -49,8 +49,8 @@ func init() {
 		},
 
 		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
-			if reviewer.Type != 1 && common.ContainsURL(review.Comment) {
-				err = errors.New("You are not allowed to have URLs in your review")
+			if reviewer.Type != 1 && common.ContainsURL(review.Comment) && !common.ContainsOnlyAllowedReviewGIFURLs(review.Comment) {
+				err = errors.New("Only Tenor, Klipy, and Giphy GIF URLs are allowed in reviews")
 			}
 			return
 		},
