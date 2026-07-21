@@ -207,8 +207,10 @@ func AddTwitterUser(code string, ip string) (*schemas.TwitterUser, error) {
 
 func AddReview(user *schemas.TwitterUser, data schemas.TwitterRequestData) (response string, err error) {
 
-	if common.LightProfanityDetector.IsProfane(data.Comment) || common.ProfanityDetector.IsProfane(data.Comment) {
-		return "", errors.New("Your review contains profanity")
+	if word := common.LightProfanityDetector.ExtractProfanity(data.Comment); word != "" {
+		return "", fmt.Errorf("Your review contains profanity: %q", word)
+	} else if word := common.ProfanityDetector.ExtractProfanity(data.Comment); word != "" {
+		return "", fmt.Errorf("Your review contains profanity: %q", word)
 	}
 
 	count, err := GetReviewCountInLastHour(user.TwitterID)

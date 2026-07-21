@@ -30,13 +30,13 @@ func init() {
 		},
 
 		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
-			if common.BanWordDetector.IsProfane(review.Comment) {
+			if word := common.BanWordDetector.ExtractProfanity(review.Comment); word != "" {
 				database.DB.NewUpdate().
 					Model(&schemas.URUser{}).
 					Set("type = ?", -1).
 					Where("id = ?", reviewer.ID).
 					Exec(context.Background())
-				err = errors.New("Your have been banned from reviewdb")
+				err = fmt.Errorf("You have been banned from ReviewDB for using %q", word)
 			}
 			return
 		},
@@ -85,18 +85,18 @@ func init() {
 		},
 
 		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
-			if common.LightProfanityDetector.IsProfane(review.Comment) {
-				err = errors.New("Your review contains profanity")
+			if word := common.LightProfanityDetector.ExtractProfanity(review.Comment); word != "" {
+				err = fmt.Errorf("Your review contains profanity: %q", word)
 			}
 			return
 		},
 
 		func(reviewer *schemas.URUser, review *schemas.UserReview) (err error) {
-			if common.ProfanityDetector.IsProfane(review.Comment) {
+			if word := common.ProfanityDetector.ExtractProfanity(review.Comment); word != "" {
 				review.ID = -1
 				modules.BanUser(reviewer.DiscordID, common.Config.AdminToken, 7, *review)
 				discord_utils.SendUserBannedWebhook(reviewer, review)
-				err = errors.New("Because of trying to post a profane review, you have been banned from ReviewDB for 1 week")
+				err = fmt.Errorf("Because of trying to post a profane review containing %q, you have been banned from ReviewDB for 1 week", word)
 			}
 			return
 		},
