@@ -73,7 +73,7 @@ func SendRegistrationBurstWebhook(ipHash string, users []schemas.URUser) error {
 	})
 }
 
-func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, reportedUser *schemas.URUser) error {
+func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, reportedUser *schemas.URUser, reportID int32) error {
 
 	reviewedUsername := "?"
 	if reviewedUser, err := ArikawaState.User(discord.UserID(review.ProfileID)); err == nil {
@@ -183,6 +183,10 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 					{
 						Name:  "**Reporter**",
 						Value: common.FormatUser(reporter.Username, reporter.ID, reporter.DiscordID),
+					},
+					{
+						Name:  "**Report ID**",
+						Value: fmt.Sprint(reportID),
 					},
 				},
 			},

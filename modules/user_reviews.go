@@ -609,13 +609,14 @@ func ReportReview(data UR_RequestData) error {
 		ReporterID: user.ID,
 	}
 
-	err = discord_utils.SendReportWebhook(&user, &review, &reportedUser)
+	database.DB.NewInsert().Model(&report).Exec(context.Background())
+
+	err = discord_utils.SendReportWebhook(&user, &review, &reportedUser, report.ID)
 
 	if err != nil {
 		println(err.Error())
 	}
 
-	database.DB.NewInsert().Model(&report).Exec(context.Background())
 	return nil
 }
 
@@ -1099,9 +1100,9 @@ func DenyAppeal(appeal *schemas.ReviewDBAppeal, denyText string) (err error) {
 		Title:  "ReviewDB",
 		Content: fmt.Sprintf(`
 			Your appeal has been denied
-	
+
 			**Reason:** %s,
-		
+
 		`, denyText),
 	})
 }
