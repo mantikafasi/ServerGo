@@ -141,7 +141,7 @@ func AddReview(w http.ResponseWriter, r *http.Request) {
 	common.SendStructResponse(w, response)
 }
 
-var ClientMods []string = []string{"aliucord", "betterdiscord", "powercordv2", "replugged", "enmity", "vencord", "vendetta"}
+var ClientMods []string = []string{"aliucord", "betterdiscord", "powercordv2", "replugged", "enmity", "vencord", "vendetta", "fairecord"}
 
 func ReviewDBAuth(w http.ResponseWriter, r *http.Request) {
 	clientmod := r.URL.Query().Get("clientMod")
