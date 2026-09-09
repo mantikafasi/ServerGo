@@ -142,7 +142,7 @@ func (h *handler) resetToken(ctx context.Context, data cmdroute.CommandData) *ap
 	} else {
 		requester := data.Event.User.ID
 
-		user, err := modules.GetDBUserViaDiscordID(string(requester))
+		user, err := modules.GetDBUserViaDiscordID(requester.String())
 
 		if err != nil {
 			return errorResponse(errors.New("Error resetting token"))

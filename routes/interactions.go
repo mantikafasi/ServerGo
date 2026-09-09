@@ -226,6 +226,34 @@ func Interactions(data InteractionsData) (string, error) {
 				response.Data.Content = option.NewNullableString(err.Error())
 			}
 
+		} else if action[0] == "canned_deny_appeal" {
+			appeal, err := modules.GetAppeal(int32(firstVariable))
+			if err != nil {
+				response.Data.Content = option.NewNullableString(err.Error())
+				return InteractionResponse(&response), nil
+			}
+			if appeal.ActionTaken {
+				response.Data.Content = option.NewNullableString("Appeal action already taken")
+				return InteractionResponse(&response), nil
+			}
+
+			if len(data.Data.Values) == 0 {
+				response.Data.Content = option.NewNullableString("No canned response selected")
+				return InteractionResponse(&response), nil
+			}
+
+			denyReason, ok := discord_utils.GetCannedAppealDenyReason(data.Data.Values[0])
+			if !ok {
+				response.Data.Content = option.NewNullableString("Invalid canned response selection")
+				return InteractionResponse(&response), nil
+			}
+
+			err = modules.DenyAppeal(&appeal, denyReason)
+			if err != nil {
+				response.Data.Content = option.NewNullableString(err.Error())
+			} else {
+				response.Data.Content = option.NewNullableString("Successfully denied appeal\n\n ```" + denyReason + "```")
+			}
 		} else if action[0] == "text_deny_appeal" {
 			appealId := int32(firstVariable)
 			component := AppealDenyTextComponent(appealId)

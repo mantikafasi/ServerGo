@@ -24,14 +24,15 @@ type WebhookData struct {
 }
 
 type WebhookComponent struct {
-	Type       int                     `json:"type"`
-	Style      int                     `json:"style"`
-	Label      string                  `json:"label"`
-	Value      string                  `json:"value"`
-	CustomID   string                  `json:"custom_id"`
-	Emoji      discord.ComponentEmoji  `json:"emoji"`
-	Options    []discord.CommandOption `json:"options,omitempty"`
-	Components []WebhookComponent      `json:"components"`
+	Type        int                    `json:"type"`
+	Style       int                    `json:"style,omitempty"`
+	Label       string                 `json:"label,omitempty"`
+	Value       string                 `json:"value,omitempty"`
+	CustomID    string                 `json:"custom_id,omitempty"`
+	Placeholder string                 `json:"placeholder,omitempty"`
+	Emoji       discord.ComponentEmoji `json:"emoji,omitempty"`
+	Options     []discord.SelectOption `json:"options,omitempty"`
+	Components  []WebhookComponent     `json:"components,omitempty"`
 }
 
 var ArikawaState *state.State

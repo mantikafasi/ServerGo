@@ -206,7 +206,7 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 			Type:     2,
 			Label:    "Ban Reporter",
 			Style:    4,
-			CustomID: fmt.Sprintf("ban_select:" + reporter.DiscordID + ":" + "0"),
+			CustomID: fmt.Sprintf("ban_select:%s:0", reporter.DiscordID),
 			Emoji: discord.ComponentEmoji{
 				Name:     "banned",
 				ID:       590237837299941382,
@@ -224,7 +224,48 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 	return err
 }
 
+type CannedAppealDenyReason struct {
+	Label string
+	Value string
+	Text  string
+}
+
+var CannedAppealDenyReasons = []CannedAppealDenyReason{
+	{
+		Label: "Idiot",
+		Value: "idiot",
+		Text:  "You wrote such a dumb reason even I could think of a better one",
+	},
+	{
+		Label: "NSFW allegations",
+		Value: "nsfw_allegations",
+		Text:  "We don't allow allegations of this nature because they are inflammatory, difficult to verify, and tend to lead to unnecessary drama. This isn't a determination of whether the claim is true or false; it's simply content we don't want on ReviewDB. If you have credible evidence of actual misconduct, please report it to Discord or, where applicable, the relevant authorities rather than using ReviewDB to make or debate the allegation.",
+	},
+	{
+		Label: "Hacked",
+		Value: "hacked",
+		Text:  "You are responsible for what happens to your account. In the future, ensure that only you has access to it",
+	},
+}
+
+func GetCannedAppealDenyReason(value string) (string, bool) {
+	for _, reason := range CannedAppealDenyReasons {
+		if reason.Value == value {
+			return reason.Text, true
+		}
+	}
+	return "", false
+}
+
 func SendAppealWebhook(appeal *schemas.ReviewDBAppeal, user *schemas.URUser) {
+	options := make([]discord.SelectOption, len(CannedAppealDenyReasons))
+	for i, canned := range CannedAppealDenyReasons {
+		options[i] = discord.SelectOption{
+			Label: canned.Label,
+			Value: canned.Value,
+		}
+	}
+
 	SendWebhook(common.Config.AppealWebhook,
 		WebhookData{
 			Username: "ReviewDB Appeals",
@@ -268,6 +309,17 @@ func SendAppealWebhook(appeal *schemas.ReviewDBAppeal, user *schemas.URUser) {
 							Emoji: discord.ComponentEmoji{
 								Name: "❌",
 							},
+						},
+					},
+				},
+				{
+					Type: 1,
+					Components: []WebhookComponent{
+						{
+							Type:        3,
+							CustomID:    fmt.Sprintf("canned_deny_appeal:%d", appeal.ID),
+							Placeholder: "Deny with canned response...",
+							Options:     options,
 						},
 					},
 				},
