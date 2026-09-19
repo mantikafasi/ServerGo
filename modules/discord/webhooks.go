@@ -104,16 +104,12 @@ func SendReportWebhook(reporter *schemas.URUser, review *schemas.UserReview, rep
 	}
 
 	moderationResult, err := moderation.ModerateContent(contentToModerate)
-	if err == nil {
-		if !moderationResult.Flagged && len(moderationResult.Scores) == 0 {
-			commentSuffix = ""
-		} else {
-			name, score := moderation.GetHighestScore(moderationResult)
-			commentSuffix = fmt.Sprintf(" (%s - %d%%)", name, int(score*100))
-		}
-	} else {
+	if err != nil {
 		println(err.Error())
-		commentSuffix = fmt.Sprintf(" (Rating: Error)")
+		commentSuffix = " (Rating: Error)"
+	} else if moderationResult.Flagged {
+		name, score := moderation.GetHighestScore(moderationResult)
+		commentSuffix = fmt.Sprintf(" (%s - %d%%)", name, int(score*100))
 	}
 
 	webhookData := WebhookData{

@@ -19,28 +19,28 @@ type Client struct {
 }
 
 type ConfigStr struct {
-	DB                     *ConfigDB `json:"db"`
-	GithubWebhookSecret    string    `json:"github_webhook_secret"`
-	Origin                 string    `json:"origin"`
-	Port                   string    `json:"port"`
-	BotToken               string    `json:"bot_token"`
-	ReportWebhook          string    `json:"report_webhook"`
-	JunkReportWebhook      string    `json:"junk_report_webhook"`
-	AppealWebhook          string    `json:"appeal_webhook"`
-	AdminToken             string    `json:"admin_token"`
-	BotIntegrationToken    string    `json:"bot_integration_token"`
-	LoggerWebhook          string    `json:"logger_webhook"`
-	UpdaterBotToken        string    `json:"updater_bot_token"`
-	GuildIDs               []string  `json:"guild_ids"`
-	Discord                *Client   `json:"discord"`
-	Twitter                *Client   `json:"twitter"`
-	Github                 *Client   `json:"github"`
-	Debug                  bool      `json:"debug"`
-	CommentAnalyzerAPIKey  string    `json:"comment_analyzer_api_key"`
-	OpenAIModerationAPIKey string    `json:"openai_moderation_api_key"`
-	ProfaneWordList        []string  `json:"profane_word_list"`
-	LightProfaneWordList   []string  `json:"light_profane_word_list"`
-	BanWordList            []string  `json:"ban_word_list"`
+	DB                    *ConfigDB `json:"db"`
+	GithubWebhookSecret   string    `json:"github_webhook_secret"`
+	Origin                string    `json:"origin"`
+	Port                  string    `json:"port"`
+	BotToken              string    `json:"bot_token"`
+	ReportWebhook         string    `json:"report_webhook"`
+	JunkReportWebhook     string    `json:"junk_report_webhook"`
+	AppealWebhook         string    `json:"appeal_webhook"`
+	AdminToken            string    `json:"admin_token"`
+	BotIntegrationToken   string    `json:"bot_integration_token"`
+	LoggerWebhook         string    `json:"logger_webhook"`
+	UpdaterBotToken       string    `json:"updater_bot_token"`
+	GuildIDs              []string  `json:"guild_ids"`
+	Discord               *Client   `json:"discord"`
+	Twitter               *Client   `json:"twitter"`
+	Github                *Client   `json:"github"`
+	Debug                 bool      `json:"debug"`
+	CommentAnalyzerAPIKey string    `json:"comment_analyzer_api_key"`
+	TypeSafeAPIKey        string    `json:"typesafe_api_key"`
+	ProfaneWordList       []string  `json:"profane_word_list"`
+	LightProfaneWordList  []string  `json:"light_profane_word_list"`
+	BanWordList           []string  `json:"ban_word_list"`
 }
 
 var LightProfanityDetector *goaway.ProfanityDetector

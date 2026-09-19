@@ -1,17 +1,79 @@
 package moderation
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 	"server-go/common"
-
-	openai "github.com/sashabaranov/go-openai"
+	"time"
 )
 
-var moderationClient *openai.Client
+// TypeSafe System One evaluates every field in one request and returns a
+// calibrated probability per field. See https://docs.typesafe.ai/api.
+const (
+	moderationEndpoint = "https://api.typesafe.ai/v1/systemone"
+	moderationModel    = "jev-latest"
+
+	// requestTimeout bounds one moderation call: a reported review must not hang
+	// the webhook on a slow evaluation.
+	requestTimeout = 15 * time.Second
+)
+
+// moderationHTTPClient is shared so connections are reused across reports.
+var moderationHTTPClient = &http.Client{Timeout: requestTimeout}
+
+// moderationQuestions is the taxonomy in wire form, built once at startup.
+var moderationQuestions = buildQuestions()
 
 func init() {
-	println("Initializing OpenAI Moderation Service...")
-	moderationClient = openai.NewClient(common.Config.OpenAIModerationAPIKey)
+	println("Initializing TypeSafe Moderation Service...")
+}
+
+func buildQuestions() map[string]noulQuestion {
+	questions := make(map[string]noulQuestion, len(moderationFields))
+	for name, f := range moderationFields {
+		questions[name] = noulQuestion{
+			Type:         "noul",
+			Instructions: f.Instructions,
+			Criteria:     &noulCriteria{True: f.Yes, False: f.No},
+		}
+	}
+	return questions
+}
+
+// noulQuestion is one TypeSafe yes/no question.
+type noulQuestion struct {
+	Type         string        `json:"type"`
+	Instructions string        `json:"instructions"`
+	Criteria     *noulCriteria `json:"criteria,omitempty"`
+}
+
+type noulCriteria struct {
+	True  string `json:"true"`
+	False string `json:"false"`
+}
+
+type systemOneRequest struct {
+	State     string                  `json:"state"`
+	Model     string                  `json:"model"`
+	Questions map[string]noulQuestion `json:"questions"`
+}
+
+type systemOneResponse struct {
+	Model   string            `json:"model"`
+	Answers map[string]answer `json:"answers"`
+	Usage   struct {
+		InputTokens  int `json:"input_tokens"`
+		OutputTokens int `json:"output_tokens"`
+	} `json:"usage"`
+}
+
+type answer struct {
+	Type string  `json:"type"`
+	Noul float64 `json:"noul"`
 }
 
 // ModerationResponse represents a simplified moderation result
@@ -21,62 +83,67 @@ type ModerationResponse struct {
 	Scores     map[string]float64
 }
 
-// ModerateContent analyzes content using OpenAI's moderation API
+// ModerateContent analyzes content with TypeSafe, scoring every field in the
+// taxonomy in a single request.
 func ModerateContent(content string) (*ModerationResponse, error) {
-	ctx := context.Background()
-
-	req := openai.ModerationRequest{
-		Model: openai.ModerationOmniLatest,
-		Input: content,
-	}
-
-	resp, err := moderationClient.Moderations(ctx, req)
+	payload, err := json.Marshal(systemOneRequest{
+		State:     content,
+		Model:     moderationModel,
+		Questions: moderationQuestions,
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("typesafe moderation: encoding request: %w", err)
 	}
 
-	// OpenAI returns an array of results, we'll use the first one
-	if len(resp.Results) == 0 {
-		return &ModerationResponse{
-			Flagged:    false,
-			Categories: make(map[string]bool),
-			Scores:     make(map[string]float64),
-		}, nil
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, moderationEndpoint, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("typesafe moderation: building request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+common.Config.TypeSafeAPIKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := moderationHTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("typesafe moderation: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return nil, fmt.Errorf("typesafe moderation: %s: %s", resp.Status, bytes.TrimSpace(body))
 	}
 
-	result := resp.Results[0]
-
-	// Convert OpenAI categories to map format
-	categories := map[string]bool{
-		"harassment":             result.Categories.Harassment,
-		"harassment/threatening": result.Categories.HarassmentThreatening,
-		"hate":                   result.Categories.Hate,
-		"hate/threatening":       result.Categories.HateThreatening,
-		"self-harm":              result.Categories.SelfHarm,
-		"self-harm/intent":       result.Categories.SelfHarmIntent,
-		"self-harm/instructions": result.Categories.SelfHarmInstructions,
-		"sexual":                 result.Categories.Sexual,
-		"sexual/minors":          result.Categories.SexualMinors,
-		"violence":               result.Categories.Violence,
-		"violence/graphic":       result.Categories.ViolenceGraphic,
+	var parsed systemOneResponse
+	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
+		return nil, fmt.Errorf("typesafe moderation: decoding response: %w", err)
 	}
 
-	scores := map[string]float64{
-		"harassment":             float64(result.CategoryScores.Harassment),
-		"harassment/threatening": float64(result.CategoryScores.HarassmentThreatening),
-		"hate":                   float64(result.CategoryScores.Hate),
-		"hate/threatening":       float64(result.CategoryScores.HateThreatening),
-		"self-harm":              float64(result.CategoryScores.SelfHarm),
-		"self-harm/intent":       float64(result.CategoryScores.SelfHarmIntent),
-		"self-harm/instructions": float64(result.CategoryScores.SelfHarmInstructions),
-		"sexual":                 float64(result.CategoryScores.Sexual),
-		"sexual/minors":          float64(result.CategoryScores.SexualMinors),
-		"violence":               float64(result.CategoryScores.Violence),
-		"violence/graphic":       float64(result.CategoryScores.ViolenceGraphic),
+	flagged := false
+	categories := make(map[string]bool, len(moderationFields))
+	scores := make(map[string]float64, len(moderationFields))
+
+	for name := range moderationFields {
+		score, ok := parsed.Answers[name]
+		if !ok {
+			return nil, fmt.Errorf("typesafe moderation: no answer for field %q", name)
+		}
+		if score.Type != "noul" {
+			return nil, fmt.Errorf("typesafe moderation: field %q answered as %q, want noul", name, score.Type)
+		}
+
+		scores[name] = score.Noul
+		categories[name] = score.Noul >= ActionThreshold
+
+		if categories[name] {
+			flagged = true
+		}
 	}
 
 	return &ModerationResponse{
-		Flagged:    result.Flagged,
+		Flagged:    flagged,
 		Categories: categories,
 		Scores:     scores,
 	}, nil
